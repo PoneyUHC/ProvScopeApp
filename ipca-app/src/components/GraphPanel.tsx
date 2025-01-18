@@ -2,20 +2,24 @@
 import { SigmaContainer } from '@react-sigma/core';
 
 
-import { Component } from 'react';
+import { Component, RefObject } from 'react';
 
 import '@react-sigma/core/lib/style.css';
 import { DirectedGraph } from 'graphology';
 
 import FA2Layout from "graphology-layout-forceatlas2"
+import EventExplorerPanel from './EventExplorerPanel';
+
 
 interface GraphPanelProps {
     className?: string;
+    eventExplorerRef?: RefObject<EventExplorerPanel>
+    onGraphLoaded?: (jsonModel: string) => void
 }
 
 interface GraphPanelState {
     graph: DirectedGraph | null;
-    jsonModel: JSON | null;
+    jsonModel: any;
 }
 
 class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
@@ -27,6 +31,17 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             jsonModel: null
         }
     }
+
+
+    setGraphToEvent(event_id: number) {
+
+    }
+
+
+    applyEvent(event: JSON) {
+
+    }
+
 
     loadModel(content: string) {
 
@@ -70,8 +85,11 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         FA2Layout.assign(graph, {iterations: 50});
 
-        this.setState({graph, jsonModel});
+        this.setState({graph, jsonModel}, () => {
+            this.props.onGraphLoaded?.(this.state.jsonModel)
+        });
     }
+
 
     render() {
 

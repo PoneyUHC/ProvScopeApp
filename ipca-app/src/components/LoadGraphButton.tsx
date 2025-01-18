@@ -33,7 +33,6 @@ class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonStat
             };
             reader.readAsText(file);
 
-            console.log("hi buddy")
             this.setState({currentFileName: file.name})
         }
     };
@@ -54,7 +53,7 @@ class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonStat
                     ref={this.fileInputRef}
                     onChange={this.handleFileChange}
                 />
-                <div className='w-auto h-3/6 flex items-center justify-center border-2 border-black ml-20 pl-5 pr-5'>
+                <div className='w-auto h-2/6 flex items-center justify-center border-2 border-black ml-20 pl-5 pr-5'>
                     {currentFileName ? currentFileName : "No file selected"}
                 </div>
                 <button 
