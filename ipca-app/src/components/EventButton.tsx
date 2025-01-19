@@ -7,7 +7,8 @@ interface EventButtonProps {
     className?: string;
     event: any;
     id: number;
-    onClick: (id: number) => void;
+    onLeftClick: (event: React.MouseEvent) => void;
+    onRightClick: (event: React.MouseEvent) => void;
 }
 
 
@@ -23,10 +24,11 @@ class EventButton extends Component<EventButtonProps> {
 
         return (
             <button 
-                onClick={(event) => this.props.onClick(id)}
+                onClick={(event) => this.props.onLeftClick(event)}
+                onContextMenu={(event) => this.props.onRightClick(event)}
                 className={className}
             > 
-                ${event.description} 
+                {event.description} 
             </button>
         );
     }

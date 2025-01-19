@@ -3,6 +3,7 @@ import React, { Component, RefObject } from 'react';
 import EventButton from './EventButton';
 import GraphPanel from './GraphPanel';
 import { renderToPipeableStream } from 'react-dom/server';
+import { JSX } from 'react/jsx-runtime';
 
 
 interface EventExplorerPanelProps {
@@ -12,10 +13,17 @@ interface EventExplorerPanelProps {
     graphPanelRef: RefObject<GraphPanel>
 }
 
+enum EventExplorerPanelMode {
+    Explore,
+    Consequence
+}
+
 interface EventExplorerPanelState {
     selectedEventID: number;
     events?: Array<any>;
+    mode: EventExplorerPanelMode
 }
+
 
 
 class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplorerPanelState> {
@@ -24,18 +32,108 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
         super(props);
         this.state = {
             events: this.props.events,
-            selectedEventID: 0
+            selectedEventID: 0,
+            mode: EventExplorerPanelMode.Explore
         }
     }
 
-    selectEvent(id: number) {
-        this.props.graphPanelRef.current?.setGraphToEvent(id)
-        this.setState({events: this.state.events, selectedEventID: id})
+    onGraphLoaded(jsonModel: any) {
+        this.setState({events: jsonModel.events, selectedEventID: 0, mode: EventExplorerPanelMode.Explore})
     }
 
-    onGraphLoaded(jsonModel: any) {
-        this.setState({events: jsonModel.events, selectedEventID: this.state.selectedEventID})
+    setExploreMode(id: number) {
+        this.setState({events: this.state.events, selectedEventID: id, mode: EventExplorerPanelMode.Explore }, () => {
+            if( this.state.events ){
+                this.props.graphPanelRef.current?.setGraphToEvent(id, this.state.events)
+            }
+        })
     }
+
+    toggleConsequenceMode(id: number) {
+        let newMode = EventExplorerPanelMode.Consequence
+        if ( this.state.mode == EventExplorerPanelMode.Consequence && id == this.state.selectedEventID ) {
+            newMode = EventExplorerPanelMode.Explore
+        }
+        this.setState({events: this.state.events, selectedEventID: id, mode: newMode })
+    }
+
+
+    onLeftClick = (i: number) => (event: React.MouseEvent) => {
+        this.setExploreMode(i)
+    }
+
+    onRightClick = (i: number) => (event: React.MouseEvent) => {
+        this.toggleConsequenceMode(i)
+        event.preventDefault()
+    }
+
+    getButtonBgColor(i: number) {
+        if( i < this.state.selectedEventID ){
+            return "bg-gray-600"
+        } else if (i > this.state.selectedEventID) {
+            return "bg-gray-300"
+        } else {
+            return "bg-red-600"
+        }
+    }
+    
+
+    getExploreButtons() { 
+        if ( ! this.state.events ) {
+            return []
+        }
+
+        return this.state.events.map((event, i) => {
+
+            let bgColor = this.getButtonBgColor(i)
+            
+            return (
+                <li key={i}>
+                    <EventButton 
+                        className={`${bgColor} ${this.props.eventsStyle}`} 
+                        event={event} 
+                        id={i} 
+                        onLeftClick={this.onLeftClick(i)} 
+                        onRightClick={this.onRightClick(i)}
+                    />
+                </li>
+            );
+        })
+    }
+
+
+    getConsequenceButtons() {
+
+        let graphPanelRef = this.props.graphPanelRef.current
+        if ( ! this.state.events || ! graphPanelRef) {
+            return []
+        }
+
+        let possibleConsequencesIndex = graphPanelRef.getPossibleConsequences(this.state.selectedEventID, this.state.events)
+
+        return this.state.events.map((event, i) => {
+
+            let opacity = "opacity-100"
+            if( !possibleConsequencesIndex.includes(i) ){
+                opacity = "opacity-10"
+            }
+
+            let bgColor = this.getButtonBgColor(i)
+            
+            return (
+                <li key={i}>
+                    <EventButton 
+                        className={`${opacity} ${bgColor} ${this.props.eventsStyle}`} 
+                        event={event} 
+                        id={i} 
+                        onLeftClick={this.onLeftClick(i)} 
+                        onRightClick={this.onRightClick(i)}
+                    />
+                </li>
+            );
+        })
+    }
+
 
     render() {
         
@@ -44,23 +142,17 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
             return <div className={`flex items-center justify-center ${this.props.className}`}>Load a model to display its events</div>;
         }
 
+        let eventButtonList
+        if ( this.state.mode == EventExplorerPanelMode.Explore ) {
+            eventButtonList = this.getExploreButtons()
+        } else if (this.state.mode == EventExplorerPanelMode.Consequence) {
+            eventButtonList = this.getConsequenceButtons()
+        }
 
-        const eventButtonList = events.map((event, i) => {
+        if ( ! eventButtonList ) {
+            <div>An error occured</div>
+        }
 
-            const onClick = () => {
-                this.selectEvent(i)
-            }
-
-            let bg_color 
-            if( i < this.state.selectedEventID ){
-                bg_color = "bg-gray-600"
-            } else if (i > this.state.selectedEventID) {
-                bg_color = "bg-gray-300"
-            } else {
-                bg_color = "bg-red-600"
-            }
-            return <li key={i}><EventButton className={`${bg_color} ${this.props.eventsStyle}`} event={event} id={i} onClick={onClick}/></li>
-        })
 
         return (
             <ul className={`overflow-scroll flex flex-col ${this.props.className}`}>

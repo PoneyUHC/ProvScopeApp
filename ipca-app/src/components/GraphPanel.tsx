@@ -5,7 +5,7 @@ import { SigmaContainer } from '@react-sigma/core';
 import { Component, RefObject } from 'react';
 
 import '@react-sigma/core/lib/style.css';
-import { DirectedGraph } from 'graphology';
+import Graph, { DirectedGraph } from 'graphology';
 
 import FA2Layout from "graphology-layout-forceatlas2"
 import EventExplorerPanel from './EventExplorerPanel';
@@ -33,13 +33,154 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    setGraphToEvent(event_id: number) {
 
+    getSourceTarget(event: any) {
+
+        let jsonModel = this.state.jsonModel
+        let process
+        let uuid: string
+
+        let graph = this.state.graph
+
+        if ( ! graph ) {
+            return [,]
+        }
+
+        switch (event.event_type) {
+            case "OpenEvent":
+                process = jsonModel.processes[event.process]
+                uuid = `${process.pid}-${process.name}`
+                let filepath = jsonModel.files[event.file].path
+                return [uuid, filepath]
+
+            case "CloseEvent":
+                // TODO
+                break;
+    
+            case "ReadEvent":
+                process = jsonModel.processes[event.process]
+                uuid = `${process.pid}-${process.name}`;
+                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                var source = graph.target(edge)
+                return [source, uuid]
+    
+            case "WriteEvent":
+                process = jsonModel.processes[event.process]
+                uuid = `${process.pid}-${process.name}`;
+                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                var target = graph.target(edge)
+                return [uuid, target]
+        }
+
+        return [,]
     }
 
 
-    applyEvent(event: JSON) {
+    getPossibleConsequences(sourceID: number, events: Array<any>){
+        
+        let result = [sourceID]
 
+        let marked = new Set()
+
+        this.setGraphToEvent(sourceID, events)
+
+        const [source, target] = this.getSourceTarget(events[sourceID])
+        marked.add(source)
+
+        for( let i=sourceID+1; i<events.length; ++i) {
+
+            let event = events[i]
+
+            const [source, target] = this.getSourceTarget(event)
+            if ( marked.has(source) ){
+                marked.add(target)
+                result.push(i)
+            }
+            
+            this.applyEventToGraph(event)
+        }
+
+        return result
+    }
+
+
+    cleanGraph() {
+        const graph = this.state.graph
+        var edges_to_keep = graph?.filterDirectedEdges((_, edgeAttribs) => edgeAttribs.definitive);
+    
+        for (const edge of graph?.edges()! ) {
+            if( edges_to_keep?.includes(edge) ) {
+                graph?.setEdgeAttribute(edge, "color", "black");
+            } else {
+                graph?.dropEdge(edge);
+            }
+        }
+    }
+
+
+    setGraphToEvent(eventID: number, events: Array<any>) {
+    
+        this.cleanGraph();
+    
+        var highlightCallback = () => {};
+    
+        var id = 0;
+        for (const event of events) {
+            highlightCallback = this.applyEventToGraph(event);
+            
+            if (id == eventID) {
+                highlightCallback();
+                break;
+            }
+            id += 1;
+        }
+    }
+
+
+    applyEventToGraph(event: any) : () => void {
+
+        var graph = this.state.graph;
+        var jsonModel = this.state.jsonModel
+
+        var highlightCallback: () => void = () => {};
+    
+        switch (event.event_type) {
+            case "OpenEvent":
+                var process = jsonModel.processes[event.process];
+                var file = jsonModel.files[event.file];
+                var process_label = `${process.pid}-${process.name}`;
+                var file_label = file.path;
+                var edge = graph?.addEdge(process_label, file_label, { size: 3, color: "blue", type: 'arrow'});
+                console.log('here')
+                graph?.setEdgeAttribute(edge, "fd", event.fd);
+                graph?.setEdgeAttribute(edge, "is_opened", true);
+                break;
+    
+            case "CloseEvent":
+                var process = jsonModel.processes[event.process];
+                var process_label = `${process.pid}-${process.name}`;
+                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                graph?.setEdgeAttribute(edge, "color", "lightgrey");
+                graph?.setEdgeAttribute(edge, "is_opened", false);
+                break;
+    
+            case "ReadEvent":
+                var process = jsonModel.processes[event.process];
+                var process_label = `${process.pid}-${process.name}`;
+                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "green");
+                break;
+    
+            case "WriteEvent":
+                var process = jsonModel.processes[event.process];
+                var process_label = `${process.pid}-${process.name}`;
+                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "red");
+                break;
+            
+        }
+    
+        return highlightCallback
     }
 
 
@@ -111,3 +252,4 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 }
 
 export default GraphPanel;
+
