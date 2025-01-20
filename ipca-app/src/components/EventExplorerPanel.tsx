@@ -2,8 +2,6 @@
 import React, { Component, RefObject } from 'react';
 import EventButton from './EventButton';
 import GraphPanel from './GraphPanel';
-import { renderToPipeableStream } from 'react-dom/server';
-import { JSX } from 'react/jsx-runtime';
 
 
 interface EventExplorerPanelProps {
