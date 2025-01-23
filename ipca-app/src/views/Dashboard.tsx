@@ -5,6 +5,11 @@ import GraphPanel from "../components/GraphPanel";
 import LoadGraphPanel from "../components/LoadGraphButton";
 import EventExplorerPanel from "../components/EventExplorerPanel";
 import Header from "../components/Header";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
+
+
+const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
 
 
 class Dashboard extends Component {
@@ -32,22 +37,28 @@ class Dashboard extends Component {
                 <Header/>
                 <div className="w-full h-full flex flex-col overflow-auto">
                     <div className="w-full h-5/6 flex flex-row p-5">
-                        <GraphPanel 
-                            ref={this.graphPanelRef}
-                            eventExplorerRef={this.eventExplorerPanelRef}
-                            onGraphLoaded={onGraphLoaded}
-                            className="w-3/4 h-11/12 shadow-[0px_0px_10px] shadow-slate-400 border-black border border-opacity-30"
-                        />
-                        <EventExplorerPanel 
-                            ref={this.eventExplorerPanelRef} 
-                            className="flex-1 h-11/12 ml-5 shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
-                            eventsStyle="w-full h-auto border border-black"
-                            graphPanelRef={this.graphPanelRef}
-                        />
+                        <Allotment className={`${borderStyles}`}>
+                            <Allotment.Pane minSize={200} preferredSize={"80%"}>
+                                <GraphPanel 
+                                    ref={this.graphPanelRef}
+                                    eventExplorerRef={this.eventExplorerPanelRef}
+                                    onGraphLoaded={onGraphLoaded}
+                                    className={`h-full ${borderStyles}`}
+                                />
+                            </Allotment.Pane>
+                            <Allotment.Pane minSize={200} preferredSize={"20%"}>
+                                <EventExplorerPanel 
+                                    ref={this.eventExplorerPanelRef} 
+                                    className={`h-full ${borderStyles}`}
+                                    eventsStyle="w-full h-auto border border-black"
+                                    graphPanelRef={this.graphPanelRef}
+                                />
+                            </Allotment.Pane>
+                        </Allotment>
                     </div>
                     <div className="w-full h-1/6 flex flex-row justify-evenly p-5">
                         <LoadGraphPanel 
-                            className="w-full h-full shadow-[0px_0px_10px] shadow-slate-400 border-black border border-opacity-30" 
+                            className={`w-full h-full ${borderStyles}`} 
                             onFileLoad={onFileLoad}
                         />
                     </div>
