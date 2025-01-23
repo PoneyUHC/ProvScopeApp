@@ -67,9 +67,9 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
 
     getButtonBgColor(i: number) {
         if( i < this.state.selectedEventID ){
-            return "bg-gray-600"
+            return "bg-gray-500 hover:bg-gray-400"
         } else if (i > this.state.selectedEventID) {
-            return "bg-gray-300"
+            return "bg-gray-400 hover:bg-gray-500"
         } else {
             return "bg-red-600"
         }
