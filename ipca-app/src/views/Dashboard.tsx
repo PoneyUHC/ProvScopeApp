@@ -4,6 +4,7 @@ import {Component, createRef, RefObject} from "react";
 import GraphPanel from "../components/GraphPanel";
 import LoadGraphPanel from "../components/LoadGraphButton";
 import EventExplorerPanel from "../components/EventExplorerPanel";
+import Header from "../components/Header";
 
 
 class Dashboard extends Component {
@@ -26,26 +27,30 @@ class Dashboard extends Component {
         }
 
         return (
+            
             <div className="w-screen h-screen flex flex-col">
-                <div className="w-full h-4/5 flex flex-row justify-evenly">
-                    <GraphPanel 
-                        ref={this.graphPanelRef}
-                        eventExplorerRef={this.eventExplorerPanelRef}
-                        onGraphLoaded={onGraphLoaded}
-                        className="w-4/6 h-11/12 border-2 border-black"
-                    />
-                    <EventExplorerPanel 
-                        ref={this.eventExplorerPanelRef} 
-                        className="w-3/12 h-11/12 border-2 border-blue-800"
-                        eventsStyle="w-full h-auto border-2 border-black"
-                        graphPanelRef={this.graphPanelRef}
-                    />
-                </div>
-                <div className="w-full h-1/5 flex flex-row justify-evenly">
-                <LoadGraphPanel 
-                    className="w-full h-full border-2 border-red-500" 
-                    onFileLoad={onFileLoad}
-                />
+                <Header/>
+                <div className="w-full h-full flex flex-col overflow-auto">
+                    <div className="w-full h-5/6 flex flex-row p-5">
+                        <GraphPanel 
+                            ref={this.graphPanelRef}
+                            eventExplorerRef={this.eventExplorerPanelRef}
+                            onGraphLoaded={onGraphLoaded}
+                            className="w-3/4 h-11/12 shadow-[0px_0px_10px] shadow-slate-400 border-black border border-opacity-30"
+                        />
+                        <EventExplorerPanel 
+                            ref={this.eventExplorerPanelRef} 
+                            className="flex-1 h-11/12 ml-5 shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
+                            eventsStyle="w-full h-auto border border-black"
+                            graphPanelRef={this.graphPanelRef}
+                        />
+                    </div>
+                    <div className="w-full h-1/6 flex flex-row justify-evenly p-5">
+                        <LoadGraphPanel 
+                            className="w-full h-full shadow-[0px_0px_10px] shadow-slate-400 border-black border border-opacity-30" 
+                            onFileLoad={onFileLoad}
+                        />
+                    </div>
                 </div>
             </div>
         );

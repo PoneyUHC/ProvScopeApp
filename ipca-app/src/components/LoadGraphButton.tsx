@@ -46,19 +46,19 @@ class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonStat
         const { currentFileName } = this.state;
 
         return (
-            <div className={`flex items-center ${this.props.className}`}>
+            <div className={`flex items-center gap-10 ${this.props.className}`}>
                 <input
                     className='hidden'
                     type="file"
                     ref={this.fileInputRef}
                     onChange={this.handleFileChange}
                 />
-                <div className='w-auto h-2/6 flex items-center justify-center border-2 border-black ml-20 pl-5 pr-5'>
+                <div className='w-1/6 h-2/6 font-mono flex items-center justify-center border border-black ml-20 pl-5 pr-5'>
                     {currentFileName ? currentFileName : "No file selected"}
                 </div>
                 <button 
                     onClick={this.handleButtonClick} 
-                    className="w-1/6 h-5/6 border-2 border-black ml-10">
+                    className="w-1/6 h-5/6 font-mono border-black border rounded-md cursor-pointer bg-[#e3e3e3] transition hover:bg-[#c7c7c7]">
                     Load Graph
                 </button>
             </div>

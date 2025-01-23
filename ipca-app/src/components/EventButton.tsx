@@ -26,7 +26,7 @@ class EventButton extends Component<EventButtonProps> {
             <button 
                 onClick={(event) => this.props.onLeftClick(event)}
                 onContextMenu={(event) => this.props.onRightClick(event)}
-                className={className}
+                className={`font-mono ${className}`}
             > 
                 {event.description} 
             </button>

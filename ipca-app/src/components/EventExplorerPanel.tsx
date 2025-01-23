@@ -137,7 +137,7 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
         
         const events = this.state.events
         if (! events) {
-            return <div className={`flex items-center justify-center ${this.props.className}`}>Load a model to display its events</div>;
+            return <div className={`flex items-center justify-center font-mono ${this.props.className}`}>Load a model to display its events</div>;
         }
 
         let eventButtonList
@@ -148,7 +148,7 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
         }
 
         if ( ! eventButtonList ) {
-            <div>An error occured</div>
+            return <div className='flex items-center justify-center font-mono text-red-600'>An error occured</div>
         }
 
 

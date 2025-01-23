@@ -1,14 +1,18 @@
 
-import { SigmaContainer } from '@react-sigma/core';
-
-
 import { Component, RefObject } from 'react';
 
 import '@react-sigma/core/lib/style.css';
-import Graph, { DirectedGraph } from 'graphology';
+import { DirectedGraph } from 'graphology';
 
 import FA2Layout from "graphology-layout-forceatlas2"
 import EventExplorerPanel from './EventExplorerPanel';
+
+import {
+    SigmaContainer,
+    ControlsContainer,
+    FullScreenControl,
+    ZoomControl,
+} from '@react-sigma/core'
 
 
 interface GraphPanelProps {
@@ -238,13 +242,19 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         let body;
         if (graph) {
-            body = <SigmaContainer graph={graph}></SigmaContainer>
+            body = 
+            <SigmaContainer graph={graph}>
+                <ControlsContainer position={'bottom-right'}>
+                    <ZoomControl />
+                    <FullScreenControl />
+                </ControlsContainer>
+            </SigmaContainer>
         } else {
             body = <div>Load a model to display its graph view</div>;
         }
 
         return (
-            <div className={`flex items-center justify-center ${this.props.className}`}>
+            <div className={`flex items-center justify-center font-mono ${this.props.className}`}>
                 {body}
             </div>
         );
