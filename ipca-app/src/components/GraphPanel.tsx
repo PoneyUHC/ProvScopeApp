@@ -1,5 +1,5 @@
 
-import { Component, RefObject } from 'react';
+import { Component, createRef, RefObject } from 'react';
 
 import '@react-sigma/core/lib/style.css';
 import { DirectedGraph } from 'graphology';
@@ -13,6 +13,8 @@ import {
     FullScreenControl,
     ZoomControl,
 } from '@react-sigma/core'
+import { Sigma } from 'sigma';
+import { MouseCoords, SigmaEventPayload, SigmaEvents, SigmaNodeEventPayload, SigmaStageEventPayload } from 'sigma/types';
 
 
 interface GraphPanelProps {
@@ -28,14 +30,76 @@ interface GraphPanelState {
 
 class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
+    sigmaInstance: Sigma | null = null;
+    didRegisterEvents: boolean = false
+    draggedNode: string | null = null;
+
     constructor(props: GraphPanelProps) {
         super(props);
         this.state = {
             graph: null,
-            jsonModel: null
+            jsonModel: null,
         }
     }
 
+
+    onDownNode(event: SigmaNodeEventPayload) {
+
+        const node = event.node
+
+        this.draggedNode = node
+        this.state.graph?.setNodeAttribute(node, 'highlighted', true)
+
+        if( ! this.sigmaInstance || ! this.draggedNode ){
+            return
+        }
+
+        if (!this.sigmaInstance.getCustomBBox()){
+            this.sigmaInstance.setCustomBBox(this.sigmaInstance.getBBox());
+        }
+    }
+
+
+    onMouseMove(event: SigmaEventPayload){
+
+        const {graph} = this.state
+
+        if( ! this.sigmaInstance || ! this.draggedNode ){
+            return
+        }
+
+        const mouseCoords = event.event 
+        const pos = this.sigmaInstance.viewportToGraph(mouseCoords)
+        graph?.setNodeAttribute(this.draggedNode, 'x', pos.x)
+        graph?.setNodeAttribute(this.draggedNode, 'y', pos.y)
+        
+        event.preventSigmaDefault()
+        event.event.original.preventDefault()
+        event.event.original.stopPropagation()
+    }
+
+
+    onMouseUp() {
+        
+        const { graph } = this.state
+
+        if ( this.draggedNode  ) {
+            graph?.removeNodeAttribute(this.draggedNode , 'highlighted')
+            this.draggedNode = null
+        }
+    }
+
+
+    registerGraphEvents() {
+
+        if( ! this.sigmaInstance ) {
+            return
+        }
+
+        this.sigmaInstance.on('downNode', (e) => this.onDownNode(e))
+        this.sigmaInstance.on('moveBody', (e) => this.onMouseMove(e))
+        this.sigmaInstance.on('upNode', () => this.onMouseUp())
+    }
 
 
     getSourceTarget(event: any) {
@@ -240,10 +304,19 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         const { graph } = this.state;
 
+        const sigmaRefCallback = (sigmaInstance: Sigma | null) => {
+            if ( ! sigmaInstance ) {
+                return
+            }
+
+            this.sigmaInstance = sigmaInstance
+            this.registerGraphEvents()
+        }
+
         let body;
         if (graph) {
             body = 
-            <SigmaContainer graph={graph}>
+            <SigmaContainer ref={sigmaRefCallback} graph={graph}>
                 <ControlsContainer position={'bottom-right'}>
                     <ZoomControl />
                     <FullScreenControl />
