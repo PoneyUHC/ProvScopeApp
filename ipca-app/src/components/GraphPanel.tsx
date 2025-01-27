@@ -99,6 +99,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         this.sigmaInstance.on('downNode', (e) => this.onDownNode(e))
         this.sigmaInstance.on('moveBody', (e) => this.onMouseMove(e))
         this.sigmaInstance.on('upNode', () => this.onMouseUp())
+        this.sigmaInstance.on('upStage', () => this.onMouseUp())
     }
 
 
