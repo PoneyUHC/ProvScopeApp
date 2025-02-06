@@ -23,22 +23,33 @@ interface GraphPanelProps {
     onGraphLoaded?: (jsonModel: string) => void
 }
 
+
 interface GraphPanelState {
-    graph: DirectedGraph | null;
-    jsonModel: any;
+    currentGraph: DirectedGraph | null;
 }
+
+
+const getKeyword = {
+    "OpenEvent" : "opens",
+    "CloseEvent" : "closes",
+    "ReadEvent" : "reads",
+    "WriteEvent" : "writes"
+}
+
 
 class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     sigmaInstance: Sigma | null = null;
     didRegisterEvents: boolean = false
     draggedNode: string | null = null;
+    
+    completeGraph: DirectedGraph | null = null;
+    jsonModel: any = null;
 
     constructor(props: GraphPanelProps) {
         super(props);
         this.state = {
-            graph: null,
-            jsonModel: null,
+            currentGraph: null
         }
     }
 
@@ -48,7 +59,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         const node = event.node
 
         this.draggedNode = node
-        this.state.graph?.setNodeAttribute(node, 'highlighted', true)
+        this.state.currentGraph?.setNodeAttribute(node, 'highlighted', true)
 
         if( ! this.sigmaInstance || ! this.draggedNode ){
             return
@@ -62,16 +73,14 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     onMouseMove(event: SigmaEventPayload){
 
-        const {graph} = this.state
-
         if( ! this.sigmaInstance || ! this.draggedNode ){
             return
         }
 
         const mouseCoords = event.event 
         const pos = this.sigmaInstance.viewportToGraph(mouseCoords)
-        graph?.setNodeAttribute(this.draggedNode, 'x', pos.x)
-        graph?.setNodeAttribute(this.draggedNode, 'y', pos.y)
+        this.state.currentGraph?.setNodeAttribute(this.draggedNode, 'x', pos.x)
+        this.state.currentGraph?.setNodeAttribute(this.draggedNode, 'y', pos.y)
         
         event.preventSigmaDefault()
         event.event.original.preventDefault()
@@ -80,11 +89,9 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
 
     onMouseUp() {
-        
-        const { graph } = this.state
 
         if ( this.draggedNode  ) {
-            graph?.removeNodeAttribute(this.draggedNode , 'highlighted')
+            this.state.currentGraph?.removeNodeAttribute(this.draggedNode , 'highlighted')
             this.draggedNode = null
         }
     }
@@ -102,17 +109,52 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         this.sigmaInstance.on('upStage', () => this.onMouseUp())
     }
 
+    
+    getRelatedFilename(event: any) {
+
+        const graph = this.completeGraph
+        const jsonModel = this.jsonModel
+
+        if ( !graph ){
+            return "Error"
+        }
+
+        const process = jsonModel.processes[event.process]
+        const uuid = `${process.pid}-${process.name}`;
+
+        
+        const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd);
+        const filename = graph.target(edge)
+
+        if ( ! edge ){
+            return "Error"
+        }
+
+        return filename
+    }
+
+
+    getEventDescription(event: any) {
+
+        const process = this.jsonModel.processes[event.process]
+        const uuid = `${process.pid}-${process.name}`;
+
+        const filename = this.getRelatedFilename(event)
+
+        return `${uuid} ${getKeyword[event.event_type]} ${filename}`
+    }
+
 
     getSourceTarget(event: any) {
 
-        let jsonModel = this.state.jsonModel
         let process
         let uuid: string
 
-        let graph = this.state.graph
+        const graph = this.completeGraph
+        const jsonModel = this.jsonModel
 
         if ( ! graph ) {
-            return [,]
+            return []
         }
 
         switch (event.event_type) {
@@ -141,7 +183,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 return [uuid, target]
         }
 
-        return [,]
+        return []
     }
 
 
@@ -152,6 +194,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         let marked = new Set()
 
         this.setGraphToEvent(sourceID, events)
+        console.log("here")
 
         const [source, target] = this.getSourceTarget(events[sourceID])
         marked.add(source)
@@ -173,29 +216,33 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    cleanGraph() {
-        const graph = this.state.graph
-        var edges_to_keep = graph?.filterDirectedEdges((_, edgeAttribs) => edgeAttribs.definitive);
+    cleanGraph(graph: DirectedGraph) {
+
+        if ( !graph ){
+            return;
+        }
+
+        const edges_to_keep = graph.filterDirectedEdges((_, edgeAttribs) => edgeAttribs.definitive);
     
-        for (const edge of graph?.edges()! ) {
-            if( edges_to_keep?.includes(edge) ) {
-                graph?.setEdgeAttribute(edge, "color", "black");
+        for (const edge of graph.edges()! ) {
+            if( edges_to_keep.includes(edge) ) {
+                graph.setEdgeAttribute(edge, "color", "black");
             } else {
-                graph?.dropEdge(edge);
+                graph.dropEdge(edge);
             }
         }
     }
 
 
-    setGraphToEvent(eventID: number, events: Array<any>) {
+    setGraphToEvent(eventID: number, events: Array<any>, graph: DirectedGraph) {
     
-        this.cleanGraph();
+        this.cleanGraph(graph);
     
-        var highlightCallback = () => {};
+        let highlightCallback = () => {};
     
-        var id = 0;
+        let id = 0;
         for (const event of events) {
-            highlightCallback = this.applyEventToGraph(event);
+            highlightCallback = this.applyEventToGraph(event, graph);
             
             if (id == eventID) {
                 highlightCallback();
@@ -206,46 +253,48 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    applyEventToGraph(event: any) : () => void {
+    applyEventToGraph(event: any, graph: DirectedGraph) : () => void {
 
-        var graph = this.state.graph;
-        var jsonModel = this.state.jsonModel
+        const jsonModel = this.jsonModel;
 
-        var highlightCallback: () => void = () => {};
+        let highlightCallback: () => void = () => {};
+
+        const process = jsonModel.processes[event.process];
+        const uuid = `${process.pid}-${process.name}`;
     
         switch (event.event_type) {
             case "OpenEvent":
-                var process = jsonModel.processes[event.process];
-                var file = jsonModel.files[event.file];
-                var process_label = `${process.pid}-${process.name}`;
-                var file_label = file.path;
-                var edge = graph?.addEdge(process_label, file_label, { size: 3, color: "blue", type: 'arrow'});
-                console.log('here')
+            {
+                const file = jsonModel.files[event.file];
+                const file_label = file.path;
+                const edge = graph?.addEdge(uuid, file_label, { size: 3, color: "blue", type: 'arrow'});
                 graph?.setEdgeAttribute(edge, "fd", event.fd);
                 graph?.setEdgeAttribute(edge, "is_opened", true);
                 break;
+            }
+                
     
             case "CloseEvent":
-                var process = jsonModel.processes[event.process];
-                var process_label = `${process.pid}-${process.name}`;
-                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+            {
+                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
                 graph?.setEdgeAttribute(edge, "color", "lightgrey");
                 graph?.setEdgeAttribute(edge, "is_opened", false);
                 break;
+            }
     
             case "ReadEvent":
-                var process = jsonModel.processes[event.process];
-                var process_label = `${process.pid}-${process.name}`;
-                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+            {
+                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
                 highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "green");
                 break;
+            }
     
             case "WriteEvent":
-                var process = jsonModel.processes[event.process];
-                var process_label = `${process.pid}-${process.name}`;
-                var edge = graph?.findEdge((_, edgeAttribs, source) => source === process_label && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+            {
+                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
                 highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "red");
                 break;
+            }
             
         }
     
@@ -259,22 +308,22 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         const graph = new DirectedGraph();
 
         for (const file of jsonModel.files) {
-            var file_label = file.path;
+            const file_label = file.path;
             graph.addNode(file_label, { x: Math.random(), y: Math.random(), size: 10, color: "green", label: file_label });
         }
     
         for (const process of jsonModel.processes) {
-            var process_label = `${process.pid}-${process.name}`;
+            const process_label = `${process.pid}-${process.name}`;
             graph.addNode(process_label, { x: Math.random(), y: Math.random(), size: 10, color: "red", label: process_label });
     
             for (const open_info of process.open_infos) {
                 const file = jsonModel.files[open_info.file];
-                var file_label = file.path;
+                const file_label = file.path;
                 graph.addEdge(process_label, file_label, { color: "black", type: 'arrow'});
             }
     
             for (const [i, channel] of jsonModel.channels.entries()) {
-                var channel_label = channel.name;
+                const channel_label = channel.name;
         
                 if( !graph.hasNode(channel_label) ){
                     graph.addNode(channel_label, { x: Math.random(), y: Math.random(), size: 10, color: "blue", label: channel_label });
@@ -283,7 +332,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 for (const comm_info of process.communication_infos) {
                     if (comm_info.channel === i) {
                         if ( !graph.hasEdge(process_label, channel_label) ){
-                            var edge = graph.addEdge(process_label, channel_label, { size: 3, color: "black", type: 'arrow'});
+                            const edge = graph.addEdge(process_label, channel_label, { size: 3, color: "black", type: 'arrow'});
                             graph.setEdgeAttribute(edge, "definitive", true);
                             graph.setEdgeAttribute(edge, "fd", 1);
                             graph.setEdgeAttribute(edge, "is_opened", true);
@@ -295,15 +344,19 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         FA2Layout.assign(graph, {iterations: 50});
 
-        this.setState({graph, jsonModel}, () => {
-            this.props.onGraphLoaded?.(this.state.jsonModel)
+        this.jsonModel = jsonModel
+        this.setState({currentGraph: graph}, () => {
+            this.props.onGraphLoaded?.(this.jsonModel)
         });
+
+
+        const completeGraph = graph.copy()
+        this.setGraphToEvent(jsonModel.events.length - 1, jsonModel.events, completeGraph)
+        this.completeGraph = completeGraph
     }
 
 
     render() {
-
-        const { graph } = this.state;
 
         const sigmaRefCallback = (sigmaInstance: Sigma | null) => {
             if ( ! sigmaInstance ) {
@@ -315,9 +368,9 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         }
 
         let body;
-        if (graph) {
+        if (this.state.currentGraph) {
             body = 
-            <SigmaContainer ref={sigmaRefCallback} graph={graph}>
+            <SigmaContainer ref={sigmaRefCallback} graph={this.state.currentGraph}>
                 <ControlsContainer position={'bottom-right'}>
                     <ZoomControl />
                     <FullScreenControl />

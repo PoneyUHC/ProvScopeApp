@@ -81,15 +81,23 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
             return []
         }
 
+        const graphPanelRef = this.props.graphPanelRef.current
+
+        if ( ! graphPanelRef ) {
+            return []
+        }
+
         return this.state.events.map((event, i) => {
 
             let bgColor = this.getButtonBgColor(i)
+
+            const content = graphPanelRef.getEventDescription(event)
             
             return (
                 <li key={i}>
                     <EventButton 
                         className={`${bgColor} ${this.props.eventsStyle}`} 
-                        event={event} 
+                        content={content} 
                         id={i} 
                         onLeftClick={this.onLeftClick(i)} 
                         onRightClick={this.onRightClick(i)}
@@ -102,12 +110,12 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
 
     getConsequenceButtons() {
 
-        let graphPanelRef = this.props.graphPanelRef.current
+        const graphPanelRef = this.props.graphPanelRef.current
         if ( ! this.state.events || ! graphPanelRef) {
             return []
         }
 
-        let possibleConsequencesIndex = graphPanelRef.getPossibleConsequences(this.state.selectedEventID, this.state.events)
+        const possibleConsequencesIndex = graphPanelRef.getPossibleConsequences(this.state.selectedEventID, this.state.events)
 
         return this.state.events.map((event, i) => {
 
@@ -117,12 +125,14 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
             }
 
             let bgColor = this.getButtonBgColor(i)
+
+            const content = graphPanelRef.getEventDescription(event)
             
             return (
                 <li key={i}>
                     <EventButton 
                         className={`${opacity} ${bgColor} ${this.props.eventsStyle}`} 
-                        event={event} 
+                        content={content}
                         id={i} 
                         onLeftClick={this.onLeftClick(i)} 
                         onRightClick={this.onRightClick(i)}

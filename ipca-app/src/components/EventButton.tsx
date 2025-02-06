@@ -1,11 +1,10 @@
 
 import { Component, RefObject } from 'react';
-import GraphPanel from './GraphPanel';
 
 
 interface EventButtonProps {
     className?: string;
-    event: any;
+    content: string
     id: number;
     onLeftClick: (event: React.MouseEvent) => void;
     onRightClick: (event: React.MouseEvent) => void;
@@ -20,7 +19,7 @@ class EventButton extends Component<EventButtonProps> {
 
     render() {
 
-        const {className, event, id} = this.props;
+        const {className, content} = this.props;
 
         return (
             <button 
@@ -28,7 +27,7 @@ class EventButton extends Component<EventButtonProps> {
                 onContextMenu={(event) => this.props.onRightClick(event)}
                 className={`font-mono ${className}`}
             > 
-                {event.description} 
+                {content}
             </button>
         );
     }
