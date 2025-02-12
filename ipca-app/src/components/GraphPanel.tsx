@@ -1,5 +1,5 @@
 
-import { Component, createRef, RefObject } from 'react';
+import { Component, RefObject } from 'react';
 
 import '@react-sigma/core/lib/style.css';
 import { DirectedGraph } from 'graphology';
@@ -14,7 +14,7 @@ import {
     ZoomControl,
 } from '@react-sigma/core'
 import { Sigma } from 'sigma';
-import { MouseCoords, SigmaEventPayload, SigmaEvents, SigmaNodeEventPayload, SigmaStageEventPayload } from 'sigma/types';
+import { SigmaEventPayload, SigmaNodeEventPayload } from 'sigma/types';
 
 
 interface EventInfos {
@@ -154,9 +154,6 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     getEventInfos(event: any): EventInfos | null {
 
-        let process
-        let uuid: string
-
         const graph = this.completeGraph
         const jsonModel = this.jsonModel
 
@@ -164,29 +161,33 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             return null
         }
 
-        let eventInfos = {} as EventInfos
+        const eventInfos = {} as EventInfos
 
-        process = jsonModel.processes[event.process]
-        uuid = `${process.pid}-${process.name}`
+        const process = jsonModel.processes[event.process]
+        const uuid = `${process.pid}-${process.name}`
         eventInfos.processUUID = uuid
 
         switch (event.event_type) {
 
             case "ReadEvent":
-                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
-                var dataSource = graph.target(edge)
+            {
+                const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
+                const dataSource = graph.target(edge)
                 eventInfos.dataTransfer = true
                 eventInfos.dataSource = dataSource
                 eventInfos.dataDestination = uuid
                 break;
+            }
     
             case "WriteEvent":
-                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
-                var dataDestination = graph.target(edge)
+            {
+                const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
+                const dataDestination = graph.target(edge)
                 eventInfos.dataTransfer = true
                 eventInfos.dataSource = uuid
                 eventInfos.dataDestination = dataDestination
                 break;
+            }
 
             default:
                 eventInfos.dataTransfer = false
@@ -199,8 +200,8 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     getPossibleConsequences(sourceID: number, events: Array<any>){
         
-        let consequences = [sourceID]
-        let reachedByEval = new Set()
+        const consequences = [sourceID]
+        const reachedByEval = new Set()
 
         if ( ! this.state.currentGraph ) {
             return []
@@ -208,7 +209,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         this.setGraphToEvent(sourceID, events, this.state.currentGraph)
 
-        let eventInfos = this.getEventInfos(events[sourceID])
+        const eventInfos = this.getEventInfos(events[sourceID])
 
         if ( ! eventInfos ){
             return []
@@ -222,13 +223,12 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         for( let i=sourceID+1; i<events.length; ++i) {
 
-            let event = events[i]
+            const event = events[i]
             
-            let eventInfos = this.getEventInfos(event)
+            const eventInfos = this.getEventInfos(event)
             if ( ! eventInfos ) {
                 return []
             }
-            
             
             // add event to list
             if ( reachedByEval.has(eventInfos.processUUID) ) {
@@ -239,10 +239,6 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             if ( reachedByEval.has(eventInfos.dataSource) ) {
                 reachedByEval.add(eventInfos.dataDestination)
             }
-            
-            console.log(event)
-            console.log(eventInfos)
-            console.log(reachedByEval)
             
             this.applyEventToGraph(event, this.state.currentGraph)
         }
