@@ -39,7 +39,8 @@ interface GraphPanelState {
 const getKeyword = {
     "OpenEvent" : "opens",
     "CloseEvent" : "closes",
-    "ReadEvent" : "reads",
+    "EnterReadEvent" : "starts reading",
+    "ExitReadEvent" : "ends reading",
     "WriteEvent" : "writes"
 }
 
@@ -133,6 +134,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd);
         const filename = graph.target(edge)
 
+
         if ( ! edge ){
             return "Error"
         }
@@ -169,7 +171,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         switch (event.event_type) {
 
-            case "ReadEvent":
+            case "ExitReadEvent":
             {
                 const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
                 const dataSource = graph.target(edge)
@@ -265,7 +267,14 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    setGraphToEvent(eventID: number, events: Array<any>, graph: DirectedGraph) {
+    setGraphToEvent(eventID: number, events: Array<any>, graph: DirectedGraph | null = null) {
+
+        if ( !graph ){
+            if ( !this.state.currentGraph ){
+                return
+            }
+            graph = this.state.currentGraph
+        }
     
         this.cleanGraph(graph);
     
@@ -313,9 +322,20 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 break;
             }
     
-            case "ReadEvent":
+            case "EnterReadEvent":
             {
                 const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                const color = graph?.getEdgeAttribute(edge, "color");
+                graph?.setEdgeAttribute(edge, "previousColor", color);
+                graph?.setEdgeAttribute(edge, "color", "green");
+                break;
+            }
+
+            case "ExitReadEvent":
+            {
+                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
+                const previousColor = graph?.getEdgeAttribute(edge, "previousColor");
+                graph?.setEdgeAttribute(edge, "color", previousColor);
                 highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "green");
                 break;
             }
