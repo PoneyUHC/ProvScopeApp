@@ -16,6 +16,9 @@ import {
 import { Sigma } from 'sigma';
 import { SigmaEventPayload, SigmaNodeEventPayload } from 'sigma/types';
 
+import { EnterReadEvent, ExitReadEvent, IPCInstance, WriteEvent, Event } from '../types.ts';
+import { myHash } from '../utils.ts';
+
 
 interface EventInfos {
     processUUID: string;
@@ -27,7 +30,7 @@ interface EventInfos {
 interface GraphPanelProps {
     className?: string;
     eventExplorerRef?: RefObject<EventExplorerPanel>
-    onGraphLoaded?: (jsonModel: string) => void
+    onGraphLoaded?: (ipcInstance: IPCInstance) => void
 }
 
 
@@ -52,7 +55,9 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     draggedNode: string | null = null;
     
     completeGraph: DirectedGraph | null = null;
-    jsonModel: any = null;
+    ipcInstance: IPCInstance | null = null
+
+    eventFilenameCache: Map<number, string> = new Map()
 
     constructor(props: GraphPanelProps) {
         super(props);
@@ -254,20 +259,16 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         if ( !graph ){
             return;
         }
-
-        const edges_to_keep = graph.filterDirectedEdges((_, edgeAttribs) => edgeAttribs.definitive);
     
-        for (const edge of graph.edges()! ) {
-            if( edges_to_keep.includes(edge) ) {
-                graph.setEdgeAttribute(edge, "color", "black");
-            } else {
+        for (const edge of graph.edges() ) {
+            if( ! graph.getEdgeAttribute(edge, "definitive") ){
                 graph.dropEdge(edge);
             }
         }
     }
 
 
-    setGraphToEvent(eventID: number, events: Array<any>, graph: DirectedGraph | null = null) {
+    setGraphToEvent(eventID: number, graph: DirectedGraph | null = null) {
 
         if ( !graph ){
             if ( !this.state.currentGraph ){
@@ -275,13 +276,17 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             }
             graph = this.state.currentGraph
         }
-    
+
+        if ( ! this.ipcInstance) {
+            return
+        }
+
         this.cleanGraph(graph);
     
         let highlightCallback = () => {};
     
         let id = 0;
-        for (const event of events) {
+        for (const event of this.ipcInstance.events) {
             highlightCallback = this.applyEventToGraph(event, graph);
             
             if (id == eventID) {
@@ -293,14 +298,11 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    applyEventToGraph(event: any, graph: DirectedGraph) : () => void {
-
-        const jsonModel = this.jsonModel;
+    applyEventToGraph(event: Event, graph: DirectedGraph) : () => void {
 
         let highlightCallback: () => void = () => {};
 
-        const process = jsonModel.processes[event.process];
-        const uuid = `${process.pid}-${process.name}`;
+        const processUUID = event.process.getUUID();
     
         switch (event.event_type) {
             case "OpenEvent":
@@ -353,57 +355,52 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    loadModel(content: string) {
+    loadInstance(content: string) {
 
-        const jsonModel = JSON.parse(content);
+        const jsonInstance = JSON.parse(content);
+        const ipcInstance = IPCInstance.loadInstanceFromJSON(jsonInstance)
+
         const graph = new DirectedGraph();
 
-        for (const file of jsonModel.files) {
-            const file_label = file.path;
-            graph.addNode(file_label, { x: Math.random(), y: Math.random(), size: 10, color: "green", label: file_label });
+    
+        for (const file of ipcInstance.files) {
+            const fileLabel = file.name;
+            graph.addNode(fileLabel, { x: myHash(fileLabel), y: myHash(fileLabel), size: 10, color: "green", label: fileLabel });
         }
     
-        for (const process of jsonModel.processes) {
-            const process_label = `${process.pid}-${process.name}`;
-            graph.addNode(process_label, { x: Math.random(), y: Math.random(), size: 10, color: "red", label: process_label });
-    
-            for (const open_info of process.open_infos) {
-                const file = jsonModel.files[open_info.file];
-                const file_label = file.path;
-                graph.addEdge(process_label, file_label, { color: "black", type: 'arrow'});
-            }
-    
-            for (const [i, channel] of jsonModel.channels.entries()) {
-                const channel_label = channel.name;
-        
-                if( !graph.hasNode(channel_label) ){
-                    graph.addNode(channel_label, { x: Math.random(), y: Math.random(), size: 10, color: "blue", label: channel_label });
-                }
-    
-                for (const comm_info of process.communication_infos) {
-                    if (comm_info.channel === i) {
-                        if ( !graph.hasEdge(process_label, channel_label) ){
-                            const edge = graph.addEdge(process_label, channel_label, { size: 3, color: "black", type: 'arrow'});
-                            graph.setEdgeAttribute(edge, "definitive", true);
-                            graph.setEdgeAttribute(edge, "fd", 1);
-                            graph.setEdgeAttribute(edge, "is_opened", true);
-                        }
-                    }
-                }
-            }
+        for (const process of ipcInstance.processes) {
+            const processLabel = process.getUUID();
+            graph.addNode(processLabel, { x: myHash(processLabel), y: myHash(processLabel), size: 10, color: "red", label: processLabel });
         }
+
+        for (const event of ipcInstance.events) {
+            if ( (event instanceof EnterReadEvent ||
+                event instanceof ExitReadEvent ||
+                event instanceof WriteEvent) && event.fd === 1
+            ) {
+                const processLabel = event.process.getUUID();
+                // TODO: fd = 1 is always STDOUT
+                const nodeLabel = `${processLabel}-STDOUT`;
+                graph.addNode(nodeLabel, { x: myHash(nodeLabel), y: myHash(nodeLabel), size: 10, color: "blue", label: nodeLabel });
+                
+                const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow'});
+                graph.setEdgeAttribute(edge, "definitive", true);
+                graph.setEdgeAttribute(edge, "fd", 1);
+                graph.setEdgeAttribute(edge, "is_opened", true);            }
+        } 
+
+        this.ipcInstance = ipcInstance
 
         FA2Layout.assign(graph, {iterations: 50});
 
-        this.jsonModel = jsonModel
         this.setState({currentGraph: graph}, () => {
-            this.props.onGraphLoaded?.(this.jsonModel)
+            this.props.onGraphLoaded?.(ipcInstance)
         });
 
-
         const completeGraph = graph.copy()
-        this.setGraphToEvent(jsonModel.events.length - 1, jsonModel.events, completeGraph)
+        this.setGraphToEvent(ipcInstance.events.length - 1, completeGraph)
         this.completeGraph = completeGraph
+
     }
 
 

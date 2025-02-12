@@ -17,14 +17,10 @@ class Dashboard extends Component {
     graphPanelRef = createRef<GraphPanel>();
     eventExplorerPanelRef = createRef<EventExplorerPanel>();
 
-    sendToGraphPanel = (graphPanelRef: RefObject<GraphPanel>, content: string) => {
-        graphPanelRef.current?.loadModel(content);
-    }
-
     render() {
 
         const onFileLoad = (content: string) => {
-            this.sendToGraphPanel(this.graphPanelRef, content)
+            this.graphPanelRef.current?.loadInstance(content);
         }
 
         const onGraphLoaded = (jsonModel: any) => {

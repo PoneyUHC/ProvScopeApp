@@ -1,5 +1,94 @@
 
-class Process {
+
+export class IPCInstance {
+
+    processes: Process[]
+    files: File[]
+    events: Event[]
+    channels: Channel[]
+
+    private constructor() {
+        this.processes = []
+        this.files = []
+        this.events = []
+    }
+
+
+    static loadInstanceFromJSON(json: any) {
+
+        const instance = new IPCInstance()
+
+        for (const process of json.processes) {
+            instance.processes.push(new Process(process.name, process.pid))   
+        }
+
+        for (const file of json.files) {
+            instance.files.push(new File(file.name))
+        }
+
+        for (const jsonEvent of json.events) {
+            const event = IPCInstance.createEventFromJSON(jsonEvent, instance)
+            if ( event ) {
+                instance.events.push(event)
+            }
+        }
+
+        return instance
+    }
+
+
+    static createEventFromJSON(json: any, instance: IPCInstance): Event | null {
+
+        switch (json.event_type) {
+            case "OpenEvent":
+                return new OpenEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    instance.files[json.file],
+                    json.fd,
+                    json.mode,
+                    json.flags
+                )
+            case "CloseEvent":
+                return new CloseEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd
+                )
+            case "EnterReadEvent":
+                return new EnterReadEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count
+                )
+            case "ExitReadEvent":
+                return new ExitReadEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count,
+                    json.content,
+                    json.ret
+                )
+            case "WriteEvent":
+                return new WriteEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count,
+                    json.content
+                )
+            
+            default:
+                console.error(`Unknown event type: ${json.event_type}`)
+                return null
+        }
+    }
+}
+
+
+export class Process {
 
     name: string
     pid: number
@@ -15,7 +104,7 @@ class Process {
 }
 
 
-class File {
+export class File {
 
     name: string
 
@@ -25,7 +114,7 @@ class File {
 }
 
 
-abstract class Event {
+export abstract class Event {
 
     timestamp: number
     process: Process
@@ -39,7 +128,7 @@ abstract class Event {
 }
 
 
-class OpenEvent extends Event {
+export class OpenEvent extends Event {
 
     file: File
     fd: number
@@ -60,7 +149,7 @@ class OpenEvent extends Event {
 }
 
 
-class CloseEvent extends Event {
+export class CloseEvent extends Event {
 
     fd: number
 
@@ -75,7 +164,7 @@ class CloseEvent extends Event {
 }
 
 
-class EnterReadEvent extends Event {
+export class EnterReadEvent extends Event {
 
     fd: number
     count: number
@@ -92,7 +181,7 @@ class EnterReadEvent extends Event {
 }
 
 
-class ExitReadEvent extends Event {
+export class ExitReadEvent extends Event {
 
     fd: number
     count: number
@@ -113,7 +202,7 @@ class ExitReadEvent extends Event {
 }
 
 
-class WriteEvent extends Event {
+export class WriteEvent extends Event {
 
     fd: number
     count: number
