@@ -17,6 +17,13 @@ import { Sigma } from 'sigma';
 import { MouseCoords, SigmaEventPayload, SigmaEvents, SigmaNodeEventPayload, SigmaStageEventPayload } from 'sigma/types';
 
 
+interface EventInfos {
+    processUUID: string;
+    dataTransfer: boolean;
+    dataSource: string;
+    dataDestination: string;
+}
+
 interface GraphPanelProps {
     className?: string;
     eventExplorerRef?: RefObject<EventExplorerPanel>
@@ -145,7 +152,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    getSourceTarget(event: any) {
+    getEventInfos(event: any): EventInfos | null {
 
         let process
         let uuid: string
@@ -154,65 +161,93 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         const jsonModel = this.jsonModel
 
         if ( ! graph ) {
-            return []
+            return null
         }
+
+        let eventInfos = {} as EventInfos
+
+        process = jsonModel.processes[event.process]
+        uuid = `${process.pid}-${process.name}`
+        eventInfos.processUUID = uuid
 
         switch (event.event_type) {
-            case "OpenEvent":
-                process = jsonModel.processes[event.process]
-                uuid = `${process.pid}-${process.name}`
-                let filepath = jsonModel.files[event.file].path
-                return [uuid, filepath]
 
-            case "CloseEvent":
-                // TODO
+            case "ReadEvent":
+                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
+                var dataSource = graph.target(edge)
+                eventInfos.dataTransfer = true
+                eventInfos.dataSource = dataSource
+                eventInfos.dataDestination = uuid
                 break;
     
-            case "ReadEvent":
-                process = jsonModel.processes[event.process]
-                uuid = `${process.pid}-${process.name}`;
-                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                var source = graph.target(edge)
-                return [source, uuid]
-    
             case "WriteEvent":
-                process = jsonModel.processes[event.process]
-                uuid = `${process.pid}-${process.name}`;
-                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                var target = graph.target(edge)
-                return [uuid, target]
+                var edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
+                var dataDestination = graph.target(edge)
+                eventInfos.dataTransfer = true
+                eventInfos.dataSource = uuid
+                eventInfos.dataDestination = dataDestination
+                break;
+
+            default:
+                eventInfos.dataTransfer = false
+
         }
 
-        return []
+        return eventInfos
     }
 
 
     getPossibleConsequences(sourceID: number, events: Array<any>){
         
-        let result = [sourceID]
+        let consequences = [sourceID]
+        let reachedByEval = new Set()
 
-        let marked = new Set()
+        if ( ! this.state.currentGraph ) {
+            return []
+        }
 
-        this.setGraphToEvent(sourceID, events)
-        console.log("here")
+        this.setGraphToEvent(sourceID, events, this.state.currentGraph)
 
-        const [source, target] = this.getSourceTarget(events[sourceID])
-        marked.add(source)
+        let eventInfos = this.getEventInfos(events[sourceID])
+
+        if ( ! eventInfos ){
+            return []
+        }
+
+        reachedByEval.add(eventInfos.processUUID)
+        if ( eventInfos.dataTransfer ){
+            reachedByEval.add(eventInfos.dataSource)
+            reachedByEval.add(eventInfos.dataDestination)
+        }
 
         for( let i=sourceID+1; i<events.length; ++i) {
 
             let event = events[i]
-
-            const [source, target] = this.getSourceTarget(event)
-            if ( marked.has(source) ){
-                marked.add(target)
-                result.push(i)
+            
+            let eventInfos = this.getEventInfos(event)
+            if ( ! eventInfos ) {
+                return []
             }
             
-            this.applyEventToGraph(event)
+            
+            // add event to list
+            if ( reachedByEval.has(eventInfos.processUUID) ) {
+                consequences.push(i)
+            }
+            
+            // then propagate eval influence
+            if ( reachedByEval.has(eventInfos.dataSource) ) {
+                reachedByEval.add(eventInfos.dataDestination)
+            }
+            
+            console.log(event)
+            console.log(eventInfos)
+            console.log(reachedByEval)
+            
+            this.applyEventToGraph(event, this.state.currentGraph)
         }
 
-        return result
+        return consequences
     }
 
 
