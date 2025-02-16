@@ -5,7 +5,6 @@ export class IPCInstance {
     processes: Process[]
     files: File[]
     events: Event[]
-    channels: Channel[]
 
     private constructor() {
         this.processes = []
@@ -23,7 +22,7 @@ export class IPCInstance {
         }
 
         for (const file of json.files) {
-            instance.files.push(new File(file.name))
+            instance.files.push(new File(file.path))
         }
 
         for (const jsonEvent of json.events) {
@@ -128,17 +127,27 @@ export abstract class Event {
 }
 
 
-export class OpenEvent extends Event {
+export abstract class FSEvent extends Event {
+
+    fd: number
+
+    constructor(timestamp: number, process: Process, fd: number) {
+        super(timestamp, process)
+        this.fd = fd
+    }
+
+}
+
+
+export class OpenEvent extends FSEvent {
 
     file: File
-    fd: number
     mode: number
     flags: number
 
     constructor(timestamp: number, process: Process, file: File, fd: number, mode: number, flags: number) {
-        super(timestamp, process)
+        super(timestamp, process, fd)
         this.file = file
-        this.fd = fd
         this.mode = mode
         this.flags = flags
     }
@@ -149,13 +158,10 @@ export class OpenEvent extends Event {
 }
 
 
-export class CloseEvent extends Event {
-
-    fd: number
+export class CloseEvent extends FSEvent {
 
     constructor(timestamp: number, process: Process, fd: number) {
-        super(timestamp, process)
-        this.fd = fd
+        super(timestamp, process, fd)
     }
 
     getKeyword(): string {
@@ -164,14 +170,12 @@ export class CloseEvent extends Event {
 }
 
 
-export class EnterReadEvent extends Event {
+export class EnterReadEvent extends FSEvent {
 
-    fd: number
     count: number
 
     constructor(timestamp: number, process: Process, fd: number, count: number) {
-        super(timestamp, process)
-        this.fd = fd
+        super(timestamp, process, fd)
         this.count = count
     }
 
@@ -181,16 +185,14 @@ export class EnterReadEvent extends Event {
 }
 
 
-export class ExitReadEvent extends Event {
+export class ExitReadEvent extends FSEvent {
 
-    fd: number
     count: number
     content: string
     ret: number
 
     constructor(timestamp: number, process: Process, fd: number, count: number, content: string, ret: number) {
-        super(timestamp, process)
-        this.fd = fd
+        super(timestamp, process, fd)
         this.count = count
         this.content = content
         this.ret = ret
@@ -202,15 +204,13 @@ export class ExitReadEvent extends Event {
 }
 
 
-export class WriteEvent extends Event {
+export class WriteEvent extends FSEvent {
 
-    fd: number
     count: number
     content: string
 
     constructor(timestamp: number, process: Process, fd: number, count: number, content: string) {
-        super(timestamp, process)
-        this.fd = fd
+        super(timestamp, process, fd)
         this.count = count
         this.content = content
     }

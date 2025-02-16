@@ -16,8 +16,11 @@ import {
 import { Sigma } from 'sigma';
 import { SigmaEventPayload, SigmaNodeEventPayload } from 'sigma/types';
 
-import { EnterReadEvent, ExitReadEvent, IPCInstance, WriteEvent, Event } from '../types.ts';
-import { myHash } from '../utils.ts';
+import { EnterReadEvent, ExitReadEvent, IPCInstance, WriteEvent, Event, OpenEvent, CloseEvent, FSEvent } from '../types.ts';
+import { toUniform } from '../utils.ts';
+
+
+const eventFilenameLookup: Map<Event, string> = new Map()
 
 
 interface EventInfos {
@@ -39,22 +42,12 @@ interface GraphPanelState {
 }
 
 
-const getKeyword = {
-    "OpenEvent" : "opens",
-    "CloseEvent" : "closes",
-    "EnterReadEvent" : "starts reading",
-    "ExitReadEvent" : "ends reading",
-    "WriteEvent" : "writes"
-}
-
-
 class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     sigmaInstance: Sigma | null = null;
     didRegisterEvents: boolean = false
     draggedNode: string | null = null;
-    
-    completeGraph: DirectedGraph | null = null;
+
     ipcInstance: IPCInstance | null = null
 
     eventFilenameCache: Map<number, string> = new Map()
@@ -122,82 +115,81 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         this.sigmaInstance.on('upStage', () => this.onMouseUp())
     }
 
-    
-    getRelatedFilename(event: any) {
 
-        const graph = this.completeGraph
-        const jsonModel = this.jsonModel
-
-        if ( !graph ){
-            return "Error"
-        }
-
-        const process = jsonModel.processes[event.process]
-        const uuid = `${process.pid}-${process.name}`;
-
+    getEventFilename(event: FSEvent, lookupGraph: DirectedGraph): string | null {
         
-        const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd);
-        const filename = graph.target(edge)
+        const processUUID = event.process.getUUID();
 
-
+        const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+        
         if ( ! edge ){
-            return "Error"
-        }
-
-        return filename
-    }
-
-
-    getEventDescription(event: any) {
-
-        const process = this.jsonModel.processes[event.process]
-        const uuid = `${process.pid}-${process.name}`;
-
-        const filename = this.getRelatedFilename(event)
-
-        return `${uuid} ${getKeyword[event.event_type]} ${filename}`
-    }
-
-
-    getEventInfos(event: any): EventInfos | null {
-
-        const graph = this.completeGraph
-        const jsonModel = this.jsonModel
-
-        if ( ! graph ) {
             return null
         }
 
+        const filename = lookupGraph.target(edge)
+        return filename
+    }
+
+    
+    precomputeEventFilenames() {
+
+        if ( ! this.ipcInstance || ! this.state.currentGraph ) {
+            return
+        }
+
+        const tmpGraph = this.state.currentGraph
+        this.cleanGraph(tmpGraph)
+
+        for (const event of this.ipcInstance.events) {
+            
+            let filename1 = this.getEventFilename(event as FSEvent, tmpGraph)
+            this.applyEventToGraph(event as FSEvent, tmpGraph)
+            let filename2 = this.getEventFilename(event as FSEvent, tmpGraph)
+            const filename = filename1 || filename2
+            eventFilenameLookup.set(event, filename || "Error")
+         
+        }
+    }
+
+
+    getEventDescription(event: Event) {
+
+        const processUUID = event.process.getUUID();
+
+        if ( ! (event instanceof FSEvent) ) {
+            return "Error: not a FSEvent"
+        }
+
+        const filename = eventFilenameLookup.get(event) || "Error"
+        return `${processUUID} ${event.getKeyword()} ${filename}`
+    }
+
+
+    getDataTransferInfos(event: Event, lookupGraph: DirectedGraph): EventInfos {
+
         const eventInfos = {} as EventInfos
 
-        const process = jsonModel.processes[event.process]
-        const uuid = `${process.pid}-${process.name}`
-        eventInfos.processUUID = uuid
+        eventInfos.processUUID = event.process.getUUID()
 
-        switch (event.event_type) {
+        if ( event instanceof ExitReadEvent) {
+            
+            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
+            const dataSource = lookupGraph.target(edge)
+            eventInfos.dataTransfer = true
+            eventInfos.dataSource = dataSource
+            eventInfos.dataDestination = eventInfos.processUUID
+        
+        } else if ( event instanceof WriteEvent ) {
 
-            case "ExitReadEvent":
-            {
-                const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
-                const dataSource = graph.target(edge)
-                eventInfos.dataTransfer = true
-                eventInfos.dataSource = dataSource
-                eventInfos.dataDestination = uuid
-                break;
-            }
-    
-            case "WriteEvent":
-            {
-                const edge = graph.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened)
-                const dataDestination = graph.target(edge)
-                eventInfos.dataTransfer = true
-                eventInfos.dataSource = uuid
-                eventInfos.dataDestination = dataDestination
-                break;
-            }
+            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
+            const dataDestination = lookupGraph.target(edge)
+            eventInfos.dataTransfer = true
+            eventInfos.dataSource = eventInfos.processUUID
+            eventInfos.dataDestination = dataDestination
 
-            default:
-                eventInfos.dataTransfer = false
+        } else {
+
+            eventInfos.dataTransfer = false
 
         }
 
@@ -205,49 +197,48 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    getPossibleConsequences(sourceID: number, events: Array<any>){
+    getPossibleConsequences(originEvent: Event): Event[] {
         
-        const consequences = [sourceID]
-        const reachedByEval = new Set()
+        const consequences = [originEvent]
+        const nodesReachedByEval = new Set<string>()
 
-        if ( ! this.state.currentGraph ) {
+        if ( ! this.state.currentGraph  || ! this.ipcInstance ){ 
             return []
         }
 
-        this.setGraphToEvent(sourceID, events, this.state.currentGraph)
+        const tmpGraph = this.state.currentGraph
+        this.cleanGraph(tmpGraph)
 
-        const eventInfos = this.getEventInfos(events[sourceID])
+        this.applyUntilEvent(originEvent, tmpGraph)
+
+        const eventInfos = this.getDataTransferInfos(originEvent, tmpGraph)
 
         if ( ! eventInfos ){
             return []
         }
 
-        reachedByEval.add(eventInfos.processUUID)
+        nodesReachedByEval.add(eventInfos.processUUID)
         if ( eventInfos.dataTransfer ){
-            reachedByEval.add(eventInfos.dataSource)
-            reachedByEval.add(eventInfos.dataDestination)
+            nodesReachedByEval.add(eventInfos.dataSource)
+            nodesReachedByEval.add(eventInfos.dataDestination)
         }
 
-        for( let i=sourceID+1; i<events.length; ++i) {
+        const startIndex = this.ipcInstance.events.indexOf(originEvent)
 
-            const event = events[i]
+        for( const event of this.ipcInstance.events.slice(startIndex+1) ) {
             
-            const eventInfos = this.getEventInfos(event)
-            if ( ! eventInfos ) {
-                return []
-            }
+            this.applyEventToGraph(event, tmpGraph)
+            const eventInfos = this.getDataTransferInfos(event, tmpGraph)
             
             // add event to list
-            if ( reachedByEval.has(eventInfos.processUUID) ) {
-                consequences.push(i)
+            if ( nodesReachedByEval.has(eventInfos.processUUID) ) {
+                consequences.push(event)
             }
             
             // then propagate eval influence
-            if ( reachedByEval.has(eventInfos.dataSource) ) {
-                reachedByEval.add(eventInfos.dataDestination)
+            if ( nodesReachedByEval.has(eventInfos.dataSource) ) {
+                nodesReachedByEval.add(eventInfos.dataDestination)
             }
-            
-            this.applyEventToGraph(event, this.state.currentGraph)
         }
 
         return consequences
@@ -268,33 +259,34 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    setGraphToEvent(eventID: number, graph: DirectedGraph | null = null) {
+    applyUntilEvent(targetEvent: Event, graph: DirectedGraph | null = null): boolean {
 
-        if ( !graph ){
-            if ( !this.state.currentGraph ){
-                return
-            }
-            graph = this.state.currentGraph
+        if ( ! this.ipcInstance ){
+            return false
         }
 
-        if ( ! this.ipcInstance) {
-            return
+        if ( !graph ){
+            if ( !this.state.currentGraph){
+                return false
+            }
+
+            graph = this.state.currentGraph
         }
 
         this.cleanGraph(graph);
     
         let highlightCallback = () => {};
     
-        let id = 0;
         for (const event of this.ipcInstance.events) {
-            highlightCallback = this.applyEventToGraph(event, graph);
+            highlightCallback = this.applyEventToGraph(event as FSEvent, graph);
             
-            if (id == eventID) {
+            if (event === targetEvent) {
                 highlightCallback();
                 break;
             }
-            id += 1;
         }
+
+        return true
     }
 
 
@@ -303,52 +295,43 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         let highlightCallback: () => void = () => {};
 
         const processUUID = event.process.getUUID();
-    
-        switch (event.event_type) {
-            case "OpenEvent":
-            {
-                const file = jsonModel.files[event.file];
-                const file_label = file.path;
-                const edge = graph?.addEdge(uuid, file_label, { size: 3, color: "blue", type: 'arrow'});
-                graph?.setEdgeAttribute(edge, "fd", event.fd);
-                graph?.setEdgeAttribute(edge, "is_opened", true);
-                break;
-            }
-                
-    
-            case "CloseEvent":
-            {
-                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                graph?.setEdgeAttribute(edge, "color", "lightgrey");
-                graph?.setEdgeAttribute(edge, "is_opened", false);
-                break;
-            }
-    
-            case "EnterReadEvent":
-            {
-                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                const color = graph?.getEdgeAttribute(edge, "color");
-                graph?.setEdgeAttribute(edge, "previousColor", color);
-                graph?.setEdgeAttribute(edge, "color", "green");
-                break;
-            }
 
-            case "ExitReadEvent":
-            {
-                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                const previousColor = graph?.getEdgeAttribute(edge, "previousColor");
-                graph?.setEdgeAttribute(edge, "color", previousColor);
-                highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "green");
-                break;
-            }
-    
-            case "WriteEvent":
-            {
-                const edge = graph?.findEdge((_, edgeAttribs, source) => source === uuid && edgeAttribs.fd === event.fd && edgeAttribs.is_opened);
-                highlightCallback = () => graph?.setEdgeAttribute(edge, "color", "red");
-                break;
-            }
-            
+        if ( ! (event instanceof FSEvent) ) {
+            console.error(`Can only apply FSEvent to graph, got ${event}`)
+            return () => {}
+        }
+
+        if ( event instanceof OpenEvent ){
+
+            const edge = graph.addEdge(processUUID, event.file.name, { size: 3, color: "blue", type: 'arrow'});
+            graph.setEdgeAttribute(edge, "fd", event.fd);
+            graph.setEdgeAttribute(edge, "isOpened", true);
+
+        } else if ( event instanceof CloseEvent ) {
+
+            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            graph.setEdgeAttribute(edge, "color", "lightgrey");
+            graph.setEdgeAttribute(edge, "isOpened", false);
+
+        } else if ( event instanceof EnterReadEvent ) {
+
+            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            const color = graph.getEdgeAttribute(edge, "color");
+            graph.setEdgeAttribute(edge, "previousColor", color);
+            graph.setEdgeAttribute(edge, "color", "green");
+        
+        } else if ( event instanceof ExitReadEvent ) {
+        
+            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            const previousColor = graph.getEdgeAttribute(edge, "previousColor");
+            graph.setEdgeAttribute(edge, "color", previousColor);
+            highlightCallback = () => graph.setEdgeAttribute(edge, "color", "green");
+        
+        } else if ( event instanceof WriteEvent ) {
+
+            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            highlightCallback = () => graph.setEdgeAttribute(edge, "color", "red");
+
         }
     
         return highlightCallback
@@ -365,12 +348,12 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     
         for (const file of ipcInstance.files) {
             const fileLabel = file.name;
-            graph.addNode(fileLabel, { x: myHash(fileLabel), y: myHash(fileLabel), size: 10, color: "green", label: fileLabel });
+            graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel });
         }
     
         for (const process of ipcInstance.processes) {
             const processLabel = process.getUUID();
-            graph.addNode(processLabel, { x: myHash(processLabel), y: myHash(processLabel), size: 10, color: "red", label: processLabel });
+            graph.addNode(processLabel, { x: toUniform(processLabel)*10, y: toUniform(processLabel+'1')*10, size: 10, color: "red", label: processLabel });
         }
 
         for (const event of ipcInstance.events) {
@@ -381,12 +364,17 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 const processLabel = event.process.getUUID();
                 // TODO: fd = 1 is always STDOUT
                 const nodeLabel = `${processLabel}-STDOUT`;
-                graph.addNode(nodeLabel, { x: myHash(nodeLabel), y: myHash(nodeLabel), size: 10, color: "blue", label: nodeLabel });
+                if (!graph.hasNode(nodeLabel)) {
+                    graph.addNode(nodeLabel, { x: toUniform(nodeLabel)*10, y: toUniform(nodeLabel+'1')*10, size: 10, color: "blue", label: nodeLabel });
+                }
                 
-                const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow'});
-                graph.setEdgeAttribute(edge, "definitive", true);
-                graph.setEdgeAttribute(edge, "fd", 1);
-                graph.setEdgeAttribute(edge, "is_opened", true);            }
+                if ( !graph.hasEdge(processLabel, nodeLabel) ) {
+                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow'});
+                    graph.setEdgeAttribute(edge, "definitive", true);
+                    graph.setEdgeAttribute(edge, "fd", 1);
+                    graph.setEdgeAttribute(edge, "isOpened", true);            
+                }
+            }   
         } 
 
         this.ipcInstance = ipcInstance
@@ -394,13 +382,10 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         FA2Layout.assign(graph, {iterations: 50});
 
         this.setState({currentGraph: graph}, () => {
+
+            this.precomputeEventFilenames()
             this.props.onGraphLoaded?.(ipcInstance)
         });
-
-        const completeGraph = graph.copy()
-        this.setGraphToEvent(ipcInstance.events.length - 1, completeGraph)
-        this.completeGraph = completeGraph
-
     }
 
 
