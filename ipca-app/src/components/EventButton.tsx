@@ -1,11 +1,10 @@
 
-import { Component, RefObject } from 'react';
+import { Component } from 'react';
 
 
 interface EventButtonProps {
     className?: string;
     content: string
-    id: number;
     onLeftClick: (event: React.MouseEvent) => void;
     onRightClick: (event: React.MouseEvent) => void;
 }

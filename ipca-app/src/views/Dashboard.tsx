@@ -8,6 +8,9 @@ import Header from "../components/Header";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
+import { IPCInstance } from "../types";
+import OverviewPanel from "../components/OverviewPanel";
+
 
 const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
 
@@ -16,6 +19,7 @@ class Dashboard extends Component {
 
     graphPanelRef = createRef<GraphPanel>();
     eventExplorerPanelRef = createRef<EventExplorerPanel>();
+    overviewPanelRef = createRef<OverviewPanel>();
 
     render() {
 
@@ -23,8 +27,9 @@ class Dashboard extends Component {
             this.graphPanelRef.current?.loadInstance(content);
         }
 
-        const onGraphLoaded = (jsonModel: any) => {
-            this.eventExplorerPanelRef.current?.onGraphLoaded(jsonModel)
+        const onGraphLoaded = (ipcInstance: IPCInstance) => {
+            this.eventExplorerPanelRef.current?.onGraphLoaded(ipcInstance)
+            this.overviewPanelRef.current?.onGraphLoaded()
         }
 
         return (
@@ -34,7 +39,14 @@ class Dashboard extends Component {
                 <div className="w-full h-full flex flex-col overflow-auto">
                     <div className="w-full h-5/6 flex flex-row p-5">
                         <Allotment className={`${borderStyles}`}>
-                            <Allotment.Pane minSize={200} preferredSize={"80%"}>
+                            <Allotment.Pane minSize={200} preferredSize={"15%"}>
+                                <OverviewPanel
+                                    ref={this.overviewPanelRef}
+                                    graphPanelRef={this.graphPanelRef}
+                                    className={`h-full ${borderStyles}`}
+                                />
+                            </Allotment.Pane>
+                            <Allotment.Pane minSize={200} preferredSize={"70%"}>
                                 <GraphPanel 
                                     ref={this.graphPanelRef}
                                     eventExplorerRef={this.eventExplorerPanelRef}
@@ -42,7 +54,7 @@ class Dashboard extends Component {
                                     className={`h-full ${borderStyles}`}
                                 />
                             </Allotment.Pane>
-                            <Allotment.Pane minSize={200} preferredSize={"20%"}>
+                            <Allotment.Pane minSize={200} preferredSize={"15%"}>
                                 <EventExplorerPanel 
                                     ref={this.eventExplorerPanelRef} 
                                     className={`h-full ${borderStyles}`}

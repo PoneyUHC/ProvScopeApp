@@ -348,12 +348,12 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     
         for (const file of ipcInstance.files) {
             const fileLabel = file.name;
-            graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel });
+            graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel, group: 'Files' });
         }
     
         for (const process of ipcInstance.processes) {
             const processLabel = process.getUUID();
-            graph.addNode(processLabel, { x: toUniform(processLabel)*10, y: toUniform(processLabel+'1')*10, size: 10, color: "red", label: processLabel });
+            graph.addNode(processLabel, { x: toUniform(processLabel)*10, y: toUniform(processLabel+'1')*10, size: 10, color: "red", label: processLabel, group: 'Processes' });
         }
 
         for (const event of ipcInstance.events) {
@@ -365,7 +365,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 // TODO: fd = 1 is always STDOUT
                 const nodeLabel = `${processLabel}-STDOUT`;
                 if (!graph.hasNode(nodeLabel)) {
-                    graph.addNode(nodeLabel, { x: toUniform(nodeLabel)*10, y: toUniform(nodeLabel+'1')*10, size: 10, color: "blue", label: nodeLabel });
+                    graph.addNode(nodeLabel, { x: toUniform(nodeLabel)*10, y: toUniform(nodeLabel+'1')*10, size: 10, color: "blue", label: nodeLabel, group: 'Channels' });
                 }
                 
                 if ( !graph.hasEdge(processLabel, nodeLabel) ) {
@@ -386,6 +386,37 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             this.precomputeEventFilenames()
             this.props.onGraphLoaded?.(ipcInstance)
         });
+    }
+
+
+    getNodesByGroup(): Map<string, string[]> | null {
+        
+        if ( ! this.state.currentGraph ){
+            return null
+        }
+
+        const nodesByGroup = new Map<string, string[]>()
+
+        for (const node of this.state.currentGraph.nodes()) {
+            const group = this.state.currentGraph.getNodeAttribute(node, 'group')
+            if ( ! nodesByGroup.get(group) ){
+                nodesByGroup.set(group, [])
+            }
+            nodesByGroup.get(group)!.push(node)
+        }
+
+        return nodesByGroup
+    }
+
+
+    toggleNodeVisibility(node: string) {
+
+        if ( ! this.state.currentGraph ){
+            return
+        }
+
+        const currentVisibility = this.state.currentGraph.getNodeAttribute(node, 'hidden')
+        this.state.currentGraph?.setNodeAttribute(node, 'hidden', !currentVisibility)
     }
 
 

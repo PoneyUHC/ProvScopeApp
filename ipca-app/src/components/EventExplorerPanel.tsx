@@ -89,77 +89,6 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
             return "bg-red-600"
         }
     }
-    
-
-    getExploreButtons() { 
-        if ( ! this.state.events ) {
-            return []
-        }
-
-        const graphPanelRef = this.props.graphPanelRef.current
-
-        if ( ! graphPanelRef ) {
-            return []
-        }
-
-        return this.state.events.map((event) => {
-
-            let bgColor = this.getButtonBgColor(event)
-
-            const content = graphPanelRef.getEventDescription(event)
-
-            const key = this.state.events!.indexOf(event)
-            
-            return (
-                <li key={key}>
-                    <EventButton 
-                        className={`${bgColor} ${this.props.eventsStyle}`} 
-                        content={content} 
-                        id={key} 
-                        onLeftClick={this.onLeftClick(event)} 
-                        onRightClick={this.onRightClick(event)}
-                    />
-                </li>
-            );
-        })
-    }
-
-
-    getConsequenceButtons() {
-
-        const graphPanelRef = this.props.graphPanelRef.current
-        if ( ! this.state.events || ! graphPanelRef) {
-            return []
-        }
-
-        const possibleConsequences = graphPanelRef.getPossibleConsequences(this.state.selectedEvent!)
-
-        return this.state.events.map((event) => {
-
-            let opacity = "opacity-100"
-            if( ! possibleConsequences.includes(event) ){
-                opacity = "opacity-10"
-            }
-
-            let bgColor = this.getButtonBgColor(event)
-
-            const content = graphPanelRef.getEventDescription(event)
-            
-            const key = this.state.events!.indexOf(event)
-
-            return (
-                <li key={key}>
-                    <EventButton 
-                        className={`${opacity} ${bgColor} ${this.props.eventsStyle}`} 
-                        content={content}
-                        id={key} 
-                        onLeftClick={this.onLeftClick(event)} 
-                        onRightClick={this.onRightClick(event)}
-                    />
-                </li>
-            );
-        })
-    }
 
 
     render() {
@@ -194,7 +123,6 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
                     <EventButton 
                         className={`${opacity} ${bgColor} ${this.props.eventsStyle}`} 
                         content={content}
-                        id={key} 
                         onLeftClick={this.onLeftClick(event)} 
                         onRightClick={this.onRightClick(event)}
                     />
