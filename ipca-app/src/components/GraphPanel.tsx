@@ -422,6 +422,11 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
+    refresh() {
+        this.sigmaInstance?.refresh()
+    }
+
+
     render() {
 
         const sigmaRefCallback = (sigmaInstance: Sigma | null) => {

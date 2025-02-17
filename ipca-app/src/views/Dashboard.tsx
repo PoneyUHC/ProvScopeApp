@@ -32,13 +32,17 @@ class Dashboard extends Component {
             this.overviewPanelRef.current?.onGraphLoaded()
         }
 
+        const onDrag = () => {
+            this.graphPanelRef.current?.refresh()
+        }
+
         return (
             
             <div className="w-screen h-screen flex flex-col">
                 <Header/>
                 <div className="w-full h-full flex flex-col overflow-auto">
                     <div className="w-full h-5/6 flex flex-row p-5">
-                        <Allotment className={`${borderStyles}`}>
+                        <Allotment className={`${borderStyles}`} onChange={onDrag}>
                             <Allotment.Pane minSize={200} preferredSize={"15%"}>
                                 <OverviewPanel
                                     ref={this.overviewPanelRef}
