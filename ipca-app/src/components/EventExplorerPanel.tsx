@@ -47,6 +47,7 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
         this.setState({events: this.state.events, selectedEvent: event, mode: EventExplorerPanelMode.Explore }, () => {
             if( this.state.events ){
                 this.props.graphPanelRef.current?.applyUntilEvent(event)
+                this.props.graphPanelRef.current?.highlightNode(event.process.getUUID())
             }
         })
     }

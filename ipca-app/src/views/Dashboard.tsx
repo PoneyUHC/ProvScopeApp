@@ -54,6 +54,7 @@ class Dashboard extends Component {
                                 <GraphPanel 
                                     ref={this.graphPanelRef}
                                     eventExplorerRef={this.eventExplorerPanelRef}
+                                    overviewPanelRef={this.overviewPanelRef}
                                     onGraphLoaded={onGraphLoaded}
                                     className={`h-full ${borderStyles}`}
                                 />

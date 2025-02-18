@@ -7,6 +7,8 @@ import HiddenIcon from '../assets/hidden.svg';
 interface VisibilityButtonProps {
     content: string;
     onToggle: (node: string) => void;
+    onClick: (node: string) => void;
+    selected: boolean;
 }
 
 
@@ -39,12 +41,19 @@ class VisibilityButton extends Component<VisibilityButtonProps, VisibilityButton
         const {content} = this.props;
 
         const icon = this.state.visible ? VisibleIcon : HiddenIcon;
+        const borderStyle = this.props.selected ?
+            "border-4 border-red-600 " : 
+            "border-t border-black -mt-px";
+
 
         return (
-            <div className="flex border-t border-black items-center pl-2 -mt-px">
-                <div className="h-full flex-1">
+            <div className={`flex ${borderStyle}`}>
+                <button 
+                    className="flex-1 border-r border-black"
+                    onClick={() => this.props.onClick(content)}
+                >
                     {content}
-                </div>
+                </button>
                 <button 
                     className="w-10"  
                     onClick={() => this.toggleVisibility()}

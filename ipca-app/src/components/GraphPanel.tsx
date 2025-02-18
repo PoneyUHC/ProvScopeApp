@@ -16,8 +16,11 @@ import {
 import { Sigma } from 'sigma';
 import { SigmaEventPayload, SigmaNodeEventPayload } from 'sigma/types';
 
+import EventEmitter from 'events';
+
 import { EnterReadEvent, ExitReadEvent, IPCInstance, WriteEvent, Event, OpenEvent, CloseEvent, FSEvent } from '../types.ts';
 import { toUniform } from '../utils.ts';
+import OverviewPanel from './OverviewPanel.tsx';
 
 
 const eventFilenameLookup: Map<Event, string> = new Map()
@@ -32,6 +35,7 @@ interface EventInfos {
 
 interface GraphPanelProps {
     className?: string;
+    overviewPanelRef?: RefObject<OverviewPanel>
     eventExplorerRef?: RefObject<EventExplorerPanel>
     onGraphLoaded?: (ipcInstance: IPCInstance) => void
 }
@@ -67,6 +71,8 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         this.draggedNode = node
         this.state.currentGraph?.setNodeAttribute(node, 'highlighted', true)
 
+        this.props.overviewPanelRef?.current?.selectNode(node)
+
         if( ! this.sigmaInstance || ! this.draggedNode ){
             return
         }
@@ -95,11 +101,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
 
     onMouseUp() {
-
-        if ( this.draggedNode  ) {
-            this.state.currentGraph?.removeNodeAttribute(this.draggedNode , 'highlighted')
-            this.draggedNode = null
-        }
+        this.draggedNode = null
     }
 
 
@@ -424,6 +426,22 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     refresh() {
         this.sigmaInstance?.refresh()
+    }
+
+
+    highlightNode(node: string) {
+        if ( ! this.state.currentGraph ){
+            return
+        }
+
+        for (const n of this.state.currentGraph.nodes()) {
+            this.state.currentGraph.setNodeAttribute(n, 'highlighted', false)
+        }
+
+        this.state.currentGraph.setNodeAttribute(node, 'highlighted', true)
+
+        this.props.overviewPanelRef?.current?.selectNode(node)
+        this.refresh()
     }
 
 
