@@ -1,6 +1,6 @@
 
 import React, { Component } from 'react';
-import goldoIcon from '../images/goldo_icon.png'
+import goldoIcon from '../assets/goldo_icon.png'
 
 class Header extends Component {
 
