@@ -142,9 +142,9 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         for (const event of this.ipcInstance.events) {
             
-            let filename1 = this.getEventFilename(event as FSEvent, tmpGraph)
+            const filename1 = this.getEventFilename(event as FSEvent, tmpGraph)
             this.applyEventToGraph(event as FSEvent, tmpGraph)
-            let filename2 = this.getEventFilename(event as FSEvent, tmpGraph)
+            const filename2 = this.getEventFilename(event as FSEvent, tmpGraph)
             const filename = filename1 || filename2
             eventFilenameLookup.set(event, filename || "Error")
          
@@ -252,7 +252,9 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         }
     
         for (const edge of graph.edges() ) {
-            if( ! graph.getEdgeAttribute(edge, "definitive") ){
+            if( graph.getEdgeAttribute(edge, "definitive") ){
+                graph.setEdgeAttribute(edge, "color", "black");
+            } else {
                 graph.dropEdge(edge);
             }
         }
