@@ -100,8 +100,15 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    onMouseUp() {
+    onNodeMouseUp() {
         this.draggedNode = null
+    }
+
+    
+    onStageMouseUp() {
+        this.draggedNode = null
+
+        this.clearHighlights()
     }
 
 
@@ -113,8 +120,8 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         this.sigmaInstance.on('downNode', (e) => this.onDownNode(e))
         this.sigmaInstance.on('moveBody', (e) => this.onMouseMove(e))
-        this.sigmaInstance.on('upNode', () => this.onMouseUp())
-        this.sigmaInstance.on('upStage', () => this.onMouseUp())
+        this.sigmaInstance.on('upNode', () => this.onNodeMouseUp())
+        this.sigmaInstance.on('upStage', () => this.onStageMouseUp())
     }
 
 
@@ -296,9 +303,14 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
     applyEventToGraph(event: Event, graph: DirectedGraph) : () => void {
 
+        if( ! this.ipcInstance ){
+            return () => {}
+        }
+
         let highlightCallback: () => void = () => {};
 
         const processUUID = event.process.getUUID();
+        const eventIndex = this.ipcInstance?.events.indexOf(event)
 
         if ( ! (event instanceof FSEvent) ) {
             console.error(`Can only apply FSEvent to graph, got ${event}`)
@@ -307,7 +319,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         if ( event instanceof OpenEvent ){
 
-            const edge = graph.addEdge(processUUID, event.file.name, { size: 3, color: "blue", type: 'arrow'});
+            const edge = graph.addEdge(processUUID, event.file.name, { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
             graph.setEdgeAttribute(edge, "fd", event.fd);
             graph.setEdgeAttribute(edge, "isOpened", true);
 
@@ -316,6 +328,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
             graph.setEdgeAttribute(edge, "color", "lightgrey");
             graph.setEdgeAttribute(edge, "isOpened", false);
+            graph.setEdgeAttribute(edge, "label", eventIndex.toString());
 
         } else if ( event instanceof EnterReadEvent ) {
 
@@ -323,17 +336,20 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
             const color = graph.getEdgeAttribute(edge, "color");
             graph.setEdgeAttribute(edge, "previousColor", color);
             graph.setEdgeAttribute(edge, "color", "green");
+            graph.setEdgeAttribute(edge, "label", eventIndex.toString());
         
         } else if ( event instanceof ExitReadEvent ) {
         
             const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
             const previousColor = graph.getEdgeAttribute(edge, "previousColor");
             graph.setEdgeAttribute(edge, "color", previousColor);
+            graph.setEdgeAttribute(edge, "label", eventIndex.toString());
             highlightCallback = () => graph.setEdgeAttribute(edge, "color", "green");
         
         } else if ( event instanceof WriteEvent ) {
 
             const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            graph.setEdgeAttribute(edge, "label", eventIndex.toString());
             highlightCallback = () => graph.setEdgeAttribute(edge, "color", "red");
 
         }
@@ -373,7 +389,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 }
                 
                 if ( !graph.hasEdge(processLabel, nodeLabel) ) {
-                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow'});
+                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow', label: 'STDOUT', forceLabel: true });
                     graph.setEdgeAttribute(edge, "definitive", true);
                     graph.setEdgeAttribute(edge, "fd", 1);
                     graph.setEdgeAttribute(edge, "isOpened", true);            
@@ -429,7 +445,8 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    highlightNode(node: string) {
+    clearHighlights() {
+
         if ( ! this.state.currentGraph ){
             return
         }
@@ -437,6 +454,15 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         for (const n of this.state.currentGraph.nodes()) {
             this.state.currentGraph.setNodeAttribute(n, 'highlighted', false)
         }
+    }
+
+
+    highlightNode(node: string) {
+        if ( ! this.state.currentGraph ){
+            return
+        }
+
+        this.clearHighlights()
 
         this.state.currentGraph.setNodeAttribute(node, 'highlighted', true)
 
@@ -459,7 +485,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         let body;
         if (this.state.currentGraph) {
             body = 
-            <SigmaContainer ref={sigmaRefCallback} graph={this.state.currentGraph}>
+            <SigmaContainer ref={sigmaRefCallback} graph={this.state.currentGraph} settings={{renderEdgeLabels: true}}>
                 <ControlsContainer position={'bottom-right'}>
                     <ZoomControl />
                     <FullScreenControl />
