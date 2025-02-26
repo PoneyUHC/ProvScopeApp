@@ -263,6 +263,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         for (const edge of graph.edges() ) {
             if( graph.getEdgeAttribute(edge, "definitive") ){
                 graph.setEdgeAttribute(edge, "color", "black");
+                graph.setEdgeAttribute(edge, "label", "");
             } else {
                 graph.dropEdge(edge);
             }
@@ -389,7 +390,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
                 }
                 
                 if ( !graph.hasEdge(processLabel, nodeLabel) ) {
-                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow', label: 'STDOUT', forceLabel: true });
+                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow', label: '', forceLabel: true });
                     graph.setEdgeAttribute(edge, "definitive", true);
                     graph.setEdgeAttribute(edge, "fd", 1);
                     graph.setEdgeAttribute(edge, "isOpened", true);            
