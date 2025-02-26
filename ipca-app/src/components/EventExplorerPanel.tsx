@@ -39,7 +39,9 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
 
 
     onGraphLoaded(ipcInstance: IPCInstance) {
-        this.setState({events: ipcInstance.events, selectedEvent: ipcInstance.events[0], mode: EventExplorerPanelMode.Explore})
+        this.setState({events: ipcInstance.events, selectedEvent: ipcInstance.events[0], mode: EventExplorerPanelMode.Explore}, () => {
+            this.props.graphPanelRef.current?.applyUntilEvent(ipcInstance.events[0])
+        })
     }
 
 
