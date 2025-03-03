@@ -1,21 +1,22 @@
 
-import React, { Component } from 'react';
+import React, { Component, MouseEventHandler } from 'react';
 
-interface LoadGraphButtonProps {
+interface MiscPanelProps {
     className?: string;
-    onFileLoad?: (fileContent: string) => void;
+    onFileLoad: (filename: string, fileContent: string) => void;
+    onExport: () => void;
 }
 
-interface LoadGraphButtonState {
+interface MiscPanelState {
     currentFileName: string | null;
 }
 
 
-class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonState> {
+class MiscPanel extends Component<MiscPanelProps, MiscPanelState> {
 
     fileInputRef: React.RefObject<HTMLInputElement>;
 
-    constructor(props: LoadGraphButtonProps) {
+    constructor(props: MiscPanelProps) {
         super(props);
         this.fileInputRef = React.createRef();
         this.state = {
@@ -28,8 +29,9 @@ class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonStat
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
+                const filename = file.name;
                 const fileContent = e.target?.result as string;
-                this.props.onFileLoad?.(fileContent);
+                this.props.onFileLoad?.(filename, fileContent);
             };
             reader.readAsText(file);
 
@@ -58,12 +60,19 @@ class LoadGraphPanel extends Component<LoadGraphButtonProps, LoadGraphButtonStat
                 </div>
                 <button 
                     onClick={this.handleButtonClick} 
-                    className="w-1/6 h-5/6 font-mono border-black border rounded-md cursor-pointer bg-[#e3e3e3] transition hover:bg-[#c7c7c7]">
+                    className="w-1/6 h-5/6 font-mono border-black border rounded-md cursor-pointer bg-[#e3e3e3] transition hover:bg-[#c7c7c7]"
+                >
                     Load Graph
+                </button>
+                <button
+                    onClick={(_) => this.props.onExport()}
+                    className="w-1/6 h-5/6 font-mono border-black border rounded-md cursor-pointer bg-[#e3e3e3] transition hover:bg-[#c7c7c7] mr-10 ml-auto"
+                >
+                    Export current state
                 </button>
             </div>
         );
     }
 }
 
-export default LoadGraphPanel;
+export default MiscPanel;

@@ -2,7 +2,7 @@
 import {Component, createRef, RefObject} from "react";
 
 import GraphPanel from "../components/GraphPanel";
-import LoadGraphPanel from "../components/LoadGraphButton";
+import MiscPanel from "../components/MiscPanel";
 import EventExplorerPanel from "../components/EventExplorerPanel";
 import Header from "../components/Header";
 import { Allotment } from "allotment";
@@ -23,8 +23,12 @@ class Dashboard extends Component {
 
     render() {
 
-        const onFileLoad = (content: string) => {
-            this.graphPanelRef.current?.loadInstance(content);
+        const onFileLoad = (filename: string, content: string) => {
+            this.graphPanelRef.current?.loadInstance(filename, content);
+        }
+
+        const onExport = () => {
+            this.graphPanelRef.current?.exportInstance();
         }
 
         const onGraphLoaded = (ipcInstance: IPCInstance) => {
@@ -70,9 +74,10 @@ class Dashboard extends Component {
                         </Allotment>
                     </div>
                     <div className="w-full h-1/6 flex flex-row justify-evenly p-5">
-                        <LoadGraphPanel 
+                        <MiscPanel 
                             className={`w-full h-full ${borderStyles}`} 
                             onFileLoad={onFileLoad}
+                            onExport={onExport}
                         />
                     </div>
                 </div>

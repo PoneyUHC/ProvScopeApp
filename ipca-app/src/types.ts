@@ -1,21 +1,30 @@
 
+interface Clonable {
+    clone: () => Clonable
+}
 
-export class IPCInstance {
+
+export class IPCInstance implements Clonable {
+
+    filename: string
 
     processes: Process[]
     files: File[]
     events: Event[]
 
     private constructor() {
+        this.filename = ""
         this.processes = []
         this.files = []
         this.events = []
     }
 
 
-    static loadInstanceFromJSON(json: any) {
+    static loadInstanceFromJSON(filename: string, json: any) {
 
         const instance = new IPCInstance()
+
+        instance.filename = filename
 
         for (const process of json.processes) {
             instance.processes.push(new Process(process.name, process.pid))   
@@ -84,6 +93,59 @@ export class IPCInstance {
                 return null
         }
     }
+
+
+    static exportToJSON(ipcInstance: IPCInstance): any {
+
+        const replacer = (key: string, value: any) => {
+
+            if ( key === 'filename') {
+                return undefined
+            }
+
+            if (key === 'process') {
+                return ipcInstance.processes.map((process) => process.pid).indexOf(value.pid)
+            }
+
+            if (key === 'file') {
+                return ipcInstance.files.map((file) => file.path).indexOf(value.path)
+            }
+
+            if (key === 'events') {
+                return value.map((event: Event) => {
+                    return { event_type: event.constructor.name, ...event }
+                })
+
+            }
+
+            return value
+        }
+
+        const json = JSON.stringify(ipcInstance, replacer, 4)
+        
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filenameParts = ipcInstance.filename.split('.');
+        const filenamePrefix = filenameParts[0]
+        const extension = filenameParts[1]
+        a.download = `${filenamePrefix}_exported.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    clone(): IPCInstance {
+        const clone = new IPCInstance()
+        clone.filename = this.filename
+        clone.processes = structuredClone(this.processes)
+        clone.files = structuredClone(this.files)
+        clone.events = [...this.events]
+        return clone
+    }
+
 }
 
 
@@ -105,15 +167,14 @@ export class Process {
 
 export class File {
 
-    name: string
-
-    constructor(name: string) {
-        this.name = name
+    path: string
+    constructor(path: string) {
+        this.path = path
     }
 }
 
 
-export abstract class Event {
+export abstract class Event{
 
     timestamp: number
     process: Process
@@ -136,6 +197,9 @@ export abstract class FSEvent extends Event {
         this.fd = fd
     }
 
+    clone(): FSEvent {
+        throw new Error("Method not implemented.")
+    }
 }
 
 

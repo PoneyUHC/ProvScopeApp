@@ -16,8 +16,6 @@ import {
 import { Sigma } from 'sigma';
 import { SigmaEventPayload, SigmaNodeEventPayload } from 'sigma/types';
 
-import EventEmitter from 'events';
-
 import { EnterReadEvent, ExitReadEvent, IPCInstance, WriteEvent, Event, OpenEvent, CloseEvent, FSEvent } from '../types.ts';
 import { toUniform } from '../utils.ts';
 import OverviewPanel from './OverviewPanel.tsx';
@@ -109,6 +107,40 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
         this.draggedNode = null
 
         this.clearHighlights()
+    }
+
+    removeProcess(processUUID: string, ipcInstance: IPCInstance) {
+        ipcInstance.processes = ipcInstance.processes.filter(p => p.getUUID() !== processUUID)
+        ipcInstance.events = ipcInstance.events.filter(e => e.process.getUUID() !== processUUID)
+    }
+
+    removeFile(path: string, ipcInstance: IPCInstance) {
+        ipcInstance.files = ipcInstance.files.filter(f => f.path !== path)
+        ipcInstance.events = ipcInstance.events.filter(e => eventFilenameLookup.get(e) !== path)
+    }
+
+    exportInstance() {
+
+        if ( ! this.ipcInstance || ! this.state.currentGraph ){
+            return
+        }
+
+        const outIpcInstance = this.ipcInstance.clone()
+        const graph = this.state.currentGraph
+
+        const excludeNodes = graph.nodes().filter(n => graph.getNodeAttribute(n, 'hidden'))
+        for (const node of excludeNodes) {
+            const group = graph.getNodeAttribute(node, 'group')
+            if ( group === 'Processes' ){
+                this.removeProcess(node, outIpcInstance)
+            } else if ( group === 'Files'){
+                this.removeFile(node, outIpcInstance)
+            } else if ( group === 'Channels'){
+                this.removeFile(node, outIpcInstance)
+            }
+        }
+
+        IPCInstance.exportToJSON(outIpcInstance)
     }
 
 
@@ -320,7 +352,7 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
 
         if ( event instanceof OpenEvent ){
 
-            const edge = graph.addEdge(processUUID, event.file.name, { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
+            const edge = graph.addEdge(processUUID, event.file.path, { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
             graph.setEdgeAttribute(edge, "fd", event.fd);
             graph.setEdgeAttribute(edge, "isOpened", true);
 
@@ -359,16 +391,16 @@ class GraphPanel extends Component<GraphPanelProps, GraphPanelState> {
     }
 
 
-    loadInstance(content: string) {
+    loadInstance(name: string, content: string) {
 
         const jsonInstance = JSON.parse(content);
-        const ipcInstance = IPCInstance.loadInstanceFromJSON(jsonInstance)
+        const ipcInstance = IPCInstance.loadInstanceFromJSON(name, jsonInstance)
 
         const graph = new DirectedGraph();
 
     
         for (const file of ipcInstance.files) {
-            const fileLabel = file.name;
+            const fileLabel = file.path;
             graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel, group: 'Files' });
         }
     
