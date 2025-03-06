@@ -1,7 +1,8 @@
 {
-  "name": "ipca-frontend",
+  "name": "frontend",
   "private": true,
   "version": "0.1.0",
+  "author": "PoneyUHC",
   "type": "module",
   "scripts": {
     "dev": "vite",

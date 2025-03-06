@@ -1,5 +1,5 @@
 
-import React, { Component, MouseEventHandler } from 'react';
+import React, { Component } from 'react';
 
 interface MiscPanelProps {
     className?: string;

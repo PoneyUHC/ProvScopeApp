@@ -1,5 +1,5 @@
 
-import {Component, createRef, RefObject} from "react";
+import {Component, createRef} from "react";
 
 import GraphPanel from "../components/GraphPanel";
 import MiscPanel from "../components/MiscPanel";

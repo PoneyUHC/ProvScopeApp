@@ -1,0 +1,5 @@
+{
+    "name": "ipca-app",
+    "private": true,
+    "workspaces": ["common"]
+  }

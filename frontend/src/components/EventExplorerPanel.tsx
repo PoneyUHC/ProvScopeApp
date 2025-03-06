@@ -64,7 +64,7 @@ class EventExplorerPanel extends Component<EventExplorerPanelProps, EventExplore
     }
 
 
-    onLeftClick = (event: Event) => (mouseEvent: React.MouseEvent) => {
+    onLeftClick = (event: Event) => () => {
         this.setExploreMode(event)
     }
 
