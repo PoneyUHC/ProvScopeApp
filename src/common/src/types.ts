@@ -1,0 +1,285 @@
+
+interface Clonable {
+    clone: () => Clonable
+}
+
+
+export class IPCTrace implements Clonable {
+
+    filename: string
+
+    processes: Process[]
+    files: File[]
+    events: Event[]
+
+    private constructor() {
+        this.filename = ""
+        this.processes = []
+        this.files = []
+        this.events = []
+    }
+
+
+    static createInstanceFromJSON(filename: string, json: any) {
+
+        const instance = new IPCTrace()
+
+        instance.filename = filename
+
+        for (const process of json.processes) {
+            instance.processes.push(new Process(process.name, process.pid))   
+        }
+
+        for (const file of json.files) {
+            instance.files.push(new File(file.path))
+        }
+
+        for (const jsonEvent of json.events) {
+            const event = IPCTrace.createEventFromJSON(jsonEvent, instance)
+            if ( event ) {
+                instance.events.push(event)
+            }
+        }
+
+        return instance
+    }
+
+
+    private static createEventFromJSON(json: any, instance: IPCTrace): Event | null {
+
+        switch (json.event_type) {
+            case "OpenEvent":
+                return new OpenEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    instance.files[json.file],
+                    json.fd,
+                    json.mode,
+                    json.flags
+                )
+            case "CloseEvent":
+                return new CloseEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd
+                )
+            case "EnterReadEvent":
+                return new EnterReadEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count
+                )
+            case "ExitReadEvent":
+                return new ExitReadEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count,
+                    json.content,
+                    json.ret
+                )
+            case "WriteEvent":
+                return new WriteEvent(
+                    json.timestamp,
+                    instance.processes[json.process],
+                    json.fd,
+                    json.count,
+                    json.content
+                )
+            
+            default:
+                console.error(`Unknown event type: ${json.event_type}`)
+                return null
+        }
+    }
+
+
+    static exportToJSON(ipcInstance: IPCTrace): any {
+
+        const replacer = (key: string, value: any) => {
+
+            if ( key === 'filename') {
+                return undefined
+            }
+
+            if (key === 'process') {
+                return ipcInstance.processes.map((process) => process.pid).indexOf(value.pid)
+            }
+
+            if (key === 'file') {
+                return ipcInstance.files.map((file) => file.path).indexOf(value.path)
+            }
+
+            if (key === 'events') {
+                return value.map((event: Event) => {
+                    return { event_type: event.constructor.name, ...event }
+                })
+
+            }
+
+            return value
+        }
+
+        const json = JSON.stringify(ipcInstance, replacer, 4)
+        
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filenameParts = ipcInstance.filename.split('.');
+        const filenamePrefix = filenameParts[0]
+        const extension = filenameParts[1]
+        a.download = `${filenamePrefix}_exported.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    clone(): IPCTrace {
+        const clone = new IPCTrace()
+        clone.filename = this.filename
+        clone.processes = structuredClone(this.processes)
+        clone.files = structuredClone(this.files)
+        clone.events = [...this.events]
+        return clone
+    }
+
+}
+
+
+export class Process {
+
+    name: string
+    pid: number
+
+    constructor(name: string, pid: number) {
+        this.name = name
+        this.pid = pid
+    }
+
+    getUUID(): string {
+        return `${this.name}-${this.pid}`
+    }
+}
+
+
+export class File {
+
+    path: string
+    constructor(path: string) {
+        this.path = path
+    }
+}
+
+
+export abstract class Event {
+
+    timestamp: number
+    process: Process
+
+    constructor(timestamp: number, process: Process) {
+        this.timestamp = timestamp
+        this.process = process
+    }
+
+    abstract getKeyword(): string
+}
+
+
+export abstract class FSEvent extends Event {
+
+    fd: number
+
+    constructor(timestamp: number, process: Process, fd: number) {
+        super(timestamp, process)
+        this.fd = fd
+    }
+
+    clone(): FSEvent {
+        throw new Error("Method not implemented.")
+    }
+}
+
+
+export class OpenEvent extends FSEvent {
+
+    file: File
+    mode: number
+    flags: number
+
+    constructor(timestamp: number, process: Process, file: File, fd: number, mode: number, flags: number) {
+        super(timestamp, process, fd)
+        this.file = file
+        this.mode = mode
+        this.flags = flags
+    }
+
+    getKeyword(): string {
+        return "opens"
+    }
+}
+
+
+export class CloseEvent extends FSEvent {
+
+    constructor(timestamp: number, process: Process, fd: number) {
+        super(timestamp, process, fd)
+    }
+
+    getKeyword(): string {
+        return "closes"
+    }
+}
+
+
+export class EnterReadEvent extends FSEvent {
+
+    count: number
+
+    constructor(timestamp: number, process: Process, fd: number, count: number) {
+        super(timestamp, process, fd)
+        this.count = count
+    }
+
+    getKeyword(): string {
+        return "enters read"
+    }
+}
+
+
+export class ExitReadEvent extends FSEvent {
+
+    count: number
+    content: string
+    ret: number
+
+    constructor(timestamp: number, process: Process, fd: number, count: number, content: string, ret: number) {
+        super(timestamp, process, fd)
+        this.count = count
+        this.content = content
+        this.ret = ret
+    }
+
+    getKeyword(): string {
+        return "exits read"
+    }
+}
+
+
+export class WriteEvent extends FSEvent {
+
+    count: number
+    content: string
+
+    constructor(timestamp: number, process: Process, fd: number, count: number, content: string) {
+        super(timestamp, process, fd)
+        this.count = count
+        this.content = content
+    }
+
+    getKeyword(): string {
+        return "writes"
+    }
+}
