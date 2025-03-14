@@ -45,14 +45,14 @@ export class IPCTrace implements Clonable {
     }
 
 
-    private static createEventFromJSON(json: any, instance: IPCTrace): Event | null {
+    private static createEventFromJSON(json: any, trace: IPCTrace): Event | null {
 
         switch (json.event_type) {
             case "OpenEvent":
                 return new OpenEvent(
                     json.timestamp,
-                    instance.processes[json.process],
-                    instance.files[json.file],
+                    trace.processes[json.process],
+                    trace.files[json.file],
                     json.fd,
                     json.mode,
                     json.flags
@@ -60,20 +60,20 @@ export class IPCTrace implements Clonable {
             case "CloseEvent":
                 return new CloseEvent(
                     json.timestamp,
-                    instance.processes[json.process],
+                    trace.processes[json.process],
                     json.fd
                 )
             case "EnterReadEvent":
                 return new EnterReadEvent(
                     json.timestamp,
-                    instance.processes[json.process],
+                    trace.processes[json.process],
                     json.fd,
                     json.count
                 )
             case "ExitReadEvent":
                 return new ExitReadEvent(
                     json.timestamp,
-                    instance.processes[json.process],
+                    trace.processes[json.process],
                     json.fd,
                     json.count,
                     json.content,
@@ -82,7 +82,7 @@ export class IPCTrace implements Clonable {
             case "WriteEvent":
                 return new WriteEvent(
                     json.timestamp,
-                    instance.processes[json.process],
+                    trace.processes[json.process],
                     json.fd,
                     json.count,
                     json.content
@@ -95,7 +95,7 @@ export class IPCTrace implements Clonable {
     }
 
 
-    static exportToJSON(ipcInstance: IPCTrace): any {
+    static exportToJSON(ipcTrace: IPCTrace): any {
 
         const replacer = (key: string, value: any) => {
 
@@ -104,11 +104,11 @@ export class IPCTrace implements Clonable {
             }
 
             if (key === 'process') {
-                return ipcInstance.processes.map((process) => process.pid).indexOf(value.pid)
+                return ipcTrace.processes.map((process) => process.pid).indexOf(value.pid)
             }
 
             if (key === 'file') {
-                return ipcInstance.files.map((file) => file.path).indexOf(value.path)
+                return ipcTrace.files.map((file) => file.path).indexOf(value.path)
             }
 
             if (key === 'events') {
@@ -121,13 +121,13 @@ export class IPCTrace implements Clonable {
             return value
         }
 
-        const json = JSON.stringify(ipcInstance, replacer, 4)
+        const json = JSON.stringify(ipcTrace, replacer, 4)
         
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const filenameParts = ipcInstance.filename.split('.');
+        const filenameParts = ipcTrace.filename.split('.');
         const filenamePrefix = filenameParts[0]
         const extension = filenameParts[1]
         a.download = `${filenamePrefix}_exported.${extension}`;
@@ -136,6 +136,7 @@ export class IPCTrace implements Clonable {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
+
 
     clone(): IPCTrace {
         const clone = new IPCTrace()

@@ -2,23 +2,27 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
+import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
+
 function createWindow(): void {
+
+
     // Create the browser window.
     const mainWindow = new BrowserWindow({
         width: 900,
         height: 670,
         show: false,
-        autoHideMenuBar: true,
+        icon: goldoIcon,
+        autoHideMenuBar: false,
         webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
-        sandbox: false
+            preload: join(__dirname, '../preload/index.js'),
+            sandbox: false
         }
     })
 
-    mainWindow.on('ready-to-show', () => {
+    mainWindow.once('ready-to-show', () => {
         mainWindow.show()
         mainWindow.maximize()
-        mainWindow.focus()
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {

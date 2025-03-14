@@ -1,10 +1,9 @@
 {
-  "name": "react-vite-electron-app",
+  "name": "ipca_app",
   "version": "1.0.0",
   "description": "An IPC analyzing app built with React, Vite, and Electron.",
   "main": "./out/main/index.js",
   "author": "PoneyUHC",
-  "homepage": "https://electron-vite.org",
   "scripts": {
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
@@ -31,7 +30,6 @@
     "sigma": "^3.0.1"
   },
   "devDependencies": {
-    "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@types/node": "^22.13.4",

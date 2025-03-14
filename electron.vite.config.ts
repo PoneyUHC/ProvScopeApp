@@ -3,19 +3,19 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  main: {
-    plugins: [externalizeDepsPlugin()]
-  },
-  preload: {
-    plugins: [externalizeDepsPlugin()]
-  },
-  renderer: {
-    resolve: {
-      alias: {
-        '@renderer': resolve('src/renderer/src'),
-        '@common': resolve('src/common/src'),
-      }
+    main: {
+        plugins: [externalizeDepsPlugin()]
     },
-    plugins: [react()]
-  },
+    preload: {
+        plugins: [externalizeDepsPlugin()]
+    },
+    renderer: {
+        resolve: {
+        alias: {
+            '@renderer': resolve(__dirname, './src/renderer/src'),
+            '@common': resolve(__dirname, 'src/common/src'),
+        }
+        },
+        plugins: [react()]
+    },
 })
