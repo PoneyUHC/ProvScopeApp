@@ -34,7 +34,7 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty 
             sigma.refresh()
             setIsDirty(false)
         }     
-    }, [sigma, isDirty])
+    }, [isDirty])
 
     if ( ! ipcTraceGraph ){
         return <Error message='No graph loaded'/>
@@ -42,7 +42,7 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty 
 
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
-            <SigmaContainer ref={setSigma} graph={ipcTraceGraph.getGraph()} settings={{renderEdgeLabels: true}}>
+            <SigmaContainer ref={setSigma} graph={ipcTraceGraph.getGraph()} settings={{renderEdgeLabels: true, allowInvalidContainer: true}}>
                 <ControlsContainer position={'bottom-right'}>
                     <ZoomControl />
                     <FullScreenControl />

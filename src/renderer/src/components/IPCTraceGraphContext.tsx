@@ -10,7 +10,9 @@ interface IPCTraceGraphContextType {
     selectedNode: [string | null, (node: string) => void],
     selectedEvent: [Event | null, (event: Event) => void],
     setNodeVisibility: (node: string, visible: boolean) => void,
-    loadFile: (filename: string, json: string) => void,
+    loadFile: (filename: string, content: string) => void,
+    loadTrace: (ipcTrace: IPCTrace) => void,
+    loadTraceGraph: (ipcTraceGraph: IPCTraceGraph) => void,
     exportTrace: () => void
 }
 
@@ -21,7 +23,9 @@ const IPCTraceGraphContext = createContext<IPCTraceGraphContextType>({
     selectedEvent: [null, () => {}], 
     setNodeVisibility: () => {},
     loadFile: () => {}, 
-    exportTrace: () => {}
+    loadTrace: () => {},
+    loadTraceGraph: () => {},
+    exportTrace: () => {},
 });
 
 
@@ -36,7 +40,12 @@ const IPCTraceGraphProvider = ({ children }) => {
             return
         }
 
+        // we have a state to trigger a re-render
         setSelectedNode(node)
+        // and a redondent field in the graph to save the selected node event when 
+        // <IPCTraceGraphProvider> is not mounted
+        ipcTraceGraph.selectedNode = node
+
         ipcTraceGraph.clearHighlights()
         ipcTraceGraph.highlightNode(node)
     }
@@ -48,7 +57,10 @@ const IPCTraceGraphProvider = ({ children }) => {
             return
         }
 
+        // same reason as above for duplicity
         setSelectedEvent(event)
+        ipcTraceGraph.selectedEvent = event
+
         ipcTraceGraph.applyUntilEvent(event)
         ipcTraceGraph.clearHighlights()
         ipcTraceGraph.highlightNode(event.process.getUUID())
@@ -67,18 +79,28 @@ const IPCTraceGraphProvider = ({ children }) => {
 
         const json = JSON.parse(content)
         const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
+        loadTrace(ipcTrace)
+    }
+
+    const loadTrace = (ipcTrace: IPCTrace) => {
         const newIpcTraceGraph = new IPCTraceGraph(ipcTrace)
         
         console.error("Loaded IPC Trace Graph", newIpcTraceGraph)
         const initialEvent = ipcTrace.events[0]
     
         setIPCTraceGraph(newIpcTraceGraph)
-        setSelectedEvent(initialEvent)
+        externalSetSelectedEvent(newIpcTraceGraph.selectedEvent)
         newIpcTraceGraph.applyUntilEvent(initialEvent)
 
-        setSelectedNode(initialEvent.process.getUUID())
+        externalSetSelectedNode(newIpcTraceGraph.selectedNode)
         newIpcTraceGraph.clearHighlights()
         newIpcTraceGraph.highlightNode(initialEvent.process.getUUID())
+    }
+
+    const loadTraceGraph = (ipcTraceGraph: IPCTraceGraph) => {
+        setIPCTraceGraph(ipcTraceGraph)
+        setSelectedEvent(ipcTraceGraph.selectedEvent)
+        setSelectedNode(ipcTraceGraph.selectedNode)
     }
 
     const exportTrace = () => {
@@ -96,6 +118,8 @@ const IPCTraceGraphProvider = ({ children }) => {
         selectedEvent: [selectedEvent, externalSetSelectedEvent],
         setNodeVisibility: setNodeVisibility,
         loadFile: loadFile,
+        loadTrace: loadTrace,
+        loadTraceGraph: loadTraceGraph,
         exportTrace: exportTrace,
     }
 

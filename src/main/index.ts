@@ -1,11 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
+import getMenu from './menuBuilder'
 
 import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
 
 function createWindow(): void {
-
 
     // Create the browser window.
     const mainWindow = new BrowserWindow({
@@ -21,6 +22,8 @@ function createWindow(): void {
     })
 
     mainWindow.once('ready-to-show', () => {
+        const menu = getMenu(mainWindow)
+        Menu.setApplicationMenu(menu)
         mainWindow.show()
         mainWindow.maximize()
     })

@@ -1,11 +1,9 @@
 
-
+import { IPCTraceGraphContext } from '../IPCTraceGraphContext';
+import VisibilityButton from './VisibilityButton';
 import { useContext } from 'react';
 
-import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
-
-import Error from '@renderer/components/Error';
-import VisibilityButton from '@renderer/components/ExplorerPanel/VisibilityButton';
+import Error from '../Error';
 
 
 interface ExplorerPanelProps {
@@ -17,15 +15,16 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const { 
         ipcTraceGraph: ipcTraceGraphState, 
-        selectedNode: selectedNodeState, 
-        setNodeVisibility 
+        selectedNode: selectNodeState,
+        setNodeVisibility: setVisibility
+    
     } = useContext(IPCTraceGraphContext)
 
     const [ipcTraceGraph, _setIpcTraceGraph] = ipcTraceGraphState
-    const [selectedNode, setSelectedNode] = selectedNodeState
+    const [selectedNode, setSelectedNode] = selectNodeState
 
-    if ( ! ipcTraceGraph ){
-        return <Error message={"No graph loaded"}/>
+    if ( ! ipcTraceGraph || ! selectedNode ){
+        return <Error message='No graph loaded'/>
     }
 
     const getNodeGroupsButtons = () => {
@@ -42,7 +41,7 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                                     <VisibilityButton 
                                         content={node}
                                         onClick={() => setSelectedNode(node)}
-                                        onSetVisibility={(value) => setNodeVisibility(node, value)}
+                                        onSetVisibility={(value) => setVisibility(node, value)}
                                         selected={selectedNode == node}
                                     />
                                 )

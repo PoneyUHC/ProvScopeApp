@@ -1,7 +1,4 @@
 
-import { Component } from 'react';
-
-
 interface EventButtonProps {
     className?: string;
     content: string
@@ -10,26 +7,19 @@ interface EventButtonProps {
 }
 
 
-class EventButton extends Component<EventButtonProps> {
+const EventButton: React.FC<EventButtonProps> = ({ className, content, onLeftClick, onRightClick }) => {
 
-    constructor(props: EventButtonProps) {
-        super(props);
-    }
+    return (
+        <button 
+            onClick={(event) => onLeftClick(event)}
+            onContextMenu={(event) => onRightClick(event)}
+            className={`font-mono ${className}`}
+        > 
+            {content}
+        </button>
+    );
 
-    render() {
-
-        const {className, content} = this.props;
-
-        return (
-            <button 
-                onClick={(event) => this.props.onLeftClick(event)}
-                onContextMenu={(event) => this.props.onRightClick(event)}
-                className={`font-mono ${className}`}
-            > 
-                {content}
-            </button>
-        );
-    }
 }
+
 
 export default EventButton;

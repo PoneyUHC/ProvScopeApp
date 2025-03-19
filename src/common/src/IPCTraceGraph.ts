@@ -1,4 +1,4 @@
-import { EnterReadEvent, Event, ExitReadEvent, FSEvent, IPCTrace, OpenEvent, WriteEvent } from "./types"
+import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, IPCTrace, OpenEvent, WriteEvent } from "./types"
 
 import DirectedGraph from 'graphology'
 import { toUniform } from "./utils"
@@ -10,12 +10,16 @@ export class IPCTraceGraph {
 
     private graph: DirectedGraph
     private ipcTrace: IPCTrace
+    selectedNode: string
+    selectedEvent: Event
 
     eventFilenameLookup: Map<Event, string>
 
     constructor(ipcTrace: IPCTrace) {
         this.ipcTrace = ipcTrace
         this.graph = this.getGraphFromTrace()
+        this.selectedNode = ipcTrace.events[0].process.getUUID()
+        this.selectedEvent = ipcTrace.events[0]
         this.eventFilenameLookup = new Map<Event, string>()
 
         this.precomputeEventFilenames()
@@ -29,6 +33,11 @@ export class IPCTraceGraph {
 
     getGraph(): Readonly<DirectedGraph> {
         return this.graph
+    }
+
+
+    getFilename(): string {
+        return this.ipcTrace.filename
     }
 
 

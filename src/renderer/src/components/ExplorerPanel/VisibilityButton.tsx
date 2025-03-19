@@ -1,4 +1,4 @@
-import { Component, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import VisibleIcon from '@renderer/assets/visible.svg';
 import HiddenIcon from '@renderer/assets/hidden.svg';
@@ -32,13 +32,13 @@ const VisibilityButton: React.FC<VisibilityButtonProps> = ({ content, onSetVisib
 
     return (
         <div className={`flex ${borderStyle}`}>
-            <button 
+            <button key={1}
                 className="flex-1 border-r border-black"
                 onClick={() => onClick(content)}
             >
                 {content}
             </button>
-            <button 
+            <button key={2}
                 className="w-10"  
                 onClick={() => toggleVisibility()}
             >

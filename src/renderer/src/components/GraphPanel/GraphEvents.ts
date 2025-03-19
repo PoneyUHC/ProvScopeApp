@@ -15,6 +15,7 @@ const GraphEvents: React.FC<GraphEventsProps> = ({ ipcTraceGraph }) => {
 
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
+        ipcTraceGraph.clearHighlights()
         setDraggedNode(e.node);
         sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
     }
