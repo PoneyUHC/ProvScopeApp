@@ -5,6 +5,7 @@ import GraphPanel from './GraphPanel/GraphPanel';
 import EventPanel from './EventPanel/EventsPanel';
 import { IPCTraceGraphContext, IPCTraceGraphContextType } from './IPCTraceGraphContext';
 import { IPCTraceGraph } from '@common/IPCTraceGraph';
+import { Event } from '@common/types';
 
 import { Allotment } from 'allotment';
 import "allotment/dist/style.css";
@@ -15,10 +16,11 @@ const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border 
 
 interface WorkspaceProps {
     ipcTraceGraph: IPCTraceGraph;
+    addTrace: (ipcTraceGraph: IPCTraceGraph) => void;
 }
 
 
-const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph}) => {
+const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
     
     const [isGraphLoaded, setIsGraphLoaded] = useState<boolean>(false);
     const { loadTraceGraph } = useContext<IPCTraceGraphContextType>(IPCTraceGraphContext)
@@ -43,6 +45,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph}) => {
         )
     }
 
+    const onRightClick = (event: Event) => {
+
+        const backwardTrace = ipcTraceGraph.backwardTraceFrom(event)
+        addTrace(backwardTrace)
+    }   
+
+
+
     return (
         <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
             <Allotment className={`${borderStyles}`} onDragEnd={onDrag}>
@@ -62,6 +72,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph}) => {
                     <EventPanel
                         className={`h-full ${borderStyles}`}
                         eventsStyle="w-full h-auto border border-black"
+                        onRightClick={onRightClick}
                     />
                 </Allotment.Pane>
             </Allotment>

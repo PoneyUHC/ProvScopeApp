@@ -14,12 +14,17 @@ const Dashboard: React.FC = () => {
     const [ipcTraceGraphs, setIPCTraceGraphs] = useState<IPCTraceGraph[]>([])
     const [currentWorkspace, setCurrentWorkspace] = useState<number | null>(null)
 
+
+    const addTrace = (ipcTraceGraph: IPCTraceGraph) => {
+        setIPCTraceGraphs(prevIpcTraceGraphs => [...prevIpcTraceGraphs, ipcTraceGraph])
+        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : prevCurrentWorkspace + 1)
+    }
+        
     const loadTrace = (filename: string, content: string) => {
         const json = JSON.parse(content)
         const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
         const ipcTraceGraph = new IPCTraceGraph(ipcTrace)
-        setIPCTraceGraphs(prevIpcTraceGraphs => [...prevIpcTraceGraphs, ipcTraceGraph])
-        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : prevCurrentWorkspace + 1)
+        addTrace(ipcTraceGraph)
     }
 
     const exportTrace = useCallback(() => {
@@ -79,7 +84,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 
                 <IPCTraceGraphProvider>
-                    <Workspace ipcTraceGraph={ipcTraceGraphs[currentWorkspace]}/>
+                    <Workspace ipcTraceGraph={ipcTraceGraphs[currentWorkspace]} addTrace={addTrace}/>
                 </IPCTraceGraphProvider>
             </div>
         )

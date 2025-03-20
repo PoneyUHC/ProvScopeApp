@@ -1,5 +1,4 @@
 
-import { IPCTraceGraph } from "../common/src/IPCTraceGraph";
 import { BrowserWindow, dialog, ipcMain, Menu } from "electron";
 import { readFileSync, writeFileSync } from "fs";
 
@@ -45,8 +44,6 @@ async function exportTrace(defaultFilename: string, content: string) {
             
         if ( ! result.canceled ) {
             const filename = result.filePath
-            console.log(filename)
-            console.log(content)
             writeFileSync(filename, content)
         }
 

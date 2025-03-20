@@ -10,10 +10,11 @@ import Error from '@renderer/components/Error';
 interface EventPanelProps {
     className?: string;
     eventsStyle?: string;
+    onRightClick?: (event: Event) => void;
 }
 
 
-const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle}) => {
+const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
 
     const { 
         ipcTraceGraph: ipcTraceGraphState, 
@@ -50,12 +51,6 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle}) => {
         setSelectedNode(event.process.getUUID())
     }
 
-    const onRightClick = (_event: Event) => (e: React.MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        console.log("Right click")
-    }
-
     const events = ipcTraceGraph.getTrace().events
     const eventButtonList = events.map((event) => {
 
@@ -71,7 +66,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle}) => {
                     className={`${opacity} ${bgColor} ${eventsStyle}`} 
                     content={content}
                     onLeftClick={onLeftClick(event)} 
-                    onRightClick={onRightClick(event)}
+                    onRightClick={onRightClick ? () => onRightClick(event) : () => {}}
                 />
             </li>
         );
