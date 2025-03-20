@@ -1,7 +1,7 @@
 
-import { IPCTrace } from "../common/src/types";
-import { BrowserWindow, dialog, Menu } from "electron";
-import { readFileSync } from "fs";
+import { IPCTraceGraph } from "../common/src/IPCTraceGraph";
+import { BrowserWindow, dialog, ipcMain, Menu } from "electron";
+import { readFileSync, writeFileSync } from "fs";
 
 
 async function loadTrace(window: BrowserWindow) {
@@ -26,6 +26,41 @@ async function loadTrace(window: BrowserWindow) {
 }
 
 
+async function requestExportTrace(window: BrowserWindow) {
+
+    console.log("request")
+    window.webContents.send('requestExportTrace')
+}
+
+
+async function exportTrace(defaultFilename: string, content: string) {
+
+    dialog.showSaveDialog({
+
+        title: 'Export trace',
+        message: 'Select a file to save the trace',
+        defaultPath: defaultFilename,
+
+    }).then((result) => {
+            
+        if ( ! result.canceled ) {
+            const filename = result.filePath
+            console.log(filename)
+            console.log(content)
+            writeFileSync(filename, content)
+        }
+
+    }).catch((err) => {
+
+        console.error(err)
+
+    })
+}
+
+
+ipcMain.on('exportTrace', (_event, defaultFilename, content) => { exportTrace(defaultFilename, content) })
+
+
 function getMenu(window: BrowserWindow) {
 
     const menuTemplate = [
@@ -34,13 +69,14 @@ function getMenu(window: BrowserWindow) {
             submenu: [
                 {
                     label: 'Load trace',
-                    accelerator: 'CmdOrCtrl+O',
+                    accelerator: process.platform == 'darwin' ? 'Cmd+O' : 'Ctrl+O',
                     click: () => { loadTrace(window) }
                 }, 
                 {
                     label: 'Export trace',
-                    click: async () => {
-                        console.log("Export trace")
+                    accelerator: process.platform == 'darwin' ? 'Cmd+S' : 'Ctrl+S',
+                    click: () => { 
+                        requestExportTrace(window)
                     }
                 }
             ]

@@ -95,7 +95,7 @@ export class IPCTrace implements Clonable {
     }
 
 
-    static exportToJSON(ipcTrace: IPCTrace): any {
+    static toJSON(ipcTrace: IPCTrace): string {
 
         const replacer = (key: string, value: any) => {
 
@@ -121,20 +121,8 @@ export class IPCTrace implements Clonable {
             return value
         }
 
-        const json = JSON.stringify(ipcTrace, replacer, 4)
-        
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const filenameParts = ipcTrace.filename.split('.');
-        const filenamePrefix = filenameParts[0]
-        const extension = filenameParts[1]
-        a.download = `${filenamePrefix}_exported.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const result = JSON.stringify(ipcTrace, replacer, 4)
+        return result
     }
 
 

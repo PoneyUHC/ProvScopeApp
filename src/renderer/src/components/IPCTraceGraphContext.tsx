@@ -13,7 +13,6 @@ interface IPCTraceGraphContextType {
     loadFile: (filename: string, content: string) => void,
     loadTrace: (ipcTrace: IPCTrace) => void,
     loadTraceGraph: (ipcTraceGraph: IPCTraceGraph) => void,
-    exportTrace: () => void
 }
 
 
@@ -25,7 +24,6 @@ const IPCTraceGraphContext = createContext<IPCTraceGraphContextType>({
     loadFile: () => {}, 
     loadTrace: () => {},
     loadTraceGraph: () => {},
-    exportTrace: () => {},
 });
 
 
@@ -85,7 +83,6 @@ const IPCTraceGraphProvider = ({ children }) => {
     const loadTrace = (ipcTrace: IPCTrace) => {
         const newIpcTraceGraph = new IPCTraceGraph(ipcTrace)
         
-        console.error("Loaded IPC Trace Graph", newIpcTraceGraph)
         const initialEvent = ipcTrace.events[0]
     
         setIPCTraceGraph(newIpcTraceGraph)
@@ -102,15 +99,6 @@ const IPCTraceGraphProvider = ({ children }) => {
         setSelectedEvent(ipcTraceGraph.selectedEvent)
         setSelectedNode(ipcTraceGraph.selectedNode)
     }
-
-    const exportTrace = () => {
-        if ( ! ipcTraceGraph ) {
-            console.error("No IPC Trace Graph to export")
-            return
-        }
-
-        ipcTraceGraph.exportTrace()
-    }
     
     const value: IPCTraceGraphContextType = {
         ipcTraceGraph: [ipcTraceGraph, setIPCTraceGraph],
@@ -120,7 +108,6 @@ const IPCTraceGraphProvider = ({ children }) => {
         loadFile: loadFile,
         loadTrace: loadTrace,
         loadTraceGraph: loadTraceGraph,
-        exportTrace: exportTrace,
     }
 
     return (

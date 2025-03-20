@@ -1,10 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { IPCTrace } from '@common/types'
+import { IPCTraceGraph } from '@common/IPCTraceGraph'
 
 // Custom APIs for renderer
 const api = {
-    onLoadTrace: (callback: (filename: string, content: string) => void) => ipcRenderer.on('loadTrace', (_event, filename, content) => callback(filename, content))
+    onLoadTrace: (callback: (filename: string, content: string) => void) => ipcRenderer.on('loadTrace', (_event, filename:  string, content: string) => callback(filename, content)),
+    offLoadTrace: (callback: (filename: string, content: string) => void) => ipcRenderer.off('loadTrace', (_event, filename:  string, content: string) => callback(filename, content)),
+    onRequestExportTrace: (callback: () => void) => ipcRenderer.on('requestExportTrace', () => callback()),
+    offRequestExportTrace: (callback: () => void) => ipcRenderer.off('requestExportTrace', () => callback()),
+    exportTrace: (filename: string, content: string) => ipcRenderer.send('exportTrace', filename, content),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

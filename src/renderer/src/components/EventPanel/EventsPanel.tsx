@@ -31,7 +31,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle}) => {
 
     const getButtonBgColor = (event: Event) => {
 
-        const events = ipcTraceGraph.getEvents()
+        const events = ipcTraceGraph.getTrace().events
 
         const eventIndex = events.indexOf(event)
         const selectedEventIndex = events.indexOf(selectedEvent)
@@ -56,7 +56,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle}) => {
         console.log("Right click")
     }
 
-    const events = ipcTraceGraph.getEvents()
+    const events = ipcTraceGraph.getTrace().events
     const eventButtonList = events.map((event) => {
 
         let opacity = "opacity-100"

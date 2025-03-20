@@ -23,21 +23,17 @@ export class IPCTraceGraph {
         this.eventFilenameLookup = new Map<Event, string>()
 
         this.precomputeEventFilenames()
+        this.applyUntilEvent(ipcTrace.events[0])
     }
 
 
-    getEvents(): ReadonlyArray<Event> {
-        return this.ipcTrace.events
-    }
-
-
-    getGraph(): Readonly<DirectedGraph> {
+    getGraph = (): Readonly<DirectedGraph> => {
         return this.graph
     }
 
 
-    getFilename(): string {
-        return this.ipcTrace.filename
+    getTrace = (): Readonly<IPCTrace> => {
+        return this.ipcTrace
     }
 
 
@@ -194,7 +190,7 @@ export class IPCTraceGraph {
     }
 
     
-    exportTrace() {
+    toJSON() {
 
         const removeFile = (path: string, ipcInstance: IPCTrace) => {
             ipcInstance.files = ipcInstance.files.filter(f => f.path !== path)
@@ -221,7 +217,7 @@ export class IPCTraceGraph {
             }
         }
 
-        IPCTrace.exportToJSON(modifiedIpcTrace)
+        return IPCTrace.toJSON(modifiedIpcTrace)
     }
 
 
