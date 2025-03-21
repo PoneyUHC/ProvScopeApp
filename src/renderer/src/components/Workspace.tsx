@@ -46,7 +46,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
     }
 
     const onRightClick = (event: Event) => {
-
         const backwardTrace = ipcTraceGraph.backwardTraceFrom(event)
         addTrace(backwardTrace)
     }   

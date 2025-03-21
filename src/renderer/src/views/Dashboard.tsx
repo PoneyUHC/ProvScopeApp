@@ -41,7 +41,6 @@ const Dashboard: React.FC = () => {
         const defaultFilename = `${filenamePrefix}_export.${extension}`
 
         const content = ipcTraceGraph.toJSON()
-        console.log(content)
         
         window.api.exportTrace(defaultFilename, content)
     }, [currentWorkspace, ipcTraceGraphs])

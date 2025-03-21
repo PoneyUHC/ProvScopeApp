@@ -8,3 +8,6 @@ out
 .eslintcache
 
 *.log*
+
+my_instance.inst
+my_solution.sol

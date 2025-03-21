@@ -6,6 +6,14 @@ import { toUniform } from "./utils"
 import FA2Layout from "graphology-layout-forceatlas2"
 
 
+interface EventInfos {
+    processUUID: string;
+    dataTransfer: boolean;
+    dataSource: string;
+    dataDestination: string;
+}
+
+
 export class IPCTraceGraph {
 
     private graph: DirectedGraph
@@ -15,14 +23,18 @@ export class IPCTraceGraph {
 
     eventFilenameLookup: Map<Event, string>
 
-    constructor(ipcTrace: IPCTrace) {
+    constructor(ipcTrace: IPCTrace, eventFilenameLookup?: Map<Event, string>) {
         this.ipcTrace = ipcTrace
         this.graph = this.getGraphFromTrace()
         this.selectedNode = ipcTrace.events[0].process.getUUID()
         this.selectedEvent = ipcTrace.events[0]
         this.eventFilenameLookup = new Map<Event, string>()
 
-        this.precomputeEventFilenames()
+        if ( eventFilenameLookup ){
+            this.eventFilenameLookup = eventFilenameLookup
+        } else {
+            this.precomputeEventFilenames()
+        }
         this.applyUntilEvent(ipcTrace.events[0])
     }
 
@@ -78,6 +90,110 @@ export class IPCTraceGraph {
     }
 
 
+    static getDataTransferInfos(event: Event, lookupGraph: DirectedGraph): EventInfos {
+
+        const eventInfos = {} as EventInfos
+
+        eventInfos.processUUID = event.process.getUUID()
+
+        if ( event instanceof ExitReadEvent) {
+            
+            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
+            const dataSource = lookupGraph.target(edge)
+            eventInfos.dataTransfer = true
+            eventInfos.dataSource = dataSource
+            eventInfos.dataDestination = eventInfos.processUUID
+        
+        } else if ( event instanceof WriteEvent ) {
+
+            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
+            const dataDestination = lookupGraph.target(edge)
+            eventInfos.dataTransfer = true
+            eventInfos.dataSource = eventInfos.processUUID
+            eventInfos.dataDestination = dataDestination
+
+        } else {
+
+            eventInfos.dataTransfer = false
+
+        }
+
+        return eventInfos
+    }
+
+
+
+    getBackwardEvents(targetEvent: Event): Event[] {
+        
+        const backwardCauses = [targetEvent]
+        const nodesReached = new Set<string>()
+
+        const tmpGraph = this.graph.copy()
+        IPCTraceGraph.cleanGraph(tmpGraph)
+
+        this.applyUntilEvent(targetEvent, tmpGraph)
+
+        const eventInfos = IPCTraceGraph.getDataTransferInfos(targetEvent, tmpGraph)
+
+        if ( ! eventInfos ){
+            return []
+        }
+
+        nodesReached.add(eventInfos.processUUID)
+        if ( eventInfos.dataTransfer ){
+            nodesReached.add(eventInfos.dataSource)
+            nodesReached.add(eventInfos.dataDestination)
+        }
+
+        const startIndex = this.ipcTrace.events.indexOf(targetEvent)
+
+        for( const event of this.ipcTrace.events.slice(startIndex-1).reverse() ) {
+            
+            this.applyUntilEvent(event, tmpGraph)
+            const eventInfos = IPCTraceGraph.getDataTransferInfos(event, tmpGraph)
+            
+            if ( ! eventInfos.dataTransfer ){
+                continue
+            }
+
+            if ( nodesReached.has(eventInfos.dataDestination) ) {
+                nodesReached.add(eventInfos.dataSource)
+                backwardCauses.push(event)
+            }
+        }
+
+        return backwardCauses
+    }
+
+
+
+    backwardTraceFrom(targetEvent: Event): IPCTraceGraph {
+
+        const events = this.getBackwardEvents(targetEvent)
+
+        const targetIndex = this.ipcTrace.events.indexOf(targetEvent)
+        const backwardTrace = this.createTraceFromEvents(events, targetIndex)
+
+        return new IPCTraceGraph(backwardTrace, this.eventFilenameLookup)
+    }
+
+
+    createTraceFromEvents(events: Event[], targetEventIndex: number): IPCTrace {
+
+        const trace = this.ipcTrace.clone()
+        trace.filename = `${trace.filename}_backward${targetEventIndex}`
+
+        const processUUIDs = events.map(e => e.process.getUUID())
+        const filepaths = events.map(e => this.eventFilenameLookup.get(e) || "Error")
+        
+        trace.processes = trace.processes.filter(p => processUUIDs.includes(p.getUUID()))
+        trace.files = trace.files.filter(f => filepaths.includes(f.path))
+        trace.events = events
+
+        return trace
+    }
+
+
     static cleanGraph(graph: DirectedGraph) {
     
         for (const edge of graph.edges() ) {
@@ -91,14 +207,18 @@ export class IPCTraceGraph {
     }
 
 
-    applyUntilEvent(targetEvent: Event): void {
+    applyUntilEvent(targetEvent: Event, graph: DirectedGraph | null = null): void {
 
-        IPCTraceGraph.cleanGraph(this.graph);
+        if ( ! graph ){
+            graph = this.graph
+        }
+
+        IPCTraceGraph.cleanGraph(graph);
     
         let highlightCallback = () => {};
     
         for (const event of this.ipcTrace.events) {
-            highlightCallback = this.applyEventToGraph(event as FSEvent, this.graph);
+            highlightCallback = this.applyEventToGraph(event as FSEvent, graph);
             
             if (event === targetEvent) {
                 highlightCallback();
@@ -120,6 +240,14 @@ export class IPCTraceGraph {
             return () => {}
         }
 
+        const handleNonExistentEdge = () => {
+            console.warn(`Edge not found for ${event}`)
+            const edge = graph.addEdge(processUUID, this.eventFilenameLookup.get(event), { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
+            graph.setEdgeAttribute(edge, "fd", event.fd);
+            graph.setEdgeAttribute(edge, "isOpened", true);
+            return edge
+        }
+
         if ( event instanceof OpenEvent ){
 
             const edge = graph.addEdge(processUUID, event.file.path, { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
@@ -135,7 +263,10 @@ export class IPCTraceGraph {
 
         } else if ( event instanceof EnterReadEvent ) {
 
-            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            if ( ! edge ){
+                edge = handleNonExistentEdge()
+            }
             const color = graph.getEdgeAttribute(edge, "color");
             graph.setEdgeAttribute(edge, "previousColor", color);
             graph.setEdgeAttribute(edge, "color", "green");
@@ -143,7 +274,10 @@ export class IPCTraceGraph {
         
         } else if ( event instanceof ExitReadEvent ) {
         
-            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            if ( ! edge ){
+                edge = handleNonExistentEdge()
+            }
             const previousColor = graph.getEdgeAttribute(edge, "previousColor");
             graph.setEdgeAttribute(edge, "color", previousColor);
             graph.setEdgeAttribute(edge, "label", eventIndex.toString());
@@ -151,7 +285,10 @@ export class IPCTraceGraph {
         
         } else if ( event instanceof WriteEvent ) {
 
-            const edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
+            if ( ! edge ){
+                edge = handleNonExistentEdge()
+            }
             graph.setEdgeAttribute(edge, "label", eventIndex.toString());
             highlightCallback = () => graph.setEdgeAttribute(edge, "color", "red");
 
@@ -178,7 +315,7 @@ export class IPCTraceGraph {
 
     precomputeEventFilenames() {
 
-        const tmpGraph = this.graph
+        const tmpGraph = this.graph.copy()
         IPCTraceGraph.cleanGraph(tmpGraph)
 
         for (const event of this.ipcTrace.events) {
@@ -192,14 +329,14 @@ export class IPCTraceGraph {
     
     toJSON() {
 
-        const removeFile = (path: string, ipcInstance: IPCTrace) => {
-            ipcInstance.files = ipcInstance.files.filter(f => f.path !== path)
-            ipcInstance.events = ipcInstance.events.filter(e => this.eventFilenameLookup.get(e) !== path)
+        const removeFile = (path: string, ipcTrace: IPCTrace) => {
+            ipcTrace.files = ipcTrace.files.filter(f => f.path !== path)
+            ipcTrace.events = ipcTrace.events.filter(e => this.eventFilenameLookup.get(e) !== path)
         }
 
-        const removeProcess = (processUUID: string, ipcInstance: IPCTrace) => {
-            ipcInstance.processes = ipcInstance.processes.filter(p => p.getUUID() !== processUUID)
-            ipcInstance.events = ipcInstance.events.filter(e => e.process.getUUID() !== processUUID)
+        const removeProcess = (processUUID: string, ipcTrace: IPCTrace) => {
+            ipcTrace.processes = ipcTrace.processes.filter(p => p.getUUID() !== processUUID)
+            ipcTrace.events = ipcTrace.events.filter(e => e.process.getUUID() !== processUUID)
         }
 
         const modifiedIpcTrace = this.ipcTrace.clone()

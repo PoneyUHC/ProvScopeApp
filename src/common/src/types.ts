@@ -12,7 +12,7 @@ export class IPCTrace implements Clonable {
     files: File[]
     events: Event[]
 
-    private constructor() {
+    constructor() {
         this.filename = ""
         this.processes = []
         this.files = []
@@ -129,7 +129,7 @@ export class IPCTrace implements Clonable {
     clone(): IPCTrace {
         const clone = new IPCTrace()
         clone.filename = this.filename
-        clone.processes = structuredClone(this.processes)
+        clone.processes = this.processes.map((process) => process.clone())
         clone.files = structuredClone(this.files)
         clone.events = [...this.events]
         return clone
@@ -138,7 +138,7 @@ export class IPCTrace implements Clonable {
 }
 
 
-export class Process {
+export class Process implements Clonable {
 
     name: string
     pid: number
@@ -148,8 +148,12 @@ export class Process {
         this.pid = pid
     }
 
-    getUUID(): string {
+    getUUID (): string {
         return `${this.name}-${this.pid}`
+    }
+
+    clone(): Process {
+        return new Process(this.name, this.pid)
     }
 }
 

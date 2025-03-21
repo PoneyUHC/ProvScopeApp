@@ -1,4 +1,5 @@
 
+import { spawnSync } from "child_process";
 import { BrowserWindow, dialog, ipcMain, Menu } from "electron";
 import { readFileSync, writeFileSync } from "fs";
 
@@ -27,8 +28,41 @@ async function loadTrace(window: BrowserWindow) {
 
 async function requestExportTrace(window: BrowserWindow) {
 
-    console.log("request")
     window.webContents.send('requestExportTrace')
+
+}
+
+
+const doLCS = (directory: string) => {
+
+    const pythonProcess = spawnSync('python3', [
+        './src/common/src/lcs/lcs.py',
+        directory
+    ]);
+
+    const lcs = pythonProcess.stdout.toString()
+    console.log(lcs)
+}
+
+async function handleLCS() {
+
+    dialog.showOpenDialog({
+
+        properties: ['openDirectory'],
+        message: 'Select traces files',
+
+    }).then((result) => {
+
+        if ( ! result.canceled ) {
+            const directory = result.filePaths[0]
+            const lcs = doLCS(directory)
+        }
+    }).catch((err) => {
+
+        console.error(err)
+
+    })
+
 }
 
 
@@ -75,6 +109,11 @@ function getMenu(window: BrowserWindow) {
                     click: () => { 
                         requestExportTrace(window)
                     }
+                },
+                {
+                    label: 'Longuest common subsequence (LCS)',
+                    accelerator: process.platform == 'darwin' ? 'Cmd+L' : 'Ctrl+L',
+                    click: () => { handleLCS() }
                 }
             ]
         }
