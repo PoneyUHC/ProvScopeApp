@@ -55,7 +55,7 @@ async function handleLCS() {
 
         if ( ! result.canceled ) {
             const directory = result.filePaths[0]
-            const lcs = doLCS(directory)
+            doLCS(directory)
         }
     }).catch((err) => {
 

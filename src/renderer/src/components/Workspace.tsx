@@ -50,8 +50,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
         addTrace(backwardTrace)
     }   
 
-
-
     return (
         <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
             <Allotment className={`${borderStyles}`} onDragEnd={onDrag}>

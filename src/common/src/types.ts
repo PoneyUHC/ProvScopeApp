@@ -1,10 +1,8 @@
 
-interface Clonable {
-    clone: () => Clonable
-}
+import { IClonable } from "./utils"
 
 
-export class IPCTrace implements Clonable {
+export class IPCTrace implements IClonable<IPCTrace> {
 
     filename: string
 
@@ -130,7 +128,7 @@ export class IPCTrace implements Clonable {
         const clone = new IPCTrace()
         clone.filename = this.filename
         clone.processes = this.processes.map((process) => process.clone())
-        clone.files = structuredClone(this.files)
+        clone.files = this.files.map((file) => file.clone())
         clone.events = [...this.events]
         return clone
     }
@@ -138,7 +136,7 @@ export class IPCTrace implements Clonable {
 }
 
 
-export class Process implements Clonable {
+export class Process implements IClonable<Process> {
 
     name: string
     pid: number
@@ -163,6 +161,10 @@ export class File {
     path: string
     constructor(path: string) {
         this.path = path
+    }
+
+    clone(): File {
+        return new File(this.path)
     }
 }
 

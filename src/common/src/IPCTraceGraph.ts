@@ -1,7 +1,8 @@
+
 import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, IPCTrace, OpenEvent, WriteEvent } from "./types"
 
 import DirectedGraph from 'graphology'
-import { toUniform } from "./utils"
+import { toUniform, IClonable } from "./utils"
 
 import FA2Layout from "graphology-layout-forceatlas2"
 
@@ -14,28 +15,54 @@ interface EventInfos {
 }
 
 
-export class IPCTraceGraph {
+export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
     private graph: DirectedGraph
     private ipcTrace: IPCTrace
     selectedNode: string
     selectedEvent: Event
+    hiddenNodes: Set<string>
+    hiddenEvents: Set<Event>
 
     eventFilenameLookup: Map<Event, string>
 
-    constructor(ipcTrace: IPCTrace, eventFilenameLookup?: Map<Event, string>) {
+    // shouldInit is used to make more efficient copies
+    private constructor(ipcTrace: IPCTrace, shouldInit: boolean) {
         this.ipcTrace = ipcTrace
-        this.graph = this.getGraphFromTrace()
+        this.graph = new DirectedGraph()
         this.selectedNode = ipcTrace.events[0].process.getUUID()
         this.selectedEvent = ipcTrace.events[0]
         this.eventFilenameLookup = new Map<Event, string>()
+        this.hiddenNodes = new Set<string>()
+        this.hiddenEvents = new Set<Event>()
 
-        if ( eventFilenameLookup ){
-            this.eventFilenameLookup = eventFilenameLookup
-        } else {
+        if ( shouldInit ) {
+            this.graph = this.computeGraphFromTrace()
             this.precomputeEventFilenames()
         }
+
         this.applyUntilEvent(ipcTrace.events[0])
+    }
+
+    // create instead of public constructor to avoid giving the user the ability to create 
+    // non-initialized instances of the class
+    static create(ipcTrace: IPCTrace): IPCTraceGraph {
+        console.log("here")
+        return new IPCTraceGraph(ipcTrace, true)
+    }
+
+
+    clone (): IPCTraceGraph {
+        console.log("there")
+        const other = new IPCTraceGraph(this.ipcTrace, false)
+        other.graph = this.graph.copy()
+        other.eventFilenameLookup = this.eventFilenameLookup
+
+        other.selectedEvent = this.selectedEvent
+        other.selectedNode = this.selectedNode
+        other.hiddenNodes = new Set([...this.hiddenNodes])
+        other.hiddenEvents = new Set([...this.hiddenEvents])
+        return other
     }
 
 
@@ -44,12 +71,54 @@ export class IPCTraceGraph {
     }
 
 
+    getEvents(): Event[] {
+        return this.ipcTrace.events.filter(e => !this.hiddenEvents.has(e))
+    }
+
+
     getTrace = (): Readonly<IPCTrace> => {
         return this.ipcTrace
     }
 
 
-    getGraphFromTrace(): DirectedGraph {
+    getHiddenNodes(): Set<string> {
+        return this.hiddenNodes
+    }
+
+
+    hideNode(node: string) {
+        this.hiddenNodes.add(node)
+        this.graph.setNodeAttribute(node, 'hidden', true)
+    }
+
+
+    showNode(node: string) {
+        this.hiddenNodes.delete(node)
+        this.graph.setNodeAttribute(node, 'hidden', false)
+    }
+
+
+    getHiddenEvents(): Set<Event> {
+        return this.hiddenEvents
+    }
+
+
+    isNodeVisible(node: string): boolean {
+        return ! this.hiddenNodes.has(node)
+    }
+
+
+    hideEvent(event: Event) {
+        this.hiddenEvents.add(event)
+    }
+
+
+    showEvent(event: Event) {
+        this.hiddenEvents.delete(event)
+    }
+
+
+    computeGraphFromTrace(): DirectedGraph {
 
         const graph = new DirectedGraph();
 
@@ -171,13 +240,14 @@ export class IPCTraceGraph {
 
         const events = this.getBackwardEvents(targetEvent)
 
-        const targetIndex = this.ipcTrace.events.indexOf(targetEvent)
-        const backwardTrace = this.createTraceFromEvents(events, targetIndex)
 
-        return new IPCTraceGraph(backwardTrace, this.eventFilenameLookup)
+        const clone = this.clone()
+        events.forEach(e => clone.hideEvent(e))
+        return clone
+
     }
 
-
+    // TODO: this method is not used, should be removed
     createTraceFromEvents(events: Event[], targetEventIndex: number): IPCTrace {
 
         const trace = this.ipcTrace.clone()
@@ -240,14 +310,6 @@ export class IPCTraceGraph {
             return () => {}
         }
 
-        const handleNonExistentEdge = () => {
-            console.warn(`Edge not found for ${event}`)
-            const edge = graph.addEdge(processUUID, this.eventFilenameLookup.get(event), { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
-            graph.setEdgeAttribute(edge, "fd", event.fd);
-            graph.setEdgeAttribute(edge, "isOpened", true);
-            return edge
-        }
-
         if ( event instanceof OpenEvent ){
 
             const edge = graph.addEdge(processUUID, event.file.path, { size: 3, color: "blue", type: 'arrow', label: eventIndex.toString(), forceLabel: true });
@@ -264,9 +326,6 @@ export class IPCTraceGraph {
         } else if ( event instanceof EnterReadEvent ) {
 
             let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
-            if ( ! edge ){
-                edge = handleNonExistentEdge()
-            }
             const color = graph.getEdgeAttribute(edge, "color");
             graph.setEdgeAttribute(edge, "previousColor", color);
             graph.setEdgeAttribute(edge, "color", "green");
@@ -275,9 +334,6 @@ export class IPCTraceGraph {
         } else if ( event instanceof ExitReadEvent ) {
         
             let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
-            if ( ! edge ){
-                edge = handleNonExistentEdge()
-            }
             const previousColor = graph.getEdgeAttribute(edge, "previousColor");
             graph.setEdgeAttribute(edge, "color", previousColor);
             graph.setEdgeAttribute(edge, "label", eventIndex.toString());
@@ -286,9 +342,6 @@ export class IPCTraceGraph {
         } else if ( event instanceof WriteEvent ) {
 
             let edge = graph.findEdge((_, edgeAttribs, source) => source === processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened);
-            if ( ! edge ){
-                edge = handleNonExistentEdge()
-            }
             graph.setEdgeAttribute(edge, "label", eventIndex.toString());
             highlightCallback = () => graph.setEdgeAttribute(edge, "color", "red");
 
@@ -342,8 +395,7 @@ export class IPCTraceGraph {
         const modifiedIpcTrace = this.ipcTrace.clone()
         const graph = this.graph
 
-        const excludeNodes = graph.nodes().filter(n => graph.getNodeAttribute(n, 'hidden'))
-        for (const node of excludeNodes) {
+        for (const node of this.hiddenNodes) {
             const group = graph.getNodeAttribute(node, 'group')
             if ( group === 'Processes' ){
                 removeProcess(node, modifiedIpcTrace)
@@ -400,6 +452,10 @@ export class IPCTraceGraph {
     }
 
     setNodeVisibility(node: string, visible: boolean) {
-        this.graph.setNodeAttribute(node, 'hidden', !visible)
+        if ( visible ) {
+            this.showNode(node)
+        } else {
+            this.hideNode(node)
+        }
     }
 }

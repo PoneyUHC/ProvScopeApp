@@ -15,17 +15,19 @@ const Dashboard: React.FC = () => {
     const [currentWorkspace, setCurrentWorkspace] = useState<number | null>(null)
 
 
-    const addTrace = (ipcTraceGraph: IPCTraceGraph) => {
+    const addTrace = useCallback((ipcTraceGraph: IPCTraceGraph) => {
         setIPCTraceGraphs(prevIpcTraceGraphs => [...prevIpcTraceGraphs, ipcTraceGraph])
-        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : prevCurrentWorkspace + 1)
-    }
+        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : ipcTraceGraphs.length)
+    }, [ipcTraceGraphs])
         
-    const loadTrace = (filename: string, content: string) => {
+    const loadTrace = useCallback((filename: string, content: string) => {
+        console.log(`Loading trace ${filename}`)
         const json = JSON.parse(content)
         const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
-        const ipcTraceGraph = new IPCTraceGraph(ipcTrace)
+        const ipcTraceGraph = IPCTraceGraph.create(ipcTrace)
         addTrace(ipcTraceGraph)
-    }
+    }, [addTrace])
+
 
     const exportTrace = useCallback(() => {
         
@@ -47,12 +49,17 @@ const Dashboard: React.FC = () => {
 
 
     useEffect(() => {
-        window.api.offLoadTrace( loadTrace )
         window.api.onLoadTrace( loadTrace )
-        window.api.offRequestExportTrace( exportTrace )
         window.api.onRequestExportTrace( exportTrace )
 
-    }, [exportTrace])
+        return () => {
+            // FIXME: callback being updated each time, a simple off for specific events does no work
+            // as the callback is not the same and cannot be targeted for removal
+            // Or this is a problem in preload/index.ts, where a lambda is not considered the same code anyway
+            window.api.offAll()
+        }
+
+    }, [loadTrace, exportTrace])
 
 
     let body: JSX.Element
@@ -75,7 +82,7 @@ const Dashboard: React.FC = () => {
                                 onClick={() => setCurrentWorkspace(index)}
                                 className={`p-2 m-2 border border-black rounded-lg ${currentWorkspace === index ? 'bg-gray-300' : ''}`}
                             >
-                                {ipcTraceGraph.getTrace().filename}
+                                {ipcTraceGraph.getTrace().filename.split('/').pop()}
                             </button>
                         )
                     })

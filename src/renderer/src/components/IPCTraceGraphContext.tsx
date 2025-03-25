@@ -9,7 +9,8 @@ interface IPCTraceGraphContextType {
     ipcTraceGraph: [IPCTraceGraph | null, React.Dispatch<React.SetStateAction<IPCTraceGraph | null>>],
     selectedNode: [string | null, (node: string) => void],
     selectedEvent: [Event | null, (event: Event) => void],
-    setNodeVisibility: (node: string, visible: boolean) => void,
+    hiddenNodes: [Set<string>, (node: string) => void, (nodes: string) => void],
+    hiddenEvents: [Set<Event>, (event: Event) => void, (event: Event) => void],
     loadFile: (filename: string, content: string) => void,
     loadTrace: (ipcTrace: IPCTrace) => void,
     loadTraceGraph: (ipcTraceGraph: IPCTraceGraph) => void,
@@ -19,8 +20,9 @@ interface IPCTraceGraphContextType {
 const IPCTraceGraphContext = createContext<IPCTraceGraphContextType>({
     ipcTraceGraph: [null, () => {}], 
     selectedNode: [null, () => {}], 
-    selectedEvent: [null, () => {}], 
-    setNodeVisibility: () => {},
+    selectedEvent: [null, () => {}],
+    hiddenNodes: [new Set<string>(), () => {}, () => {}],
+    hiddenEvents: [new Set<Event>(), () => {}, () => {}],
     loadFile: () => {}, 
     loadTrace: () => {},
     loadTraceGraph: () => {},
@@ -31,6 +33,8 @@ const IPCTraceGraphProvider = ({ children }) => {
     const [ipcTraceGraph, setIPCTraceGraph] = useState<IPCTraceGraph | null>(null);
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    const [hiddenNodes, setHiddenNodes] = useState<Set<string>>(new Set<string>())
+    const [hiddenEvents, setHiddenEvents] = useState<Set<Event>>(new Set<Event>())
     
     const externalSetSelectedNode = (node: string) => {
         if ( ! ipcTraceGraph ) {
@@ -64,14 +68,52 @@ const IPCTraceGraphProvider = ({ children }) => {
         ipcTraceGraph.highlightNode(event.process.getUUID())
     }
 
-    const setNodeVisibility = (node: string, visible: boolean) => {
+
+    const hideNode = (node: string) => {
         if ( ! ipcTraceGraph ) {
-            console.error("No IPC Trace Graph to set node visibility")
+            console.error("No IPC Trace Graph to set hidden nodes")
             return
         }
 
-        ipcTraceGraph.setNodeVisibility(node, visible)
+        setHiddenNodes(new Set([...hiddenNodes, node]))
+        ipcTraceGraph.hideNode(node)
     }
+
+
+    const showNode = (node: string) => {
+        if ( ! ipcTraceGraph ) {
+            console.error("No IPC Trace Graph to set hidden nodes")
+            return
+        }
+
+        setHiddenNodes(new Set([...hiddenNodes].filter((n) => n !== node)))
+        ipcTraceGraph.showNode(node)
+    }
+
+
+    const hideEvent = (event: Event) => {
+
+        if ( ! ipcTraceGraph ) {
+            console.error("No IPC Trace Graph to set hidden events")
+            return
+        }
+
+        setHiddenEvents(new Set([...hiddenEvents, event]))
+        ipcTraceGraph.hideEvent(event)
+    }
+
+
+    const showEvent = (event: Event) => {
+
+        if ( ! ipcTraceGraph ) {
+            console.error("No IPC Trace Graph to set hidden events")
+            return
+        }
+
+        setHiddenEvents(new Set([...hiddenEvents].filter((e) => e !== event)))
+        ipcTraceGraph.showEvent(event)
+    }
+
 
     const loadFile = (filename: string, content: string) => {
 
@@ -81,7 +123,7 @@ const IPCTraceGraphProvider = ({ children }) => {
     }
 
     const loadTrace = (ipcTrace: IPCTrace) => {
-        const newIpcTraceGraph = new IPCTraceGraph(ipcTrace)
+        const newIpcTraceGraph = IPCTraceGraph.create(ipcTrace)
         
         const initialEvent = ipcTrace.events[0]
     
@@ -92,6 +134,9 @@ const IPCTraceGraphProvider = ({ children }) => {
         externalSetSelectedNode(newIpcTraceGraph.selectedNode)
         newIpcTraceGraph.clearHighlights()
         newIpcTraceGraph.highlightNode(initialEvent.process.getUUID())
+
+        setHiddenNodes(newIpcTraceGraph.hiddenNodes)
+        setHiddenEvents(newIpcTraceGraph.hiddenEvents)
     }
 
     const loadTraceGraph = (ipcTraceGraph: IPCTraceGraph) => {
@@ -99,12 +144,14 @@ const IPCTraceGraphProvider = ({ children }) => {
         setSelectedEvent(ipcTraceGraph.selectedEvent)
         setSelectedNode(ipcTraceGraph.selectedNode)
     }
+
     
     const value: IPCTraceGraphContextType = {
         ipcTraceGraph: [ipcTraceGraph, setIPCTraceGraph],
         selectedNode: [selectedNode, externalSetSelectedNode],
         selectedEvent: [selectedEvent, externalSetSelectedEvent],
-        setNodeVisibility: setNodeVisibility,
+        hiddenNodes: [hiddenNodes, hideNode, showNode],
+        hiddenEvents: [hiddenEvents, hideEvent, showEvent],
         loadFile: loadFile,
         loadTrace: loadTrace,
         loadTraceGraph: loadTraceGraph,

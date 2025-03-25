@@ -1,28 +1,18 @@
-import { useEffect, useState } from "react";
 
 import VisibleIcon from '@renderer/assets/visible.svg';
 import HiddenIcon from '@renderer/assets/hidden.svg';
 
 
-interface VisibilityButtonProps {
+interface ShowHideButtonProps {
     content: string;
-    onSetVisibility: (visible: boolean) => void;
+    onToggle: () => void;
     onClick: (node: string) => void;
     selected: boolean;
+    visible: boolean;
 }
 
 
-const VisibilityButton: React.FC<VisibilityButtonProps> = ({ content, onSetVisibility, onClick, selected }) => {
-
-    const [visible, setVisible] = useState<boolean>(true);
-
-    useEffect(() => {
-        onSetVisibility(visible)
-    }, [visible])
-
-    const toggleVisibility = () => {
-        setVisible(!visible)
-    }
+const ShowHideButton: React.FC<ShowHideButtonProps> = ({ content, onToggle, onClick, selected, visible }) => {
 
     const icon = visible ? VisibleIcon : HiddenIcon;
     const borderStyle = selected ?
@@ -40,7 +30,7 @@ const VisibilityButton: React.FC<VisibilityButtonProps> = ({ content, onSetVisib
             </button>
             <button key={2}
                 className="w-10"  
-                onClick={() => toggleVisibility()}
+                onClick={() => onToggle()}
             >
                 <img src={icon} className={visible ? "" : "opacity-20"}/>
             </button> 
@@ -49,4 +39,4 @@ const VisibilityButton: React.FC<VisibilityButtonProps> = ({ content, onSetVisib
     );
 }
 
-export default VisibilityButton;
+export default ShowHideButton;

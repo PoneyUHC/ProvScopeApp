@@ -14,3 +14,11 @@ export function toUniform(str: string): number {
 
     return hash / 2**32;
 }
+
+
+interface IClonable<T> {
+    clone(): T
+}
+
+
+export type { IClonable }

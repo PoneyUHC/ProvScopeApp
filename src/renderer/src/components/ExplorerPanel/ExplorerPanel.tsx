@@ -1,7 +1,7 @@
 
 import { IPCTraceGraphContext } from '../IPCTraceGraphContext';
-import VisibilityButton from './VisibilityButton';
-import { useContext } from 'react';
+import ShowHideButton from './ShowHideButton';
+import { useCallback, useContext } from 'react';
 
 import Error from '../Error';
 
@@ -14,20 +14,16 @@ interface ExplorerPanelProps {
 const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const { 
-        ipcTraceGraph: ipcTraceGraphState, 
-        selectedNode: selectNodeState,
-        setNodeVisibility: setVisibility
-    
+        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
+        selectedNode: [selectedNode, setSelectedNode],
+        hiddenNodes: [hiddenNodes, hideNode, showNode],
     } = useContext(IPCTraceGraphContext)
-
-    const [ipcTraceGraph, _setIpcTraceGraph] = ipcTraceGraphState
-    const [selectedNode, setSelectedNode] = selectNodeState
 
     if ( ! ipcTraceGraph || ! selectedNode ){
         return <Error message='No graph loaded'/>
     }
 
-    const getNodeGroupsButtons = () => {
+    const getNodeGroupsButtons = useCallback(() => {
 
         const nodesByGroup = ipcTraceGraph.getNodesByGroup()
 
@@ -38,11 +34,12 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                         {
                             pair[1].map((node) => {
                                 return (
-                                    <VisibilityButton 
+                                    <ShowHideButton 
                                         content={node}
                                         onClick={() => setSelectedNode(node)}
-                                        onSetVisibility={(value) => setVisibility(node, value)}
+                                        onToggle={() => hiddenNodes.has(node) ? showNode(node) : hideNode(node)}
                                         selected={selectedNode == node}
+                                        visible={!hiddenNodes.has(node)}
                                     />
                                 )
                             })  
@@ -51,7 +48,7 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                 </div>
             )
         })
-    }
+    }, [ipcTraceGraph, selectedNode, hiddenNodes])
 
     const buttons = getNodeGroupsButtons()
 
