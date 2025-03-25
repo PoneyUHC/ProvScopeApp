@@ -1,5 +1,5 @@
 
-import React, { useContext } from 'react';
+import React, { useCallback, useContext } from 'react';
 import EventButton from './EventButton';
 
 import { Event } from '@common/types';
@@ -17,22 +17,20 @@ interface EventPanelProps {
 const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
 
     const { 
-        ipcTraceGraph: ipcTraceGraphState, 
-        selectedEvent: selectedEventState,
-        selectedNode: selectedNodeState
-    } = useContext(IPCTraceGraphContext)
+        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
+        selectedEvent: [selectedEvent, setSelectedEvent],
+        selectedNode: [_selectedNode, setSelectedNode],
+        hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
 
-    const [ipcTraceGraph, _setIpcTraceGraph] = ipcTraceGraphState
-    const [selectedEvent, setSelectedEvent] = selectedEventState
-    const [_selectedNode, setSelectedNode] = selectedNodeState
+    } = useContext(IPCTraceGraphContext)
 
     if ( ! ipcTraceGraph || ! selectedEvent ){
         return <Error message='No graph loaded'/>
     }
 
-    const getButtonBgColor = (event: Event) => {
+    const getButtonBgColor = useCallback((event: Event) => {
 
-        const events = ipcTraceGraph.getTrace().events
+        const events = ipcTraceGraph.getEvents()
 
         const eventIndex = events.indexOf(event)
         const selectedEventIndex = events.indexOf(selectedEvent)
@@ -44,26 +42,30 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         } else {
             return "bg-red-600"
         }
-    }
+    }, [ipcTraceGraph, selectedEvent])
 
     const onLeftClick = (event: Event) => (_e: React.MouseEvent) => {
         setSelectedEvent(event)
         setSelectedNode(event.process.getUUID())
     }
 
-    const events = ipcTraceGraph.getTrace().events
-    const eventButtonList = events.map((event) => {
+    const events = ipcTraceGraph.getEvents()
 
-        let opacity = "opacity-100"
+    const filterCallback = useCallback((e) => ! hiddenEvents.has(e), [hiddenEvents])
+    console.log(hiddenEvents)
+
+    const filteredEvents = events.filter(filterCallback)
+
+    const eventButtonList = events.filter(filterCallback).map((event, i) => {
+
         let bgColor = getButtonBgColor(event)
-
         const content = ipcTraceGraph.getEventDescription(event)
-        const key = events.indexOf(event)
 
         return (
-            <li key={key}>
+            <li key={i} className='flex flex-row'>
+                <p>{i}</p>
                 <EventButton 
-                    className={`${opacity} ${bgColor} ${eventsStyle}`} 
+                    className={`${bgColor} ${eventsStyle}`} 
                     content={content}
                     onLeftClick={onLeftClick(event)} 
                     onRightClick={onRightClick ? () => onRightClick(event) : () => {}}

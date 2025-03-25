@@ -39,21 +39,18 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         if ( shouldInit ) {
             this.graph = this.computeGraphFromTrace()
             this.precomputeEventFilenames()
+            this.applyUntilEvent(ipcTrace.events[0])
         }
-
-        this.applyUntilEvent(ipcTrace.events[0])
     }
 
     // create instead of public constructor to avoid giving the user the ability to create 
     // non-initialized instances of the class
     static create(ipcTrace: IPCTrace): IPCTraceGraph {
-        console.log("here")
         return new IPCTraceGraph(ipcTrace, true)
     }
 
 
     clone (): IPCTraceGraph {
-        console.log("there")
         const other = new IPCTraceGraph(this.ipcTrace, false)
         other.graph = this.graph.copy()
         other.eventFilenameLookup = this.eventFilenameLookup
@@ -62,6 +59,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         other.selectedNode = this.selectedNode
         other.hiddenNodes = new Set([...this.hiddenNodes])
         other.hiddenEvents = new Set([...this.hiddenEvents])
+        other.applyUntilEvent(other.selectedEvent)        
         return other
     }
 
@@ -71,6 +69,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     }
 
 
+    // TODO: add visible events set for more efficient computation
     getEvents(): Event[] {
         return this.ipcTrace.events.filter(e => !this.hiddenEvents.has(e))
     }
@@ -198,15 +197,9 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         const nodesReached = new Set<string>()
 
         const tmpGraph = this.graph.copy()
-        IPCTraceGraph.cleanGraph(tmpGraph)
-
         this.applyUntilEvent(targetEvent, tmpGraph)
 
         const eventInfos = IPCTraceGraph.getDataTransferInfos(targetEvent, tmpGraph)
-
-        if ( ! eventInfos ){
-            return []
-        }
 
         nodesReached.add(eventInfos.processUUID)
         if ( eventInfos.dataTransfer ){
@@ -214,9 +207,10 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             nodesReached.add(eventInfos.dataDestination)
         }
 
-        const startIndex = this.ipcTrace.events.indexOf(targetEvent)
+        const startIndex = this.getEvents().indexOf(targetEvent)
+        const previousEvents = this.getEvents().slice(0, startIndex).reverse()
 
-        for( const event of this.ipcTrace.events.slice(startIndex-1).reverse() ) {
+        for( const event of previousEvents ) {
             
             this.applyUntilEvent(event, tmpGraph)
             const eventInfos = IPCTraceGraph.getDataTransferInfos(event, tmpGraph)
@@ -238,29 +232,23 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
     backwardTraceFrom(targetEvent: Event): IPCTraceGraph {
 
-        const events = this.getBackwardEvents(targetEvent)
+        const backwardEvents = this.getBackwardEvents(targetEvent)
 
+        console.log("there")
+        console.log(backwardEvents)
 
         const clone = this.clone()
-        events.forEach(e => clone.hideEvent(e))
+        const events = clone.getEvents()
+        for( const event of events ) {
+            if ( ! backwardEvents.includes(event) ){
+                clone.hideEvent(event)
+            }
+        }
+        console.log(clone.getHiddenEvents())
+        console.log(clone.getEvents())
+        console.log("here")
         return clone
 
-    }
-
-    // TODO: this method is not used, should be removed
-    createTraceFromEvents(events: Event[], targetEventIndex: number): IPCTrace {
-
-        const trace = this.ipcTrace.clone()
-        trace.filename = `${trace.filename}_backward${targetEventIndex}`
-
-        const processUUIDs = events.map(e => e.process.getUUID())
-        const filepaths = events.map(e => this.eventFilenameLookup.get(e) || "Error")
-        
-        trace.processes = trace.processes.filter(p => processUUIDs.includes(p.getUUID()))
-        trace.files = trace.files.filter(f => filepaths.includes(f.path))
-        trace.events = events
-
-        return trace
     }
 
 
