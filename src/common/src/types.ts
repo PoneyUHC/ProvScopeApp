@@ -8,12 +8,14 @@ export class IPCTrace implements IClonable<IPCTrace> {
 
     processes: Process[]
     files: File[]
+    channels: string[]
     events: Event[]
 
     constructor() {
         this.filename = ""
         this.processes = []
         this.files = []
+        this.channels = []
         this.events = []
     }
 
@@ -30,6 +32,10 @@ export class IPCTrace implements IClonable<IPCTrace> {
 
         for (const file of json.files) {
             instance.files.push(new File(file.path))
+        }
+
+        for( const channel of json.channels) {
+            instance.channels.push(channel)
         }
 
         for (const jsonEvent of json.events) {

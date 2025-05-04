@@ -63,6 +63,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
                         className={`h-full ${borderStyles}`}
                         isDirty={isDirty}
                         setIsDirty={setIsDirty}
+                        getGraph={() => ipcTraceGraph.getGraph()}
                     />
                 </Allotment.Pane>
                 <Allotment.Pane minSize={200} preferredSize={"15%"}>

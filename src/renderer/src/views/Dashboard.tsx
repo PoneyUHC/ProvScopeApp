@@ -7,6 +7,7 @@ import { IPCTraceGraphProvider } from "@renderer/components/IPCTraceGraphContext
 import { IPCTrace } from "@common/types";
 import Header from "@renderer/components/Header";
 import { IPCTraceGraph } from "@common/IPCTraceGraph";
+import Title from "@renderer/components/Title";
 
 
 const Dashboard: React.FC = () => {
@@ -99,6 +100,7 @@ const Dashboard: React.FC = () => {
     return (
         <div className='w-screen h-screen flex flex-col'>
             <Header/>
+            <Title content="Dashboard"/>  
             {body}
         </div>
     )

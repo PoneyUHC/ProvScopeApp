@@ -365,6 +365,8 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             const filename2 = IPCTraceGraph.getEventFilename(event as FSEvent, tmpGraph)
             this.eventFilenameLookup.set(event, filename1 || filename2 || "Error")
         }
+
+        
     }
 
     

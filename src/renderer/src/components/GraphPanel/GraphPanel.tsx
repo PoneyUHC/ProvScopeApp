@@ -12,6 +12,8 @@ import GraphEvents from './GraphEvents';
 import { useContext, useEffect, useState } from 'react';
 import { IPCTraceGraphContext, IPCTraceGraphContextType } from '../IPCTraceGraphContext';
 
+import DirectedGraph from 'graphology'
+
 import Error from '@renderer/components/Error';
 import Sigma from 'sigma';
 
@@ -19,15 +21,17 @@ interface GraphPanelProps {
     className?: string;
     isDirty: boolean;
     setIsDirty: (value: boolean) => void;
+    getGraph: () => DirectedGraph;
 }
 
 
-const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty }) => {
+const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty, getGraph }) => {
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
 
-    const { ipcTraceGraph: ipcTraceGraphState } = useContext<IPCTraceGraphContextType>(IPCTraceGraphContext)
-    const [ipcTraceGraph, _setIpcTraceGraph] = ipcTraceGraphState
+    const { 
+        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
+    } = useContext(IPCTraceGraphContext)
 
     useEffect(() => {
         if( sigma && isDirty ) {
@@ -42,7 +46,7 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty 
 
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
-            <SigmaContainer ref={setSigma} graph={ipcTraceGraph.getGraph()} settings={{renderEdgeLabels: true, allowInvalidContainer: true}}>
+            <SigmaContainer ref={setSigma} graph={getGraph()} settings={{renderEdgeLabels: true, allowInvalidContainer: true}}>
                 <ControlsContainer position={'bottom-right'}>
                     <ZoomControl />
                     <FullScreenControl />

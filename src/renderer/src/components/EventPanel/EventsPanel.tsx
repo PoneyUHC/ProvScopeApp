@@ -52,9 +52,6 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     const events = ipcTraceGraph.getEvents()
 
     const filterCallback = useCallback((e) => ! hiddenEvents.has(e), [hiddenEvents])
-    console.log(hiddenEvents)
-
-    const filteredEvents = events.filter(filterCallback)
 
     const eventButtonList = events.filter(filterCallback).map((event, i) => {
 
