@@ -2,17 +2,22 @@
 import DirectedGraph from 'graphology'
 import { ExitReadEvent, IPCTrace, WriteEvent } from './types'
 import { IPCTraceGraph } from './IPCTraceGraph'
+import { reverse } from 'graphology-operators'
+import { bfsFromNode } from 'graphology-traversal'
 
 
 
 class DataflowGraph {
 
     graph: DirectedGraph
+    trace: IPCTrace
     versions: Map<string, number>
     lastNodes: Map<string, string>
+    excludedNodes: Set<string> = new Set<string>()
 
     constructor(trace: Readonly<IPCTrace>) {
         this.graph = new DirectedGraph()
+        this.trace = trace
         this.versions = new Map<string, number>()
         this.lastNodes = new Map<string, string>()
 
@@ -20,15 +25,19 @@ class DataflowGraph {
     }
 
 
-    computeCoords(node: string, version: number): { x: number, y: number } {
+    computeCoords(){
 
-        console.log(node)
+        for (const node of this.graph.nodes()) {
+            
+            const event = this.graph.getNodeAttribute(node, 'event')
+            const x = this.trace.events.indexOf(event) * 5
 
-        const x = Array.from(this.lastNodes.keys()).indexOf(node)
-        console.log(x)
-        const y = version
-        
-        return { x, y }
+            const objectName = this.graph.getNodeAttribute(node, 'objectName')
+            const y = Array.from(this.lastNodes.keys()).indexOf(objectName) * 5
+
+            this.graph.setNodeAttribute(node, 'x', x)
+            this.graph.setNodeAttribute(node, 'y', y)
+        }
     }
 
 
@@ -39,10 +48,7 @@ class DataflowGraph {
 
         for (const file of trace.files) {
 
-            // positions map to get x coord
-            // then compuite y coord thanks to versions later
-
-            const node = this.graph.addNode(file.path, {...this.computeCoords(file.path, 0), label: file.path})
+            const node = this.graph.addNode(file.path, {x: 0, y: 0, label: file.path, version: 0, objectName: file.path, event: null, type: 'square'})
             this.lastNodes.set(file.path, node)
             this.versions.set(file.path, 0)
         }
@@ -50,17 +56,18 @@ class DataflowGraph {
         for (const process of trace.processes) {
 
             const processUUID = process.getUUID()
-            const node = this.graph.addNode(processUUID, {...this.computeCoords(processUUID, 0), label: processUUID})
+            const node = this.graph.addNode(processUUID, {x: 0, y: 0, label: processUUID, version: 0, objectName: processUUID, event: null, type: 'circle'})
             this.lastNodes.set(processUUID, node)
             this.versions.set(processUUID, 0)
 
             const stdoutName = `${process.getUUID()}-STDOUT`
-            const stdoutNode = this.graph.addNode(stdoutName, {...this.computeCoords(stdoutName, 0), label: stdoutName})
+            const stdoutNode = this.graph.addNode(stdoutName, {x: 0, y: 0, label: stdoutName, version: 0, objectName: stdoutName, event: null, type: 'square'})
             this.lastNodes.set(stdoutName, stdoutNode)
             this.versions.set(stdoutName, 0)
         }
 
         this.loadEvents(traceGraph)
+        this.computeCoords()
     }
 
     loadEvents(traceGraph: IPCTraceGraph) {
@@ -107,24 +114,24 @@ class DataflowGraph {
         this.versions.set(processUUID, nextVersion)
 
         const newProcessNodeLabel = `${processUUID}-${nextVersion}`
-        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {...this.computeCoords(processUUID, nextVersion), label: newProcessNodeLabel})
+        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {x: 0, y: 0, label: newProcessNodeLabel, version: nextVersion, objectName: processUUID, event: event, type: 'circle'})
         this.lastNodes.set(processUUID, newProcessNode)
 
-        this.graph.addEdge(fileNode, newProcessNode)
-        this.graph.addEdge(processNode, newProcessNode)
+        this.graph.addEdge(fileNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
+        this.graph.addEdge(processNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
     }
 
     
     addWriteEvent(event: WriteEvent, traceGraph: IPCTraceGraph) {
         const process = event.process.getUUID()
-        const file = traceGraph.eventFilenameLookup.get(event)
-        if (!file) {
+        const filePath = traceGraph.eventFilenameLookup.get(event)
+        if (!filePath) {
             console.error(`File not found for event`)
             console.error(event)
             return
         }
 
-        const fileNode = this.lastNodes.get(file)
+        const fileNode = this.lastNodes.get(filePath)
         const processNode = this.lastNodes.get(process)
         if (!fileNode || !processNode) {
             console.log(traceGraph.eventFilenameLookup.get(event))
@@ -132,7 +139,7 @@ class DataflowGraph {
             return
         }
 
-        const currentVersion = this.versions.get(file)
+        const currentVersion = this.versions.get(filePath)
         if (currentVersion === undefined) {
             console.error(`File version not found for event`)
             console.error(event)
@@ -140,14 +147,27 @@ class DataflowGraph {
         }
 
         const nextVersion = currentVersion + 1
-        this.versions.set(file, nextVersion)
+        this.versions.set(filePath, nextVersion)
 
-        const newFileNodeLabel = `${file}-${nextVersion}`
-        const newFileNode = this.graph.addNode(newFileNodeLabel, {...this.computeCoords(file, nextVersion), label: newFileNodeLabel})
-        this.lastNodes.set(file, newFileNode)
+        const newFileNodeLabel = `${filePath}-${nextVersion}`
+        const newFileNode = this.graph.addNode(newFileNodeLabel, {x: 0, y: 0, label: newFileNodeLabel, version: nextVersion, objectName: filePath, event: event, type: 'square'})
+        this.lastNodes.set(filePath, newFileNode)
 
-        this.graph.addEdge(fileNode, newFileNode)
-        this.graph.addEdge(processNode, newFileNode)
+        this.graph.addEdge(fileNode, newFileNode, {eventType: 'write', event: event, color: 'blue'})
+        this.graph.addEdge(processNode, newFileNode, {eventType: 'write', event: event, color: 'blue'})
+    }
+
+
+    computeDataflowFrom(node: string): Set<string> {
+
+        const reversedGraph = reverse(this.graph)
+        const dataflow = new Set<string>()
+
+        bfsFromNode(reversedGraph, node, (node) => {
+            dataflow.add(node)
+        });
+
+        return dataflow
     }
 }
 

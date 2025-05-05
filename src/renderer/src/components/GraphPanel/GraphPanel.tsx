@@ -8,9 +8,9 @@ import {
     ZoomControl,
 } from '@react-sigma/core'
 
-import GraphEvents from './GraphEvents';
+import GraphEvents from './GraphPanelEvents';
 import { useContext, useEffect, useState } from 'react';
-import { IPCTraceGraphContext, IPCTraceGraphContextType } from '../IPCTraceGraphContext';
+import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
 
 import DirectedGraph from 'graphology'
 

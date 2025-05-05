@@ -1,5 +1,4 @@
 
-import { IPCTraceGraphProvider } from "./components/IPCTraceGraphContext";
 import Dashboard from "./views/Dashboard";
 import Dataflow from "./views/Dataflow";
 import { useState, useEffect } from "react";
@@ -23,10 +22,7 @@ function App() {
     }, []);
 
     return currentView === "Dashboard" ? 
-        <Dashboard /> : 
-        <IPCTraceGraphProvider>
-            <Dataflow />
-        </IPCTraceGraphProvider>
+        <Dashboard /> : <Dataflow />
 }
 
 export default App;
