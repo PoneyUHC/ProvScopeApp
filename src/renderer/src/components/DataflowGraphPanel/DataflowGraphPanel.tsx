@@ -25,9 +25,26 @@ interface DataflowGraphPanelProps {
 
 const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, dataflowGraph }) => {
 
-    const [_sigma, setSigma] = useState<Sigma | null>(null);
+    const [sigma, setSigma] = useState<Sigma | null>(null);
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
+    const [isDirty, setIsDirty] = useState(false);
 
+
+    const toggleNodeVersionsVisibility = (node: string) => {
+        dataflowGraph.toggleVisible(node)
+        setIsDirty(true)
+    }
+
+    useEffect(() => {
+
+        if (!dataflowGraph) return;
+        if (!sigma) return;
+
+        if (isDirty) {
+            sigma.refresh();
+            setIsDirty(false);
+        }
+    }, [isDirty])
 
     useEffect(() => {
 
@@ -62,9 +79,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                 graph.removeEdgeAttribute(edge, 'color')
             }
         })
-
-        
-
     }, [selectedNode])
 
 
@@ -88,7 +102,10 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                     <ZoomControl />
                     <FullScreenControl />
                 </ControlsContainer>
-                <DataflowGraphEvents setSelectedNode={setSelectedNode}/>
+                <DataflowGraphEvents 
+                    setSelectedNode={setSelectedNode} 
+                    toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
+                />
             </SigmaContainer>
         </div>
         

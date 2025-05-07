@@ -5,9 +5,10 @@ import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
 interface DataflowGraphEventsProps {
     setSelectedNode: (node: string | null) => void;
+    toggleNodeVersionsVisibility: (node: string) => void;
 }
 
-const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNode }) => {
+const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNode, toggleNodeVersionsVisibility }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -17,6 +18,13 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
 
         if ((e.event.original as MouseEvent).button === 2) {
             onRightClickNode(e)
+            return;
+        }
+
+        if ((e.event.original as MouseEvent).button !== 0) return;
+
+        if ((e.event.original as MouseEvent).ctrlKey) {
+            toggleNodeVersionsVisibility(e.node);
             return;
         }
 
