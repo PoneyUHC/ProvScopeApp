@@ -54,7 +54,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         const other = new IPCTraceGraph(this.ipcTrace, false)
         other.graph = this.graph.copy()
         other.eventFilenameLookup = this.eventFilenameLookup
-
+        
         other.selectedEvent = this.selectedEvent
         other.selectedNode = this.selectedNode
         other.hiddenNodes = new Set([...this.hiddenNodes])

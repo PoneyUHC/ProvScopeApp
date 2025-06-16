@@ -8,7 +8,7 @@ import { IPCTrace } from "@common/types";
 import Header from "@renderer/components/Header";
 import { IPCTraceGraph } from "@common/IPCTraceGraph";
 import Title from "@renderer/components/Title";
-
+import TabButton from "@renderer/components/TabButton";
 
 const Dashboard: React.FC = () => {
 
@@ -78,13 +78,43 @@ const Dashboard: React.FC = () => {
                 {
                     Array.from(ipcTraceGraphs).map((ipcTraceGraph, index) => {
                         return (
-                            <button
-                                key={index}
-                                onClick={() => setCurrentWorkspace(index)}
-                                className={`p-2 m-2 border border-black rounded-lg ${currentWorkspace === index ? 'bg-gray-300' : ''}`}
-                            >
-                                {ipcTraceGraph.getTrace().filename.split('/').pop()}
-                            </button>
+                            <div className="flex items-center">
+                                <button>
+                                <TabButton
+                                    key={index}
+                                    mainClick={() => setCurrentWorkspace(index)}
+                                    deleteClick={() => { 
+                                        if (ipcTraceGraphs.length === 1) {
+                                            setCurrentWorkspace(null);
+                                            setIPCTraceGraphs([]);
+                                            return;
+                                        }
+                                        else{
+                                            setIPCTraceGraphs((prev) => {
+                                                const newGraphs = prev.filter((_, i) => i !== index);
+                                                // We adjust the current workspace index if necessary
+                                                if (currentWorkspace !== null) {
+                                                    if (index === currentWorkspace) {
+                                                        setCurrentWorkspace(newGraphs.length > 0 ? 0 : null);
+                                                    } else if (index < currentWorkspace) {
+                                                        setCurrentWorkspace(currentWorkspace - 1);
+                                                    }
+                                                }
+                                                return newGraphs;
+                                            });
+
+                                        }
+                                        
+                                        }
+                                    }
+                                    index={index}
+                                    className="border-b-2 border-black-200"
+                                    ipcTraceGraph={ipcTraceGraph}
+                                    currentWorkspace={currentWorkspace}
+                                />
+                                </button>
+        
+                            </div>
                         )
                     })
                 }

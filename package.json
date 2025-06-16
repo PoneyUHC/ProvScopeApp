@@ -30,6 +30,7 @@
     "graphology-layout-forceatlas2": "^0.10.1",
     "graphology-operators": "^1.6.1",
     "graphology-traversal": "^0.3.1",
+    "package.json": "^2.0.1",
     "postcss": "^8.5.3",
     "sigma": "^3.0.1"
   },
