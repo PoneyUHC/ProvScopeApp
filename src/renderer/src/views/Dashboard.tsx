@@ -10,6 +10,9 @@ import { IPCTraceGraph } from "@common/IPCTraceGraph";
 import Title from "@renderer/components/Title";
 import TabButton from "@renderer/components/TabButton";
 
+const tabSelectedButton = "bg-white border border-b-transparent border-black-200 text-black"
+const tabNotSelectedButton = "bg-gray-200 text-gray-600 border border-b-black-300 hover:bg-black-300"
+
 const Dashboard: React.FC = () => {
 
     const [ipcTraceGraphs, setIPCTraceGraphs] = useState<IPCTraceGraph[]>([])
@@ -49,6 +52,33 @@ const Dashboard: React.FC = () => {
     }, [currentWorkspace, ipcTraceGraphs])
 
 
+    const deleteClick = useCallback((index) => { 
+        if (ipcTraceGraphs.length === 1) {
+            setCurrentWorkspace(null);
+            setIPCTraceGraphs([]);
+            return;
+        }
+        
+        setIPCTraceGraphs((prev) => {
+            const newGraphs = prev.filter((_, i) => i !== index);
+            // We adjust the current workspace index if necessary
+            if (currentWorkspace !== null) {
+                if (index === currentWorkspace) {
+                    setCurrentWorkspace(newGraphs.length > 0 ? 0 : null);
+                } else if (index < currentWorkspace) {
+                    setCurrentWorkspace(currentWorkspace - 1);
+                }
+            }
+            return newGraphs;
+        });
+    }, [ipcTraceGraphs, currentWorkspace]) 
+
+ 
+    const isSelected = useCallback((index) => {
+        return currentWorkspace === index
+    }, [currentWorkspace])
+
+    
     useEffect(() => {
         window.api.onLoadTrace( loadTrace )
         window.api.onRequestExportTrace( exportTrace )
@@ -62,6 +92,7 @@ const Dashboard: React.FC = () => {
 
     }, [loadTrace, exportTrace])
 
+        
 
     let body: JSX.Element
 
@@ -77,43 +108,21 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-row overflow-auto">
                 {
                     Array.from(ipcTraceGraphs).map((ipcTraceGraph, index) => {
+
+                        const text = ipcTraceGraph.getTrace().filename.split('/').pop() || "";
+                        
                         return (
                             <div className="flex items-center">
-                                <button>
                                 <TabButton
-                                    key={index}
                                     mainClick={() => setCurrentWorkspace(index)}
-                                    deleteClick={() => { 
-                                        if (ipcTraceGraphs.length === 1) {
-                                            setCurrentWorkspace(null);
-                                            setIPCTraceGraphs([]);
-                                            return;
-                                        }
-                                        else{
-                                            setIPCTraceGraphs((prev) => {
-                                                const newGraphs = prev.filter((_, i) => i !== index);
-                                                // We adjust the current workspace index if necessary
-                                                if (currentWorkspace !== null) {
-                                                    if (index === currentWorkspace) {
-                                                        setCurrentWorkspace(newGraphs.length > 0 ? 0 : null);
-                                                    } else if (index < currentWorkspace) {
-                                                        setCurrentWorkspace(currentWorkspace - 1);
-                                                    }
-                                                }
-                                                return newGraphs;
-                                            });
-
-                                        }
-                                        
-                                        }
-                                    }
+                                    deleteClick={deleteClick}
                                     index={index}
-                                    className="border-b-2 border-black-200"
-                                    ipcTraceGraph={ipcTraceGraph}
-                                    currentWorkspace={currentWorkspace}
+                                    className="p-2 border-b-2 border-black-200"
+                                    text={text}
+                                    isSelected={isSelected(index)}
+                                    selectedButtonStyle={tabSelectedButton}
+                                    notSelectedButtonStyle={tabNotSelectedButton}
                                 />
-                                </button>
-        
                             </div>
                         )
                     })
