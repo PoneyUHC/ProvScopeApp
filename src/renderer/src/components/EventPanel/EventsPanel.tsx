@@ -53,14 +53,15 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
 
     const filterCallback = useCallback((e) => ! hiddenEvents.has(e), [hiddenEvents])
 
-    const eventButtonList = events.filter(filterCallback).map((event, i) => {
+    const eventButtonList = events.filter(filterCallback).map((event, _i) => {
 
         let bgColor = getButtonBgColor(event)
         const content = ipcTraceGraph.getEventDescription(event)
+        const originalIndex = ipcTraceGraph.eventIndexLookup.get(event)
 
         return (
-            <li key={i} className='flex flex-row'>
-                <p>{i}</p>
+            <li key={originalIndex} className='flex flex-row'>
+                <p>{originalIndex}</p>
                 <EventButton 
                     className={`${bgColor} ${eventsStyle}`} 
                     content={content}
