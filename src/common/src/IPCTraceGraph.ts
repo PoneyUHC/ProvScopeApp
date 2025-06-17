@@ -25,6 +25,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     hiddenEvents: Set<Event>
 
     eventFilenameLookup: Map<Event, string>
+    eventIndexLookup: Map<Event, number>
 
     // shouldInit is used to make more efficient copies
     private constructor(ipcTrace: IPCTrace, shouldInit: boolean) {
@@ -33,6 +34,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         this.selectedNode = ipcTrace.events[0].process.getUUID()
         this.selectedEvent = ipcTrace.events[0]
         this.eventFilenameLookup = new Map<Event, string>()
+        this.eventIndexLookup = new Map<Event, number>()
         this.hiddenNodes = new Set<string>()
         this.hiddenEvents = new Set<Event>()
 
@@ -40,6 +42,10 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             this.graph = this.computeGraphFromTrace()
             this.precomputeEventFilenames()
             this.applyUntilEvent(ipcTrace.events[0])
+
+            for (const event of ipcTrace.events) {
+                this.eventIndexLookup.set(event, ipcTrace.events.indexOf(event))
+            }
         }
     }
 
@@ -54,6 +60,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         const other = new IPCTraceGraph(this.ipcTrace, false)
         other.graph = this.graph.copy()
         other.eventFilenameLookup = this.eventFilenameLookup
+        other.eventIndexLookup = this.eventIndexLookup
         
         other.selectedEvent = this.selectedEvent
         other.selectedNode = this.selectedNode
@@ -234,9 +241,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
         const backwardEvents = this.getBackwardEvents(targetEvent)
 
-        console.log("there")
-        console.log(backwardEvents)
-
         const clone = this.clone()
         const events = clone.getEvents()
         for( const event of events ) {
@@ -244,9 +248,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
                 clone.hideEvent(event)
             }
         }
-        console.log(clone.getHiddenEvents())
-        console.log(clone.getEvents())
-        console.log("here")
         return clone
 
     }
