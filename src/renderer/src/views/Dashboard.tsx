@@ -109,8 +109,8 @@ const Dashboard: React.FC = () => {
                 {
                     Array.from(ipcTraceGraphs).map((ipcTraceGraph, index) => {
 
-                        const text = ipcTraceGraph.getTrace().filename.split('/').pop() || "";
-                        
+                        const text = ipcTraceGraph.traceName;
+
                         return (
                             <div className="flex items-center">
                                 <TabButton
