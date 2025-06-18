@@ -179,10 +179,12 @@ export abstract class Event {
 
     timestamp: number
     process: Process
+    eventType: string
 
     constructor(timestamp: number, process: Process) {
         this.timestamp = timestamp
         this.process = process
+        this.eventType = this.constructor.name
     }
 
     abstract getKeyword(): string
@@ -196,10 +198,6 @@ export abstract class FSEvent extends Event {
     constructor(timestamp: number, process: Process, fd: number) {
         super(timestamp, process)
         this.fd = fd
-    }
-
-    clone(): FSEvent {
-        throw new Error("Method not implemented.")
     }
 }
 

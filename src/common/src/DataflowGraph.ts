@@ -1,27 +1,55 @@
 
 import DirectedGraph from 'graphology'
-import { ExitReadEvent, IPCTrace, WriteEvent } from './types'
+import { ExitReadEvent, IPCTrace, WriteEvent, Event } from './types'
 import { IPCTraceGraph } from './IPCTraceGraph'
-import { reverse } from 'graphology-operators'
-import { bfsFromNode } from 'graphology-traversal'
+import { CausalLink, EventPattern, FollowUpCL, PatternValue } from './causality'
 
 
 
 class DataflowGraph {
 
     graph: DirectedGraph
-    trace: IPCTrace
+    ipcTrace: IPCTrace
+    events: Event[]
     versions: Map<string, number>
     nodes: Map<string, string[]>
     excludedNodes: Set<string>
 
+    eventCausalLinks: Map<Event, CausalLink[]>
+    testCausalLink: CausalLink[]
+
     constructor(trace: Readonly<IPCTrace>) {
         this.graph = new DirectedGraph()
-        this.trace = trace
+        this.ipcTrace = trace
+        this.events = []
         this.versions = new Map<string, number>()
         this.nodes = new Map<string, string[]>()
         this.excludedNodes = new Set<string>()
+        this.eventCausalLinks = new Map<Event, CausalLink[]>()
 
+        this.testCausalLink = [new FollowUpCL([
+            new EventPattern(new Map<string, PatternValue>([
+                ['eventType', new PatternValue('ExitReadEvent')],
+                ['process', new PatternValue('', true)],
+                ['fd', new PatternValue('', true)],
+            ])),
+            new EventPattern(new Map<string, PatternValue>([
+                ['eventType', new PatternValue('ExitReadEvent')],
+                ['process', new PatternValue('', true)],
+                ['fd', new PatternValue('', true)],
+            ])),
+            new EventPattern(new Map<string, PatternValue>([
+                ['eventType', new PatternValue('ExitReadEvent')],
+                ['process', new PatternValue('', true)],
+                ['fd', new PatternValue('', true)],
+            ])),
+            new EventPattern(new Map<string, PatternValue>([
+                ['eventType', new PatternValue('WriteEvent')],
+                ['process', new PatternValue('', true)],
+                ['fd', new PatternValue('', true)],
+            ])),
+        ])]
+        
         this.loadTrace(trace)
     }
 
@@ -31,7 +59,7 @@ class DataflowGraph {
         for (const node of this.graph.nodes()) {
             
             const event = this.graph.getNodeAttribute(node, 'event')
-            const x = this.trace.events.indexOf(event) * 5
+            const x = this.ipcTrace.events.indexOf(event) * 5
 
             const objectName = this.graph.getNodeAttribute(node, 'objectName')
             const y = Array.from(this.nodes.keys()).indexOf(objectName) * 50
@@ -100,13 +128,15 @@ class DataflowGraph {
 
     loadEvents(traceGraph: IPCTraceGraph) {
         
-        const events = traceGraph.getEvents()
+        const allEvent = traceGraph.getEvents()
 
-        for (const event of events) {
+        for (const event of allEvent) {
             if (event instanceof ExitReadEvent) {
                 this.addReadEvent(event, traceGraph)
+                this.events.push(event)
             } else if (event instanceof WriteEvent) {
                 this.addWriteEvent(event, traceGraph)
+                this.events.push(event)
             } else {
                 console.log(`${event} not handled by DataflowGraph`)
             }
@@ -117,6 +147,7 @@ class DataflowGraph {
         
         const processUUID = event.process.getUUID()
         const filePath = traceGraph.eventFilenameLookup.get(event)
+        const id = traceGraph.eventIndexLookup.get(event)
         if (!filePath) {
             console.error(`File not found for event`)
             console.error(event)
@@ -146,12 +177,15 @@ class DataflowGraph {
         const newProcessNodeLabel = `${processUUID}-${nextVersion}`
         const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
             x: 0, 
-            y: 0, 
+            y: 0,
             size: 4,
+            id: id,
             label: newProcessNodeLabel, 
             version: nextVersion, 
             objectName: processUUID, 
-            event: event, 
+            event: event,
+            objectType: "process", 
+            eventType: 'read',
             type: 'circle'
         })
         this.nodes.get(processUUID)?.push(newProcessNode)
@@ -164,6 +198,7 @@ class DataflowGraph {
     addWriteEvent(event: WriteEvent, traceGraph: IPCTraceGraph) {
         const processUUID = event.process.getUUID()
         const filePath = traceGraph.eventFilenameLookup.get(event)
+        const id = traceGraph.eventIndexLookup.get(event)
         if (!filePath) {
             console.error(`File not found for event`)
             console.error(event)
@@ -194,11 +229,14 @@ class DataflowGraph {
         const newFileNode = this.graph.addNode(newFileNodeLabel, {
             x: 0, 
             y: 0, 
+            id: id,
             size: 4,
             label: newFileNodeLabel, 
             version: nextVersion, 
             objectName: filePath, 
+            objectType: "resource",
             event: event, 
+            eventType: 'write', 
             type: 'square'
         })
         this.nodes.get(filePath)?.push(newFileNode)
@@ -210,15 +248,55 @@ class DataflowGraph {
 
     computeDataflowFrom(node: string): Set<string> {
 
-        const reversedGraph = reverse(this.graph)
-        const dataflow = new Set<string>()
+        const event = this.graph.getNodeAttribute(node, 'event') as Event
+        if (!event) {
+            console.error(`Node ${node} does not have an event attribute`)
+            return new Set<string>()
+        }
 
-        bfsFromNode(reversedGraph, node, (node) => {
-            dataflow.add(node)
-        });
+        const dataflow = new Set<Event>()
+        const queue: Event[] = [event]
+        while (queue.length > 0) {
+            const current = queue.shift()
+            if (!current) continue
 
-        return dataflow
+            dataflow.add(current)
+
+            const causes = this.getCausesOfEvent(current)
+            for (const cause of causes) {
+                if (!dataflow.has(cause)) {
+                    queue.push(cause)
+                }
+            }
+        }
+
+        const nodesInDataflow: Set<string> = new Set<string>();
+        for (const event of dataflow) {
+            const node = this.graph.findNode((n) => this.graph.getNodeAttribute(n, 'event') == event);
+            if (node) {
+                nodesInDataflow.add(node);
+            }
+        }
+        return nodesInDataflow;
     }
+
+
+    getCausesOfEvent(event: Event): Set<Event> {
+
+        const causes: Set<Event> = new Set<Event>();
+        const causalLinks = this.testCausalLink
+        if (!causalLinks) {
+            return new Set<Event>();
+        }
+
+        for (const causalLink of causalLinks) {
+            const partialCauses = causalLink.getCauses(event, this)
+            partialCauses.forEach(cause => causes.add(cause))
+        }
+
+        return causes
+    }
+
 
     setNodeVersionsVisibility(node: string, visible: boolean) {
 
