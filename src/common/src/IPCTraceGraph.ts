@@ -21,6 +21,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     private ipcTrace: IPCTrace
     selectedNode: string
     selectedEvent: Event
+    traceName: string;
     hiddenNodes: Set<string>
     hiddenEvents: Set<Event>
 
@@ -37,6 +38,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         this.eventIndexLookup = new Map<Event, number>()
         this.hiddenNodes = new Set<string>()
         this.hiddenEvents = new Set<Event>()
+        this.traceName = ipcTrace.filename.split('/').pop() || ""
 
         if ( shouldInit ) {
             this.graph = this.computeGraphFromTrace()
@@ -240,9 +242,12 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     backwardTraceFrom(targetEvent: Event): IPCTraceGraph {
 
         const backwardEvents = this.getBackwardEvents(targetEvent)
-
+        
         const clone = this.clone()
         const events = clone.getEvents()
+
+        //const filename = this.ipcTrace.filename.split('/').pop() || ""
+        clone.traceName = `${this.traceName} `+ "_" + this.eventIndexLookup.get(targetEvent)!.toString()
         for( const event of events ) {
             if ( ! backwardEvents.includes(event) ){
                 clone.hideEvent(event)
