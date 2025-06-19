@@ -34,7 +34,7 @@ class DataflowGraph {
             const x = this.trace.events.indexOf(event) * 5
 
             const objectName = this.graph.getNodeAttribute(node, 'objectName')
-            const y = Array.from(this.nodes.keys()).indexOf(objectName) * 5
+            const y = Array.from(this.nodes.keys()).indexOf(objectName) * 50
 
             this.graph.setNodeAttribute(node, 'x', x)
             this.graph.setNodeAttribute(node, 'y', y)
@@ -49,7 +49,16 @@ class DataflowGraph {
 
         for (const file of trace.files) {
 
-            const node = this.graph.addNode(file.path, {x: 0, y: 0, label: file.path, version: 0, objectName: file.path, event: null, type: 'square'})
+            const node = this.graph.addNode(file.path, {
+                x: 0, 
+                y: 0, 
+                size: 4,
+                label: file.path, 
+                version: 0, 
+                objectName: file.path, 
+                event: null, 
+                type: 'square'
+            })
             this.nodes.set(file.path, [node])
             this.versions.set(file.path, 0)
         }
@@ -57,12 +66,30 @@ class DataflowGraph {
         for (const process of trace.processes) {
 
             const processUUID = process.getUUID()
-            const node = this.graph.addNode(processUUID, {x: 0, y: 0, label: processUUID, version: 0, objectName: processUUID, event: null, type: 'circle'})
+            const node = this.graph.addNode(processUUID, {
+                x: 0, 
+                y: 0, 
+                size: 4,
+                label: processUUID, 
+                version: 0, 
+                objectName: processUUID, 
+                event: null, 
+                type: 'circle'
+            })
             this.nodes.set(processUUID, [node])
             this.versions.set(processUUID, 0)
 
             const stdoutName = `${process.getUUID()}-STDOUT`
-            const stdoutNode = this.graph.addNode(stdoutName, {x: 0, y: 0, label: stdoutName, version: 0, objectName: stdoutName, event: null, type: 'square'})
+            const stdoutNode = this.graph.addNode(stdoutName, {
+                x: 0, 
+                y: 0, 
+                size: 4,
+                label: stdoutName, 
+                version: 0, 
+                objectName: stdoutName, 
+                event: null, 
+                type: 'square'
+            })
             this.nodes.set(stdoutName, [stdoutNode])
             this.versions.set(stdoutName, 0)
         }
@@ -117,7 +144,16 @@ class DataflowGraph {
         this.versions.set(processUUID, nextVersion)
 
         const newProcessNodeLabel = `${processUUID}-${nextVersion}`
-        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {x: 0, y: 0, label: newProcessNodeLabel, version: nextVersion, objectName: processUUID, event: event, type: 'circle'})
+        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
+            x: 0, 
+            y: 0, 
+            size: 4,
+            label: newProcessNodeLabel, 
+            version: nextVersion, 
+            objectName: processUUID, 
+            event: event, 
+            type: 'circle'
+        })
         this.nodes.get(processUUID)?.push(newProcessNode)
 
         this.graph.addEdge(fileNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
@@ -155,7 +191,16 @@ class DataflowGraph {
         this.versions.set(filePath, nextVersion)
 
         const newFileNodeLabel = `${filePath}-${nextVersion}`
-        const newFileNode = this.graph.addNode(newFileNodeLabel, {x: 0, y: 0, label: newFileNodeLabel, version: nextVersion, objectName: filePath, event: event, type: 'square'})
+        const newFileNode = this.graph.addNode(newFileNodeLabel, {
+            x: 0, 
+            y: 0, 
+            size: 4,
+            label: newFileNodeLabel, 
+            version: nextVersion, 
+            objectName: filePath, 
+            event: event, 
+            type: 'square'
+        })
         this.nodes.get(filePath)?.push(newFileNode)
 
         this.graph.addEdge(fileNode, newFileNode, {eventType: 'write', event: event, color: 'blue'})
