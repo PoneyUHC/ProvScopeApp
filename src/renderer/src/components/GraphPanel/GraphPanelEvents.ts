@@ -1,21 +1,25 @@
 import { IPCTraceGraph } from "@common/IPCTraceGraph";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
+import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
 
 
 interface GraphEventsProps {
     ipcTraceGraph: IPCTraceGraph;
 }
 
-const GraphEvents: React.FC<GraphEventsProps> = ({ ipcTraceGraph }) => {
+const GraphEvents: React.FC<GraphEventsProps> = () => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
+    const { ipcTraceGraph : [ipcTraceGraph], } = useContext(IPCTraceGraphContext)
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
-
+    
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
-        ipcTraceGraph.clearHighlights()
+        if (ipcTraceGraph) {
+            ipcTraceGraph.clearHighlights();
+        }
         setDraggedNode(e.node);
         sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
     }
@@ -41,7 +45,9 @@ const GraphEvents: React.FC<GraphEventsProps> = ({ ipcTraceGraph }) => {
 
     const onStageMouseUp = () => {
         setDraggedNode(null);
-        ipcTraceGraph.clearHighlights()
+        if (ipcTraceGraph) {
+            ipcTraceGraph.clearHighlights();
+        }
     }
 
     const onMouseDown = () => {

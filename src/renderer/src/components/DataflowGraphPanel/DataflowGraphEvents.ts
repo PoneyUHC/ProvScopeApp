@@ -1,7 +1,9 @@
 
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
+
+
 
 interface DataflowGraphEventsProps {
     setSelectedNode: (node: string | null) => void;
@@ -12,9 +14,68 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
+    const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+    
+    
+    const addNodeToSelection = (node: string, prevSelectedNodes) => {
+        sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
+        return [...prevSelectedNodes, node];
+    }
+
+    const removeNodeFromSelection = (node: string, prevSelectedNodes) => {
+        sigma.getGraph().setNodeAttribute(node, 'highlighted', false);
+        return prevSelectedNodes.filter(n => n !== node);
+    }
+
+    const clearSelection = () => {
+        setSelectedNodes([]);
+        sigma.getGraph().forEachNode((node) => {
+            sigma.getGraph().setNodeAttribute(node, 'highlighted', false);
+        });
+        setDraggedNode(null);
+    }
+
+    const manageNodeSelection = (node: string) => {
+        setSelectedNodes(prevSelectedNodes => {
+            if (prevSelectedNodes.includes(node)) {
+                return removeNodeFromSelection(node, prevSelectedNodes);
+            } else {
+                return addNodeToSelection(node, prevSelectedNodes);
+            }
+        });
+    }
+
+    const selectSingleNode = (node: string) => {
+        setSelectedNodes(prevSelectedNodes => {
+            if(!prevSelectedNodes.includes(node)){
+                
+                // Clear previous selection if the node is not already selected
+                for(const n of prevSelectedNodes) {
+                    sigma.getGraph().setNodeAttribute(n, 'highlighted', false);
+                }
+                sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
+                return [node];
+            }
+            return prevSelectedNodes;
+        })
+    }
 
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
+
+        const isShiftPressed = (e.event.original as MouseEvent).shiftKey;
+        const isLeftMouseButtonPressed = (e.event.original as MouseEvent).button === 0;
+        const currentNode = e.node;
+
+        if (isShiftPressed && isLeftMouseButtonPressed) { // Shift + Left Click
+            //we add or delete a node from selectedNodes
+            manageNodeSelection(currentNode);
+            return; //we don't move the node if shift is pressed
+        }
+
+        // case where we click on a node not selected
+        selectSingleNode(currentNode);
+        
 
         if ((e.event.original as MouseEvent).button === 2) {
             onRightClickNode(e)
@@ -28,13 +89,24 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
             return;
         }
 
-        setDraggedNode(e.node);
-        sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
+        setDraggedNode(currentNode);
     }
+
+
 
     const onRightClickNode = (e: SigmaNodeEventPayload) => {
         setSelectedNode(e.node);
     }
+
+    const moveSelectedNodes = useCallback((dx: number, dy: number) => {
+        const graph = sigma.getGraph();
+        for(const node of selectedNodes) {
+            graph.setNodeAttribute(node, 'x', graph.getNodeAttribute(node, 'x') + dx);
+            graph.setNodeAttribute(node, 'y', graph.getNodeAttribute(node, 'y') + dy);
+        }
+    }, [selectedNodes, sigma]);
+
+
 
 
     const onMouseMove = (event: MouseCoords) => {
@@ -44,8 +116,10 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
         const mouseCoords = event
         const pos = sigma.viewportToGraph(mouseCoords)
         const graph = sigma.getGraph()
-        graph.setNodeAttribute(draggedNode, 'x', pos.x)
-        graph.setNodeAttribute(draggedNode, 'y', pos.y)
+        const dx = pos.x - graph.getNodeAttribute(draggedNode, 'x');
+        const dy = pos.y - graph.getNodeAttribute(draggedNode, 'y');
+
+        moveSelectedNodes(dx, dy);
         
         event.preventSigmaDefault()
         event.original.preventDefault()
@@ -56,11 +130,25 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
 
         if (!draggedNode) return;
 
-        sigma.getGraph().setNodeAttribute(draggedNode, 'highlighted', false);
+        for(const node of selectedNodes) {
+            sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
+            
+        }
+        
+        //we clear the dragged node highlight if it is not in the selected nodes
+        if (!selectedNodes.includes(draggedNode)) { 
+            sigma.getGraph().setNodeAttribute(draggedNode, 'highlighted', false);
+        }
+
         setDraggedNode(null);
     }
 
     const onStageMouseUp = () => {
+        
+        //we clear the selection if we click on the stage
+        if(selectedNodes.length > 0) { 
+            clearSelection();
+        }
 
         onNodeMouseUp()
     }
