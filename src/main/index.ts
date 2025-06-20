@@ -12,7 +12,7 @@ function createWindow(): void {
     const mainWindow = new BrowserWindow({
         width: 900,
         height: 670,
-        show: false,
+        show: true,
         icon: goldoIcon,
         autoHideMenuBar: false,
         webPreferences: {
@@ -21,11 +21,12 @@ function createWindow(): void {
         }
     })
 
+
     mainWindow.once('ready-to-show', () => {
         const menu = getMenu(mainWindow)
         Menu.setApplicationMenu(menu)
-        mainWindow.show()
         mainWindow.maximize()
+        mainWindow.focus()
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
