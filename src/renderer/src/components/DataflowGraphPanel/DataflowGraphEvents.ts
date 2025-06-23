@@ -1,16 +1,16 @@
 
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useCallback, useEffect, useState } from "react";
-import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
+import { MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
 
 
 interface DataflowGraphEventsProps {
-    setSelectedNode: (node: string | null) => void;
+    showDataflowFrom: (node: string | null) => void;
     toggleNodeVersionsVisibility: (node: string) => void;
 }
 
-const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNode, toggleNodeVersionsVisibility }) => {
+const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -105,10 +105,10 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
     }
 
 
-
     const onRightClickNode = (e: SigmaNodeEventPayload) => {
-        setSelectedNode(e.node);
+        showDataflowFrom(e.node);
     }
+
 
     const moveSelectedNodes = useCallback((dx: number, dy: number) => {
         const graph = sigma.getGraph();
@@ -117,8 +117,6 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
             graph.setNodeAttribute(node, 'y', graph.getNodeAttribute(node, 'y') + dy);
         }
     }, [selectedNodes, sigma]);
-
-
 
 
     const onMouseMove = (event: MouseCoords) => {
@@ -138,32 +136,36 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
         event.original.stopPropagation()
     }
 
+
+    // Used to handle drag and drop of nodes
     const onNodeMouseUp = () => {
 
-        if (!draggedNode) return;
-
-        for(const node of selectedNodes) {
-            sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
-            
-        }
-        
-        //we clear the dragged node highlight if it is not in the selected nodes
-        if (!selectedNodes.includes(draggedNode)) { 
-            sigma.getGraph().setNodeAttribute(draggedNode, 'highlighted', false);
-        }
-
         setDraggedNode(null);
+
     }
 
-    const onStageMouseUp = () => {
+
+    const onStageMouseUp = (e: SigmaStageEventPayload) => {
         
-        //we clear the selection if we click on the stage
-        if(selectedNodes.length > 0) { 
-            clearSelection();
-        }
+        const isLeftMouseButtonPressed = (e.event.original as MouseEvent).button === 0;
 
-        onNodeMouseUp()
+        if ( ! isLeftMouseButtonPressed ) return;
+
+        setDraggedNode(draggedNode => {    
+            // on fast node displacement, stage up might append when dragging a node
+            // to differenciate between a node drag and a stage click, we check if draggedNode is set
+            if ( ! draggedNode) {
+                console.warn("Stage up without dragged node, this should not happen");
+                clearSelection();
+            }
+            return null;
+        })
     }
+
+    const onRightClickStage = (_e: SigmaStageEventPayload) => {
+        showDataflowFrom(null);
+    }
+
 
     const onMouseDown = () => {
         if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
@@ -176,7 +178,8 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
             downNode: (e) => onDownNode(e),
             mousemovebody: (e) => onMouseMove(e),
             upNode: () => onNodeMouseUp(),
-            upStage: () => onStageMouseUp(),
+            upStage: (e) => onStageMouseUp(e),
+            rightClickStage: (e) => onRightClickStage(e),
             mousedown: () => onMouseDown(),
         });
     }, [registerEvents, sigma, draggedNode]);

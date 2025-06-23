@@ -26,7 +26,6 @@ interface DataflowGraphPanelProps {
 const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, dataflowGraph }) => {
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
-    const [selectedNode, setSelectedNode] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
 
 
@@ -46,20 +45,22 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
         }
     }, [isDirty])
 
-    useEffect(() => {
+    
+    const showDataflowFrom = (target: string | null) => {
 
-        if( !selectedNode ) return;
+        if ( !target ) {
+            dataflowGraph.resetColoring()
+            return;
+        }
 
-        const dataflow = dataflowGraph.computeDataflowFrom(selectedNode)
+        const dataflow = dataflowGraph.computeDataflowFrom(target)
 
         const graph = dataflowGraph.graph
 
         graph.forEachNode((node) => {
             graph.removeNodeAttribute(node, 'color')
-            for(const dfNode of dataflow) {
-                if (node === dfNode) {
-                    graph.setNodeAttribute(node, 'color', 'red')
-                }
+            if( dataflow.has(node) ) {
+                graph.setNodeAttribute(node, 'color', 'red')
             }
         })
         
@@ -69,17 +70,17 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
             const target = graph.target(edge)
 
             if (dataflow.has(source) && dataflow.has(target)) {
-                const eventType = graph.getEdgeAttribute(edge, 'eventType')
-                if (eventType === 'read') {
+                const eventType = graph.getEdgeAttribute(edge, 'event').eventType
+                if (eventType === 'ExitReadEvent') {
                     graph.setEdgeAttribute(edge, 'color', 'green')
-                } else {
+                } else if (eventType === 'WriteEvent') {
                     graph.setEdgeAttribute(edge, 'color', 'blue')
                 }
             } else {
                 graph.removeEdgeAttribute(edge, 'color')
             }
         })
-    }, [selectedNode])
+    }
 
 
     return (
@@ -89,7 +90,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                 graph={dataflowGraph.graph} 
                 settings={
                     {
-                        renderEdgeLabels: true,
                         renderLabels: false,
                         allowInvalidContainer: true, 
                         nodeProgramClasses: {
@@ -103,7 +103,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                     <FullScreenControl />
                 </ControlsContainer>
                 <DataflowGraphEvents 
-                    setSelectedNode={setSelectedNode} 
+                    showDataflowFrom={showDataflowFrom} 
                     toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
                 />
             </SigmaContainer>

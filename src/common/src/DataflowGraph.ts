@@ -184,13 +184,12 @@ class DataflowGraph {
             objectName: processUUID, 
             event: event,
             objectType: "process", 
-            eventType: 'read',
             type: 'circle'
         })
         this.nodes.get(processUUID)?.push(newProcessNode)
 
-        this.graph.addEdge(fileNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
-        this.graph.addEdge(processNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
+        this.graph.addEdge(fileNode, newProcessNode, {event: event, color: 'green'})
+        this.graph.addEdge(processNode, newProcessNode, {event: event, color: 'green'})
     }
 
 
@@ -235,13 +234,12 @@ class DataflowGraph {
             objectName: filePath, 
             objectType: "resource",
             event: event, 
-            eventType: 'write', 
             type: 'square'
         })
         this.nodes.get(filePath)?.push(newFileNode)
 
-        this.graph.addEdge(fileNode, newFileNode, {eventType: 'write', event: event, color: 'blue'})
-        this.graph.addEdge(processNode, newFileNode, {eventType: 'write', event: event, color: 'blue'})
+        this.graph.addEdge(fileNode, newFileNode, {event: event, color: 'blue'})
+        this.graph.addEdge(processNode, newFileNode, {event: event, color: 'blue'})
     }
 
 
@@ -323,6 +321,23 @@ class DataflowGraph {
             this.excludedNodes.add(node)
             this.setNodeVersionsVisibility(objectName, false)
         }
+    }
+
+    resetColoring() {
+        this.graph.forEachEdge((edge, attr) => {
+            const event = attr.event
+            if (!event) return
+
+            if (event instanceof WriteEvent) {
+                this.graph.setEdgeAttribute(edge, 'color', 'blue')
+            } else if (event instanceof ExitReadEvent) {
+                this.graph.setEdgeAttribute(edge, 'color', 'green')
+            }
+        })
+
+        this.graph.forEachNode((node, _attr) => {
+            this.graph.removeNodeAttribute(node, 'color')
+        });
     }
 }
 
