@@ -57,7 +57,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
 
         let bgColor = getButtonBgColor(event)
         const content = ipcTraceGraph.getEventDescription(event)
-        const originalIndex = ipcTraceGraph.eventIndexLookup.get(event)
+        const originalIndex = event.id
 
         return (
             <li key={originalIndex} className='flex flex-row'>

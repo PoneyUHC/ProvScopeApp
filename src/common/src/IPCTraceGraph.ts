@@ -25,29 +25,23 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     hiddenNodes: Set<string>
     hiddenEvents: Set<Event>
 
-    eventFilenameLookup: Map<Event, string>
-    eventIndexLookup: Map<Event, number>
-
     // shouldInit is used to make more efficient copies
     private constructor(ipcTrace: IPCTrace, shouldInit: boolean) {
         this.ipcTrace = ipcTrace
         this.graph = new DirectedGraph()
         this.selectedNode = ipcTrace.events[0].process.getUUID()
         this.selectedEvent = ipcTrace.events[0]
-        this.eventFilenameLookup = new Map<Event, string>()
-        this.eventIndexLookup = new Map<Event, number>()
         this.hiddenNodes = new Set<string>()
         this.hiddenEvents = new Set<Event>()
         this.traceName = ipcTrace.filename.split('/').pop() || ""
 
         if ( shouldInit ) {
             this.graph = this.computeGraphFromTrace()
-            this.precomputeEventFilenames()
-            this.applyUntilEvent(ipcTrace.events[0])
 
-            for (const event of ipcTrace.events) {
-                this.eventIndexLookup.set(event, ipcTrace.events.indexOf(event))
-            }
+            this.setEventFilepaths()
+            this.setEventIDs()
+
+            this.applyUntilEvent(ipcTrace.events[0])
         }
     }
 
@@ -61,8 +55,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     clone (): IPCTraceGraph {
         const other = new IPCTraceGraph(this.ipcTrace, false)
         other.graph = this.graph.copy()
-        other.eventFilenameLookup = this.eventFilenameLookup
-        other.eventIndexLookup = this.eventIndexLookup
         
         other.selectedEvent = this.selectedEvent
         other.selectedNode = this.selectedNode
@@ -84,16 +76,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     }
 
 
-    getTrace = (): Readonly<IPCTrace> => {
-        return this.ipcTrace
-    }
-
-
-    getHiddenNodes(): Set<string> {
-        return this.hiddenNodes
-    }
-
-
     hideNode(node: string) {
         this.hiddenNodes.add(node)
         this.graph.setNodeAttribute(node, 'hidden', true)
@@ -103,16 +85,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     showNode(node: string) {
         this.hiddenNodes.delete(node)
         this.graph.setNodeAttribute(node, 'hidden', false)
-    }
-
-
-    getHiddenEvents(): Set<Event> {
-        return this.hiddenEvents
-    }
-
-
-    isNodeVisible(node: string): boolean {
-        return ! this.hiddenNodes.has(node)
     }
 
 
@@ -246,15 +218,14 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         const clone = this.clone()
         const events = clone.getEvents()
 
-        //const filename = this.ipcTrace.filename.split('/').pop() || ""
-        clone.traceName = `${this.traceName} `+ "_" + this.eventIndexLookup.get(targetEvent)!.toString()
+        clone.traceName = `${this.traceName} `+ "_" + targetEvent.id.toString()
         for( const event of events ) {
             if ( ! backwardEvents.includes(event) ){
                 clone.hideEvent(event)
             }
         }
-        return clone
 
+        return clone
     }
 
 
@@ -360,27 +331,36 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     }
 
 
-    precomputeEventFilenames() {
+    setEventFilepaths() {
 
         const tmpGraph = this.graph.copy()
         IPCTraceGraph.cleanGraph(tmpGraph)
 
         for (const event of this.ipcTrace.events) {
-            const filename1 = IPCTraceGraph.getEventFilename(event as FSEvent, tmpGraph)
-            this.applyEventToGraph(event as FSEvent, tmpGraph)
-            const filename2 = IPCTraceGraph.getEventFilename(event as FSEvent, tmpGraph)
-            this.eventFilenameLookup.set(event, filename1 || filename2 || "Error")
+            if ( ! (event instanceof FSEvent) ) {
+                console.error(`Can only set filename for FSEvent, got ${event}`)
+                continue
+            }
+            const filename1 = IPCTraceGraph.getEventFilename(event, tmpGraph)
+            this.applyEventToGraph(event, tmpGraph)
+            const filename2 = IPCTraceGraph.getEventFilename(event, tmpGraph)
+            event.filepath = filename1 || filename2 || "Error"
         }
-
-        
     }
 
-    
+
+    setEventIDs() {
+        for (const [id, event] of this.ipcTrace.events.entries()) {
+            event.id = id;
+        }
+    }
+
+
     toJSON() {
 
         const removeFile = (path: string, ipcTrace: IPCTrace) => {
             ipcTrace.files = ipcTrace.files.filter(f => f.path !== path)
-            ipcTrace.events = ipcTrace.events.filter(e => this.eventFilenameLookup.get(e) !== path)
+            ipcTrace.events = ipcTrace.events.filter(e => (e as FSEvent).filepath !== path)
         }
 
         const removeProcess = (processUUID: string, ipcTrace: IPCTrace) => {
@@ -414,8 +394,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             return "Error: not a FSEvent"
         }
 
-        const filename = this.eventFilenameLookup.get(event) || "Error"
-        return `${processUUID} ${event.getKeyword()} ${filename}`
+        return `${processUUID} ${event.getKeyword()} ${event.filepath}`
     }
 
 
@@ -444,14 +423,6 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     clearHighlights() {
         for (const n of this.graph.nodes()) {
             this.graph.setNodeAttribute(n, 'highlighted', false)
-        }
-    }
-
-    setNodeVisibility(node: string, visible: boolean) {
-        if ( visible ) {
-            this.showNode(node)
-        } else {
-            this.hideNode(node)
         }
     }
 }

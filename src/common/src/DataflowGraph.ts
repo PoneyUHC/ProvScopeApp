@@ -9,7 +9,6 @@ import { CausalLink, EventPattern, FollowUpCL, PatternValue } from './causality'
 class DataflowGraph {
 
     graph: DirectedGraph
-    ipcTrace: IPCTrace
     events: Event[]
     versions: Map<string, number>
     nodes: Map<string, string[]>
@@ -20,7 +19,6 @@ class DataflowGraph {
 
     constructor(trace: Readonly<IPCTrace>) {
         this.graph = new DirectedGraph()
-        this.ipcTrace = trace
         this.events = []
         this.versions = new Map<string, number>()
         this.nodes = new Map<string, string[]>()
@@ -59,7 +57,7 @@ class DataflowGraph {
         for (const node of this.graph.nodes()) {
             
             const event = this.graph.getNodeAttribute(node, 'event')
-            const x = this.ipcTrace.events.indexOf(event) * 5
+            const x = this.events.indexOf(event) * 5
 
             const objectName = this.graph.getNodeAttribute(node, 'objectName')
             const y = Array.from(this.nodes.keys()).indexOf(objectName) * 50
@@ -68,7 +66,6 @@ class DataflowGraph {
             this.graph.setNodeAttribute(node, 'y', y)
         }
     }
-
 
 
     loadTrace(trace: IPCTrace) {
@@ -126,16 +123,17 @@ class DataflowGraph {
         this.computeCoords()
     }
 
+
     loadEvents(traceGraph: IPCTraceGraph) {
         
         const allEvent = traceGraph.getEvents()
 
         for (const event of allEvent) {
             if (event instanceof ExitReadEvent) {
-                this.addReadEvent(event, traceGraph)
+                this.addReadEvent(event)
                 this.events.push(event)
             } else if (event instanceof WriteEvent) {
-                this.addWriteEvent(event, traceGraph)
+                this.addWriteEvent(event)
                 this.events.push(event)
             } else {
                 console.log(`${event} not handled by DataflowGraph`)
@@ -143,11 +141,12 @@ class DataflowGraph {
         }
     }
 
-    addReadEvent(event: ExitReadEvent, traceGraph: IPCTraceGraph) {
+    
+    addReadEvent(event: ExitReadEvent) {
         
         const processUUID = event.process.getUUID()
-        const filePath = traceGraph.eventFilenameLookup.get(event)
-        const id = traceGraph.eventIndexLookup.get(event)
+        const filePath = event.filepath
+        const id = event.id
         if (!filePath) {
             console.error(`File not found for event`)
             console.error(event)
@@ -194,11 +193,11 @@ class DataflowGraph {
         this.graph.addEdge(processNode, newProcessNode, {eventType: 'read', event: event, color: 'green'})
     }
 
-    
-    addWriteEvent(event: WriteEvent, traceGraph: IPCTraceGraph) {
+
+    addWriteEvent(event: WriteEvent) {
         const processUUID = event.process.getUUID()
-        const filePath = traceGraph.eventFilenameLookup.get(event)
-        const id = traceGraph.eventIndexLookup.get(event)
+        const filePath = event.filepath
+        const id = event.id
         if (!filePath) {
             console.error(`File not found for event`)
             console.error(event)
@@ -210,7 +209,7 @@ class DataflowGraph {
         const processNodes = this.nodes.get(processUUID)
         const processNode = processNodes ? processNodes[processNodes.length - 1] : null
         if (!fileNode || !processNode) {
-            console.log(traceGraph.eventFilenameLookup.get(event))
+            console.log(event.filepath)
             console.error(event)
             return
         }

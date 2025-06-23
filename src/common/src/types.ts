@@ -180,11 +180,13 @@ export abstract class Event {
     timestamp: number
     process: Process
     eventType: string
+    id: number
 
     constructor(timestamp: number, process: Process) {
         this.timestamp = timestamp
         this.process = process
         this.eventType = this.constructor.name
+        this.id = -1 // Placeholder for unique ID, can be set later
     }
 
     abstract getKeyword(): string
@@ -194,10 +196,12 @@ export abstract class Event {
 export abstract class FSEvent extends Event {
 
     fd: number
+    filepath: string
 
     constructor(timestamp: number, process: Process, fd: number) {
         super(timestamp, process)
         this.fd = fd
+        this.filepath = "TBD" // Placeholder, can be set later
     }
 }
 
