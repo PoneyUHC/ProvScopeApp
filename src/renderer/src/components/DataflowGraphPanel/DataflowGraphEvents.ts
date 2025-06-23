@@ -64,6 +64,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
     const onDownNode = (e: SigmaNodeEventPayload) => {
 
         const isShiftPressed = (e.event.original as MouseEvent).shiftKey;
+        const isAltPressed = (e.event.original as MouseEvent).altKey;
         const isLeftMouseButtonPressed = (e.event.original as MouseEvent).button === 0;
         const currentNode = e.node;
 
@@ -76,6 +77,17 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
         // case where we click on a node not selected
         selectSingleNode(currentNode);
         
+        if (isAltPressed && isLeftMouseButtonPressed) {
+            //we search the objectName of the selected node
+            const selectedNode = sigma.getGraph().getNodeAttribute(e.node, 'objectName');
+
+            //filter the graph to have a list with only the familly of this node
+            const node_familly = sigma.getGraph().filterNodes((node) => { 
+                return sigma.getGraph().getNodeAttribute(node, 'objectName') === selectedNode });
+
+            clearSelection();
+            setSelectedNodes(node_familly);
+        }
 
         if ((e.event.original as MouseEvent).button === 2) {
             onRightClickNode(e)
@@ -165,7 +177,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ setSelectedNo
             mousemovebody: (e) => onMouseMove(e),
             upNode: () => onNodeMouseUp(),
             upStage: () => onStageMouseUp(),
-            mousedown: () => onMouseDown()
+            mousedown: () => onMouseDown(),
         });
     }, [registerEvents, sigma, draggedNode]);
 
