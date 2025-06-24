@@ -8,9 +8,10 @@ import { MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigm
 interface DataflowGraphEventsProps {
     showDataflowFrom: (node: string | null) => void;
     toggleNodeVersionsVisibility: (node: string) => void;
+    setDetailsEvent: React.Dispatch<React.SetStateAction<Event | null>>;
 }
 
-const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility }) => {
+const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility, setDetailsEvent }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -46,14 +47,18 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
     }
 
     const selectSingleNode = (node: string) => {
+
+        const graph = sigma.getGraph()
+
         setSelectedNodes(prevSelectedNodes => {
             if(!prevSelectedNodes.includes(node)){
                 
                 // Clear previous selection if the node is not already selected
                 for(const n of prevSelectedNodes) {
-                    sigma.getGraph().setNodeAttribute(n, 'highlighted', false);
+                    graph.setNodeAttribute(n, 'highlighted', false);
                 }
-                sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
+                graph.setNodeAttribute(node, 'highlighted', true);
+                setDetailsEvent(graph.getNodeAttribute(node, 'event'));
                 return [node];
             }
             return prevSelectedNodes;
@@ -155,7 +160,6 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
             // on fast node displacement, stage up might append when dragging a node
             // to differenciate between a node drag and a stage click, we check if draggedNode is set
             if ( ! draggedNode) {
-                console.warn("Stage up without dragged node, this should not happen");
                 clearSelection();
             }
             return null;
@@ -170,7 +174,6 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
     const onMouseDown = () => {
         if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
     }
-
 
     useEffect(() => {
         // Register the events
