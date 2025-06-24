@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+
 import { ControlsContainer } from '@react-sigma/core'
 
 import { Event } from "@common/types";
@@ -10,8 +10,9 @@ interface EventInfosPanelProps {
 
 
 const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
-    
-    useEffect(() => {
+
+    const modifyScrollBehavior = ( ref: HTMLDivElement ) => {
+
         const handleWheel = (e: WheelEvent) => {
             e.preventDefault()
             if (e.currentTarget instanceof HTMLElement) {
@@ -19,11 +20,8 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
             }
         }
 
-        const container = document.getElementById("horizontal-scroll-container")
-        container?.addEventListener("wheel", handleWheel, { passive: false })
-        return () => container?.removeEventListener("wheel", handleWheel)
-    }, [])
-
+        ref.addEventListener("wheel", handleWheel, { passive: false })
+    }
 
     if (!event) {
         return (
@@ -36,8 +34,11 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
     }
     
     return (
-        <ControlsContainer position="top-left" className="w-1/6">
-            <div id="horizontal-scroll-container" className="w-full p-4 bg-gray-100 rounded-lg shadow-md overflow-auto">
+        <ControlsContainer position="top-left" className="w-1/6 ">
+            <div 
+                ref={modifyScrollBehavior} 
+                className="w-full p-4 bg-gray-100 rounded-lg shadow-md overflow-auto"
+            >
                 {Object.entries(event).map(([key, value]) => {
 
                     if (value === null || value === undefined) {
@@ -53,7 +54,6 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
                 })}
             </div>
         </ControlsContainer>
-
     );
 };
 
