@@ -34,6 +34,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
             sigma.getGraph().setNodeAttribute(node, 'highlighted', false);
         });
         setDraggedNode(null);
+        setDetailsEvent(null);
     }
 
     const manageNodeSelection = (node: string) => {

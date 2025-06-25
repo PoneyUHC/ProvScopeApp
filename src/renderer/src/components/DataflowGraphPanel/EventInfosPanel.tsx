@@ -13,6 +13,8 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
 
     const modifyScrollBehavior = ( ref: HTMLDivElement ) => {
 
+        if (!ref) return;
+
         const handleWheel = (e: WheelEvent) => {
             e.preventDefault()
             if (e.currentTarget instanceof HTMLElement) {
