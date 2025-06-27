@@ -52,7 +52,7 @@ class DataflowGraph {
     }
 
 
-    computeCoords(){
+    computeCoords(objectNames: string[]) {
 
         for (const node of this.graph.nodes()) {
             
@@ -60,7 +60,7 @@ class DataflowGraph {
             const x = this.events.indexOf(event) * 5
 
             const objectName = this.graph.getNodeAttribute(node, 'objectName')
-            const y = Array.from(this.nodes.keys()).indexOf(objectName) * 50
+            const y = -objectNames.indexOf(objectName) * 50
 
             this.graph.setNodeAttribute(node, 'x', x)
             this.graph.setNodeAttribute(node, 'y', y)
@@ -120,7 +120,6 @@ class DataflowGraph {
         }
 
         this.loadEvents(traceGraph)
-        this.computeCoords()
     }
 
 
