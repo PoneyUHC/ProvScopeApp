@@ -3,20 +3,21 @@ import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useCallback, useEffect, useState } from "react";
 import { MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
+import { Event } from "@common/types";
 
 
 interface DataflowGraphEventsProps {
     showDataflowFrom: (node: string | null) => void;
     toggleNodeVersionsVisibility: (node: string) => void;
     setDetailsEvent: React.Dispatch<React.SetStateAction<Event | null>>;
+    selectedNodes: string[];
+    setSelectedNodes: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility, setDetailsEvent }) => {
+const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility, setDetailsEvent, selectedNodes, setSelectedNodes }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
-    const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
-    
     
     const addNodeToSelection = (node: string, prevSelectedNodes) => {
         sigma.getGraph().setNodeAttribute(node, 'highlighted', true);

@@ -1,7 +1,7 @@
 
-import { ControlsContainer } from '@react-sigma/core'
 
 import { Event } from "@common/types";
+import ResizableControlsContainer from './ResizableControlsContainer';
 
 
 interface EventInfosPanelProps {
@@ -11,41 +11,22 @@ interface EventInfosPanelProps {
 
 const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
 
-    const modifyScrollBehavior = ( ref: HTMLDivElement ) => {
-
-        if (!ref) return;
-
-        const handleWheel = (e: WheelEvent) => {
-            e.preventDefault()
-            if (e.currentTarget instanceof HTMLElement) {
-                e.currentTarget.scrollLeft += e.deltaY
-            }
-        }
-
-        ref.addEventListener("wheel", handleWheel, { passive: false })
-    }
+    let body: JSX.Element;
 
     if (!event) {
-        return (
-            <ControlsContainer position="top-left">
-                <div className="w-full h-full p-4 bg-gray-100 rounded-lg shadow-md">
-                    No event selected
-                </div>
-            </ControlsContainer>
-        );
-    }
-    
-    return (
-        <ControlsContainer position="top-left" className="w-1/6 ">
-            <div 
-                ref={modifyScrollBehavior} 
-                className="w-full p-4 bg-gray-100 rounded-lg shadow-md overflow-auto"
-            >
+        body = (
+            <div className='self-center h-full flex items-center justify-center overflow-hidden'> 
+                No event selected 
+            </div>
+        )
+    } else {
+        body = (
+            <div>
                 {Object.entries(event).map(([key, value]) => {
-
                     if (value === null || value === undefined) {
                         return null; // Skip null or undefined values
                     }
+
                     const json = JSON.stringify(value, null, 2)
 
                     return (
@@ -55,7 +36,17 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
                     );
                 })}
             </div>
-        </ControlsContainer>
+        )
+    }
+    
+    return (
+        <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-left'>
+            <div
+                className="w-full h-full bg-gray-100 rounded-lg shadow-md overflow-auto"
+            >
+                {body}
+            </div>
+        </ResizableControlsContainer>
     );
 };
 

@@ -19,6 +19,8 @@ import DataflowGraph from '@common/DataflowGraph';
 import EventInfosPanel from './EventInfosPanel';
 
 import { Event } from '@common/types';
+import PatternPanel from './PatternPanel';
+
 
 interface DataflowGraphPanelProps {
     className?: string;
@@ -31,6 +33,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [sigma, setSigma] = useState<Sigma | null>(null);
     const [isDirty, setIsDirty] = useState(false);
     const [detailsEvent, setDetailsEvent] = useState<Event | null>(null);
+    const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
     const toggleNodeVersionsVisibility = (node: string) => {
         dataflowGraph.toggleVisible(node)
@@ -109,9 +112,14 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                     showDataflowFrom={showDataflowFrom} 
                     toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
                     setDetailsEvent={setDetailsEvent}
+                    selectedNodes={selectedNodes}
+                    setSelectedNodes={setSelectedNodes}
                 />
 
                 <EventInfosPanel event={detailsEvent} />
+
+                <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
+
             </SigmaContainer>
         </div>
         
