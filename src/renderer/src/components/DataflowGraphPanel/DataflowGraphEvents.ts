@@ -1,7 +1,7 @@
 
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useCallback, useEffect, useState } from "react";
-import { MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
+import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
 import { Event } from "@common/types";
 
@@ -18,7 +18,8 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
-    
+    const [_downStageCameraState, setDownStageCameraState] = useState<CameraState | null>(null);
+
     const addNodeToSelection = (node: string, prevSelectedNodes) => {
         sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
         return [...prevSelectedNodes, node];
@@ -151,6 +152,11 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
     }
 
+    const onStageMouseDown = (_e: SigmaStageEventPayload) => {
+        const cameraState = sigma.getCamera().getState()
+        setDownStageCameraState( cameraState );
+    }
+
 
     const onStageMouseUp = (e: SigmaStageEventPayload) => {
         
@@ -158,15 +164,24 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
         if ( ! isLeftMouseButtonPressed ) return;
 
-        setDraggedNode(draggedNode => {    
-            // on fast node displacement, stage up might append when dragging a node
-            // to differenciate between a node drag and a stage click, we check if draggedNode is set
-            if ( ! draggedNode) {
-                clearSelection();
+        const currentState = sigma.getCamera().getState();
+
+        setDownStageCameraState( prevState => {
+
+            if ( ! prevState ) {
+                return null;
             }
-            return null;
-        })
+
+            const isCameraMoved = currentState.x !== prevState.x || currentState.y !== prevState.y;
+            if ( ! isCameraMoved ) {
+                clearSelection();
+                return prevState; 
+            }
+
+            return null; 
+        });
     }
+
 
     const onRightClickStage = (_e: SigmaStageEventPayload) => {
         showDataflowFrom(null);
@@ -183,6 +198,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
             downNode: (e) => onDownNode(e),
             mousemovebody: (e) => onMouseMove(e),
             upNode: () => onNodeMouseUp(),
+            downStage: (e) => onStageMouseDown(e),
             upStage: (e) => onStageMouseUp(e),
             rightClickStage: (e) => onRightClickStage(e),
             mousedown: () => onMouseDown(),
