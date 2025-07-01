@@ -20,12 +20,6 @@ import EventInfosPanel from './EventInfosPanel';
 
 import { Event } from '@common/types';
 import DragDropListPanel from '../DragDropListPanel';
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-//import SlidingPanel from '../SlidingPanel';
 
 
 
@@ -182,33 +176,27 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
                 <EventInfosPanel event={detailsEvent} />
             </SigmaContainer>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            
+            <div className="flex flex-col gap-2" >
                 <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
 
-                <Divider sx={{ my: 2 }} />
+                <hr className="my-4 border-gray-300" />
 
-                <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
-                    <List sx={{ maxHeight: 300, overflowY: 'auto', position: 'relative', pr: 1 }} >
+                <div className="w-full max-w-[360px] bg-white" >
+                    <div className="max-h-[300px] overflow-y-auto relative pr-4" >
                         {removedItems.map(({ name, index }) => (
-                            <ListItem key={name} sx={{ display: 'flex', justifyContent: 'space-between', bgcolor: '#f9f9f9', mb: 1, borderRadius: 1,}}>
+                            <li className="flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
                                 <span>{name}</span>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    onClick={() => onRestore(name, index)}
-                                    sx={{
-                                        bgcolor: '#d3d3d3', 
-                                        color: 'black','&:hover': {bgcolor: '#bfbfbf'},
-                                    }}
+                                <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
+                                        onClick={() => onRestore(name, index)} 
                                 >
                                     👁
-                                </Button>
-                            </ListItem>
+                                </button>
+                            </li>
                         ))}
-                    </List>
-                </Box>
-            </Box>
+                    </div>
+                </div>
+            </div>
         </div>
         
     )

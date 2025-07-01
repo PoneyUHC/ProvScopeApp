@@ -83,15 +83,8 @@ const DragDropListPanel: React.FC<DragDropListProps> = ({itemNames, onListChange
                                 >
                                     <div>{itemName}</div>
                                     
-                                    <button
-                                        onClick={() => onRemove(itemName, index)}
-                                        style={{
-                                            color: 'grey',
-                                            cursor: 'pointer',
-                                            marginLeft: 10,
-                                            fontWeight: 'bold',
-                                            fontSize: '20px',
-                                        }}
+                                    <button className="text-gray-500 cursor-pointer ml-2 font-bold text-xl"
+                                            onClick={() => onRemove(itemName, index)}
                                     >
                                         X
                                     </button>
