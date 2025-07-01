@@ -3,12 +3,13 @@ import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useCallback, useEffect, useState } from "react";
 import { MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
+import { Event } from "@common/types";
 
 
 interface DataflowGraphEventsProps {
     showDataflowFrom: (node: string | null) => void;
     toggleNodeVersionsVisibility: (node: string) => void;
-    setDetailsEvent: React.Dispatch<React.SetStateAction<Event | null>>;
+    setDetailsEvent: (e: Event | null) => void;
 }
 
 const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom, toggleNodeVersionsVisibility, setDetailsEvent }) => {

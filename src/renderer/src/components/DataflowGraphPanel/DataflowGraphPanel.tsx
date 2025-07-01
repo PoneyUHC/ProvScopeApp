@@ -37,10 +37,20 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [objectNames, setObjectNames] = useState<string[]>([]); //Array of objectName related to the graph lines
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
 
-    const toggleNodeVersionsVisibility = (node: string) => {
-        dataflowGraph.toggleVisible(node)
-        setIsDirty(true)
-    }
+
+    const getObjectNames = (): Set<string> => {
+        const graph = dataflowGraph.graph;
+        const objectNames = graph.mapNodes((node) => graph.getNodeAttribute(node, 'objectName'));
+        return new Set(objectNames)
+    };
+
+
+    useEffect(() => {
+        const newItems = Array.from(getObjectNames());
+        setObjectNames(newItems);
+        dataflowGraph.computeCoords(newItems);
+    }, []);
+
 
     useEffect(() => {
 
@@ -52,7 +62,13 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
         }
     }, [isDirty])
 
+
+    const toggleNodeVersionsVisibility = (node: string) => {
+        dataflowGraph.toggleVisible(node)
+        setIsDirty(true)
+    }
     
+
     const showDataflowFrom = (target: string | null) => {
 
         if ( !target ) {
@@ -89,29 +105,8 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
         })
     }
 
-    const getObjectNames = () => {
-        const uniqueObjectNames = new Set<string>();  
-        const graph = dataflowGraph.graph;
 
-        graph.forEachNode((node) => {
-            const currentObjectName = graph.getNodeAttribute(node, 'objectName');
-            if (currentObjectName) {
-                uniqueObjectNames.add(currentObjectName); 
-            }
-        });
-
-        return Array.from(uniqueObjectNames)
-    };
-
-    
-    useEffect(() => {
-        const newItems = getObjectNames();
-        setObjectNames(newItems);
-        dataflowGraph.computeCoords(newItems);
-    }, []);
-
-
-    const onListChanged = (newOrder) => {
+    const onListChanged = (newOrder: string[]) => {
         dataflowGraph.computeCoords(newOrder);
         setObjectNames(newOrder);
     };
@@ -180,21 +175,19 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
             <div className="flex flex-col gap-2" >
                 <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
 
-                <hr className="my-4 border-gray-300" />
-
-                <div className="w-full max-w-[360px] bg-white" >
-                    <div className="max-h-[300px] overflow-y-auto relative pr-4" >
-                        {removedItems.map(({ name, index }) => (
-                            <li className="flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
-                                <span>{name}</span>
-                                <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
-                                        onClick={() => onRestore(name, index)} 
-                                >
-                                    👁
-                                </button>
-                            </li>
-                        ))}
-                    </div>
+                <div className="w-full max-w-[360px] bg-white max-h-[300px] overflow-y-auto relative pr-4" >
+                {
+                    removedItems.map(({ name, index }) => (
+                        <li className="flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
+                            {name}
+                            <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
+                                    onClick={() => onRestore(name, index)} 
+                            >
+                                👁
+                            </button>
+                        </li>
+                    ))
+                }
                 </div>
             </div>
         </div>
