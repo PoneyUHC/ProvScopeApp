@@ -21,6 +21,7 @@ import EventInfosPanel from './EventInfosPanel';
 import { Event } from '@common/types';
 import PatternPanel from './PatternPanel';
 import DragDropListPanel from '../DragDropListPanel';
+import { Allotment } from 'allotment';
 
 
 interface DataflowGraphPanelProps {
@@ -142,62 +143,79 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
         setObjectNames(newList);
         setRemovedItems(prev => prev.filter(item => item.name !== name));
-    } 
+    }
+
+
+    const onDrag = () => {
+        setIsDirty(true);
+    }
 
 
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
-            <SigmaContainer 
-                ref={setSigma} 
-                graph={dataflowGraph.graph} 
-                settings={
-                    {
-                        renderLabels: false,
-                        allowInvalidContainer: true, 
-                        nodeProgramClasses: {
-                            square: NodeSquareProgram,
-                            circle: NodeCircleProgram,
+             <Allotment onDragEnd={onDrag}>
+                <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full">
+
+                    <SigmaContainer 
+                        ref={setSigma} 
+                        graph={dataflowGraph.graph} 
+                        settings={
+                            {
+                                renderLabels: false,
+                                allowInvalidContainer: true, 
+                                nodeProgramClasses: {
+                                    square: NodeSquareProgram,
+                                    circle: NodeCircleProgram,
+                                }
+                            }
+                        }>
+                        <ControlsContainer position={'bottom-right'}>
+                            <ZoomControl />
+                            <FullScreenControl />
+                        </ControlsContainer>
+                        <DataflowGraphEvents 
+                            showDataflowFrom={showDataflowFrom} 
+                            toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
+                            setDetailsEvent={setDetailsEvent}
+                            selectedNodes={selectedNodes}
+                            setSelectedNodes={setSelectedNodes}
+                        />
+
+                        <EventInfosPanel event={detailsEvent} />
+
+                        <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
+
+                    </SigmaContainer>
+                
+                </Allotment.Pane>
+
+                <Allotment.Pane minSize={200} preferredSize={"10%"}>
+
+                    <div className="flex flex-col gap-10 h-full" >
+
+                        <div className="h-1/2 overflow-auto">
+                            <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
+                        </div>
+
+                        <div className="w-full bg-white h-1/2 overflow-y-auto relative pr-4" >
+                        {
+                            removedItems.map(({ name, index }) => (
+                                <li className="w-full flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
+                                    {name}
+                                    <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
+                                            onClick={() => onRestore(name, index)} 
+                                    >
+                                        👁
+                                    </button>
+                                </li>
+                            ))
                         }
-                    }
-                }>
-                <ControlsContainer position={'bottom-right'}>
-                    <ZoomControl />
-                    <FullScreenControl />
-                </ControlsContainer>
-                <DataflowGraphEvents 
-                    showDataflowFrom={showDataflowFrom} 
-                    toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
-                    setDetailsEvent={setDetailsEvent}
-                    selectedNodes={selectedNodes}
-                    setSelectedNodes={setSelectedNodes}
-                />
+                        </div>
+                    </div>
 
-                <EventInfosPanel event={detailsEvent} />
-
-                <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
-
-            </SigmaContainer>
-            
-            <div className="flex flex-col gap-2" >
-                <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
-
-                <div className="w-full max-w-[360px] bg-white max-h-[300px] overflow-y-auto relative pr-4" >
-                {
-                    removedItems.map(({ name, index }) => (
-                        <li className="flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
-                            {name}
-                            <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
-                                    onClick={() => onRestore(name, index)} 
-                            >
-                                👁
-                            </button>
-                        </li>
-                    ))
-                }
-                </div>
-            </div>
+                </Allotment.Pane>
+            </Allotment>
         </div>
-        
     )
 }
 

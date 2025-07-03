@@ -27,7 +27,6 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
     };
 
     const graph = dataflowGraph.graph;
-
     
     let body: JSX.Element;
 
@@ -40,12 +39,22 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
     } else {
         body = (
             <div>
-                {selectedNodes.map(node => (
-                    <div key={node} className="mb-4 p-2 border rounded bg-white shadow-sm overflow-x-scroll">
-                        <p className="font-bold mb-2">{node}</p>
-                        {
-                            Object.entries(graph.getNodeAttribute(node, 'event')).map(([field, value]) => {
-                                
+                {selectedNodes.map(node => {
+                    const event = graph.getNodeAttribute(node, 'event');
+                    if (!event) {
+                        return (
+                            <div key={node} className="mb-4 p-2 border rounded bg-white shadow-sm">
+                                <p className="font-bold mb-2">{node}</p>
+                                <p className="text-red-500">No event data available</p>
+                            </div>
+                        );
+                    }
+                    return (
+                        <div key={node} className="mb-4 p-2 border rounded bg-white shadow-sm overflow-x-scroll">
+                            <p className="font-bold mb-2">{node}</p>
+                            {
+                                Object.entries(event).map(([field, value]) => {
+
                                 const json = JSON.stringify(value, null, 2)
                                 
                                 return (
@@ -63,9 +72,10 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
                                     </div>
                                 );
                             })
-                        }
-                    </div>
-                ))}
+                            }
+                        </div>
+                    );
+                })}
             </div>
         );
     }

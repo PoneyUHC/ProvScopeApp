@@ -30,8 +30,7 @@ const DragDropListPanel: React.FC<DragDropListProps> = ({ itemNames, onListChang
     const getListStyle = (_isDraggingOver: boolean): React.CSSProperties => ({
         background: "lightgrey",
         position: 'relative',
-        maxHeight: '300px',
-        overflowY: 'auto'
+        overflowY: 'auto',
     });
 
 
