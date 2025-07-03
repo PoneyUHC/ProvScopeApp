@@ -20,6 +20,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@react-sigma/core": "^5.0.2",
     "@sigma/node-square": "^3.0.0",
     "@tailwindcss/vite": "^4.0.13",

@@ -20,6 +20,7 @@ import EventInfosPanel from './EventInfosPanel';
 
 import { Event } from '@common/types';
 import PatternPanel from './PatternPanel';
+import DragDropListPanel from '../DragDropListPanel';
 
 
 interface DataflowGraphPanelProps {
@@ -34,15 +35,26 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [isDirty, setIsDirty] = useState(false);
     const [detailsEvent, setDetailsEvent] = useState<Event | null>(null);
     const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+    const [objectNames, setObjectNames] = useState<string[]>([]);
+    const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
 
-    const toggleNodeVersionsVisibility = (node: string) => {
-        dataflowGraph.toggleVisible(node)
-        setIsDirty(true)
-    }
+
+    const getObjectNames = (): Set<string> => {
+        const graph = dataflowGraph.graph;
+        const objectNames = graph.mapNodes((node) => graph.getNodeAttribute(node, 'objectName'));
+        return new Set(objectNames)
+    };
+
+
+    useEffect(() => {
+        const newItems = Array.from(getObjectNames());
+        setObjectNames(newItems);
+        dataflowGraph.computeCoords(newItems);
+    }, []);
+
 
     useEffect(() => {
 
-        if (!dataflowGraph) return;
         if (!sigma) return;
 
         if (isDirty) {
@@ -51,7 +63,13 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
         }
     }, [isDirty])
 
+
+    const toggleNodeVersionsVisibility = (node: string) => {
+        dataflowGraph.toggleVisible(node)
+        setIsDirty(true)
+    }
     
+
     const showDataflowFrom = (target: string | null) => {
 
         if ( !target ) {
@@ -89,6 +107,44 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     }
 
 
+    const onListChanged = (newOrder: string[]) => {
+        dataflowGraph.computeCoords(newOrder);
+        setObjectNames(newOrder);
+    };
+
+
+    const onRemove = (name: string, index: number) => {
+        const newList = [...objectNames];
+        newList.splice(index, 1);
+
+        dataflowGraph.graph.forEachNode( (node: string) => {
+            const currentObjectName = dataflowGraph.graph.getNodeAttribute(node, 'objectName');
+            if(currentObjectName === name){
+                dataflowGraph.graph.setNodeAttribute(node, 'hidden', true)
+            }
+        })
+
+        setObjectNames(newList);
+        setRemovedItems(prev => [...prev, { name, index }]);
+    }
+
+
+    const onRestore = (name: string, index: number) => {
+        const safeIndex = Math.min(index, objectNames.length);
+        const newList = [...objectNames.slice(0, safeIndex), name, ...objectNames.slice(safeIndex)]; //we add the name at it's original place 
+
+        dataflowGraph.graph.forEachNode( (node: string) => {
+            const currentObjectName = dataflowGraph.graph.getNodeAttribute(node, 'objectName');
+            if(currentObjectName === name){
+                dataflowGraph.graph.setNodeAttribute(node, 'hidden', false)
+            }
+        })
+
+        setObjectNames(newList);
+        setRemovedItems(prev => prev.filter(item => item.name !== name));
+    } 
+
+
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
             <SigmaContainer 
@@ -121,6 +177,25 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                 <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
 
             </SigmaContainer>
+            
+            <div className="flex flex-col gap-2" >
+                <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
+
+                <div className="w-full max-w-[360px] bg-white max-h-[300px] overflow-y-auto relative pr-4" >
+                {
+                    removedItems.map(({ name, index }) => (
+                        <li className="flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
+                            {name}
+                            <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
+                                    onClick={() => onRestore(name, index)} 
+                            >
+                                👁
+                            </button>
+                        </li>
+                    ))
+                }
+                </div>
+            </div>
         </div>
         
     )
