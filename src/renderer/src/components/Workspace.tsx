@@ -24,18 +24,19 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
     
     const [isGraphLoaded, setIsGraphLoaded] = useState<boolean>(false);
     const { loadTraceGraph } = useContext<IPCTraceGraphContextType>(IPCTraceGraphContext)
+    const [isDirty, setIsDirty] = useState<boolean>(false);
+
+    
+    const onDrag = () => {
+        setIsDirty(true);
+    }
+
 
     useEffect(() => {
         loadTraceGraph(ipcTraceGraph)
         setIsGraphLoaded(true)
-    }, [ipcTraceGraph])
-
-
-    const [isDirty, setIsDirty] = useState<boolean>(false);
-
-    const onDrag = () => {
         setIsDirty(true);
-    }
+    }, [ipcTraceGraph])
 
     if ( ! isGraphLoaded ){
         return (
@@ -58,7 +59,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
                         className={`h-full ${borderStyles}`}
                     />
                 </Allotment.Pane>
-                <Allotment.Pane minSize={200} preferredSize={"70%"}>
+                <Allotment.Pane minSize={200} preferredSize={"70%"} className="w-full">
                     <GraphPanel
                         className={`h-full ${borderStyles}`}
                         isDirty={isDirty}

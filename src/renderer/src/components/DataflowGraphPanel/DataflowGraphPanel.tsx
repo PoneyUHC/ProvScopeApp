@@ -154,7 +154,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
              <Allotment onDragEnd={onDrag}>
-                <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full">
+                <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full w-full">
 
                     <SigmaContainer 
                         ref={setSigma} 
