@@ -2,6 +2,7 @@
 import { app, shell, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { GhidraCommunication } from "../common/src/software/ghidra/GhidraCommunication";
 
 import getMenu from './menuBuilder'
 import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
@@ -62,6 +63,10 @@ app.whenReady().then(() => {
         // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
+
+    const ghidra_communication = new GhidraCommunication('ws://localhost:8765');
+    ghidra_communication.webSocketConnection();
+    setTimeout(() => { ghidra_communication.sendMessage("Hello from Electron App") }, 1000);
 })
 
 

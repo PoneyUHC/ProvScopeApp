@@ -35,7 +35,8 @@
     "postcss": "^8.5.3",
     "re-resizable": "^6.11.2",
     "react-tabs": "^6.1.0",
-    "sigma": "^3.0.1"
+    "sigma": "^3.0.1",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
