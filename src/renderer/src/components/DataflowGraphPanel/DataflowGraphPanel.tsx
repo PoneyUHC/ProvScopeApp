@@ -22,6 +22,7 @@ import { Event } from '@common/types';
 import PatternPanel from './PatternPanel';
 import DragDropListPanel from '../DragDropListPanel';
 import { Allotment } from 'allotment';
+import { EventPattern } from '@common/causality';
 
 
 interface DataflowGraphPanelProps {
@@ -38,6 +39,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
+    const [patterns, setPatterns] = useState<Set<EventPattern[]>>(new Set());
 
 
     const getObjectNames = (): Set<string> => {
@@ -151,6 +153,11 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     }
 
 
+    const addPatternGroup = (patternGroup: EventPattern[]) => {
+        setPatterns(prev => new Set([...prev, patternGroup]));
+    }
+
+
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
              <Allotment onDragEnd={onDrag}>
@@ -183,7 +190,11 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
                         <EventInfosPanel event={detailsEvent} />
 
-                        <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
+                        <PatternPanel 
+                            dataflowGraph={dataflowGraph} 
+                            selectedNodes={selectedNodes} 
+                            addPatternGroup={addPatternGroup}
+                        />
 
                     </SigmaContainer>
                 

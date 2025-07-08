@@ -5,9 +5,9 @@ import DataflowGraph from './DataflowGraph';
 
 export class PatternValue {
 
-    isWildcard: boolean;
     value: unknown;
-
+    isWildcard: boolean;
+    
     constructor(value: unknown, isWildcard: boolean = false) {
         this.value = value;
         this.isWildcard = isWildcard;
