@@ -191,28 +191,30 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
                 <Allotment.Pane minSize={200} preferredSize={"10%"}>
 
-                    <div className="flex flex-col gap-10 h-full" >
-
-                        <div className="h-1/2 overflow-auto">
-                            <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
-                        </div>
-
-                        <div className="w-full bg-white h-1/2 overflow-y-auto relative pr-4" >
-                        {
-                            removedItems.map(({ name, index }) => (
-                                <li className="w-full flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
-                                    {name}
-                                    <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
-                                            onClick={() => onRestore(name, index)} 
-                                    >
-                                        👁
-                                    </button>
-                                </li>
-                            ))
-                        }
-                        </div>
-                    </div>
-
+                    <Allotment vertical={true}>
+                        <Allotment.Pane minSize={200} preferredSize={"70%"}>
+                            <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
+                                <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
+                            </div>
+                        </Allotment.Pane>
+                        <Allotment.Pane minSize={200} preferredSize={"30%"} className="w-full h-full overflow-auto">
+                            <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
+                                {
+                                    removedItems.map(({ name, index }) => (
+                                        <div className="w-full flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
+                                            {name}
+                                            <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
+                                                    onClick={() => onRestore(name, index)} 
+                                            >
+                                                👁
+                                            </button>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </Allotment.Pane>
+                    </Allotment>
+        
                 </Allotment.Pane>
             </Allotment>
         </div>
