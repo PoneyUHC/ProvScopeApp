@@ -16,6 +16,7 @@ interface PatternPanelProps {
 const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNodes, addPatternGroup }) => {
 
     const [lockedFields, setLockedFields] = useState<Map<Event, string[]>>(new Map());
+    const [description, setDescription] = useState<string>('');
 
     const toggleLock = (event: Event, field: string) => {
         setLockedFields(prev => {
@@ -33,6 +34,7 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
             console.warn("No nodes selected to create a pattern group.");
             return;
         }
+
         const patternGroup: EventPattern[] = [];
 
         for (const node of selectedNodes) {
@@ -112,6 +114,38 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
         );
     }
 
+    let createButton: JSX.Element;
+    if (description.trim() === '') {
+        createButton = (
+            <button
+                disabled={true}
+                title="Description cannot be empty"
+                className="w-full bg-blue-300 text-white py-2 mt-1 rounded cursor-not-allowed opacity-60"
+            >
+                Create Pattern Group
+            </button>
+        );
+
+    } else if (selectedNodes.length === 0) {
+        createButton = (
+            <button
+                disabled={true}
+                title="No nodes selected"
+                className="w-full bg-blue-300 text-white py-2 mt-1 rounded cursor-not-allowed opacity-60"
+            >
+                Create Pattern Group
+            </button>
+        );
+    } else {
+        createButton = (
+            <button
+                onClick={createPatternGroup}
+                className="w-full bg-blue-500 text-white py-2 mt-1 rounded hover:bg-blue-600 transition-colors"
+            >
+                Create Pattern Group
+            </button>
+        );
+    }
 
     return (
         <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-right'>
@@ -122,12 +156,13 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
                 >
                     {body}
                 </div>
-                <button
-                    onClick={createPatternGroup}
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
-                >
-                    Create Pattern Group
-                </button>
+                <input
+                    type="text"
+                    placeholder="Description ..."
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-3 py-2 mt-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {createButton}
             </div>
         </ResizableControlsContainer>
     );
