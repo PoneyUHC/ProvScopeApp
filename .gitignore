@@ -13,3 +13,4 @@ my_instance.inst
 my_solution.sol
 
 venv/
+__pycache__/

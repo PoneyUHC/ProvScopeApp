@@ -12,7 +12,7 @@ import { NodeSquareProgram } from "@sigma/node-square";
 import { NodeCircleProgram } from "sigma/rendering"
 
 import DataflowGraphEvents from '@renderer/components/DataflowGraphPanel/DataflowGraphEvents';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState} from 'react';
 
 import Sigma from 'sigma';
 import DataflowGraph from '@common/DataflowGraph';
@@ -23,6 +23,7 @@ import PatternPanel from './PatternPanel';
 import DragDropListPanel from '../DragDropListPanel';
 import { Allotment } from 'allotment';
 import { EventPattern, PatternGroup } from '@common/causality';
+import { GhidraCommunication } from '@common/software/ghidra/GhidraCommunication';
 
 
 interface DataflowGraphPanelProps {
@@ -40,6 +41,8 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
+    
+    const ghidraCommunication = useRef<GhidraCommunication>(window.api.getGhidraCommunicationInstance())
 
 
     const getObjectNames = (): Set<string> => {

@@ -68,13 +68,40 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
         })
     }
 
+    let gKeyPressed = false;
+
+    document.addEventListener("keydown", (event) => {
+        if (event.code === "KeyG") {
+            gKeyPressed = true;
+        }
+    });
+
+    document.addEventListener("keyup", (event) => {
+        if (event.code === "KeyG") {
+            gKeyPressed = false;
+        }
+    });
+
+    const isGKeyPressed = (): boolean => {
+        return gKeyPressed;
+    };
+
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
 
         const isShiftPressed = (e.event.original as MouseEvent).shiftKey;
         const isAltPressed = (e.event.original as MouseEvent).altKey;
+        const gKeyPressed = isGKeyPressed();
         const isLeftMouseButtonPressed = (e.event.original as MouseEvent).button === 0;
         const currentNode = e.node;
+
+        if( gKeyPressed && isLeftMouseButtonPressed){
+            //collect the adress and the file path
+
+            //call ghidraCommunication instance with the address
+            //ghidraCommunication!.send(address)
+            //ghidraCommunication!.send(filePath)
+        }
 
         if (isShiftPressed && isLeftMouseButtonPressed) { // Shift + Left Click
             //we add or delete a node from selectedNodes

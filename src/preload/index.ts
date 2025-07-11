@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { GhidraCommunication } from '../common/src/software/ghidra/GhidraCommunication'
 
 // Custom APIs for renderer
 const api = {
@@ -9,6 +10,7 @@ const api = {
     offRequestExportTrace: (callback: () => void) => ipcRenderer.off('requestExportTrace', callback),
     offAll: () => ipcRenderer.removeAllListeners(),
     exportTrace: (filename: string, content: string) => ipcRenderer.send('exportTrace', filename, content),
+    getGhidraCommunicationInstance: () => GhidraCommunication.getInstance()
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -3,42 +3,57 @@ import WebSocket from 'ws';
 
 export class GhidraCommunication {
     private url: string;
-    private socket: WebSocket | null = null;
+    private socket: WebSocket | null;
+    private connected: boolean;
+    private static instance: GhidraCommunication | null = null
 
-    constructor(url: string){
-        this.url = url;
+    private constructor() {
+        this.url = "ws://localhost:8765";
+        this.socket = null;
+        this.connected = false;
+
+        this.connect();
     }
 
-    webSocketConnection(): void {
+    static getInstance(): GhidraCommunication {
+        if( GhidraCommunication.instance === null ) {
+            GhidraCommunication.instance = new GhidraCommunication()
+        }
+
+        return GhidraCommunication.instance
+    }
+
+    isConnected(): boolean {
+        return this.connected;
+    }
+
+    private connect(): void {
         this.socket = new WebSocket(this.url);
 
         this.socket.on('open', () => { console.log("Connected to the WebSocket \n") });
 
-        this.socket.on('message', (data: WebSocket.RawData)  => {
+        this.socket.on('message', (data: WebSocket.RawData) => {
             const message = data.toString();
-            console.log("Message received from the WebSocket server : ",message);
-            this.isGhidraConnected(message);
+            console.log("Message received from the WebSocket server : ", message);
+            if (this.parseMessage(message)) {
+                this.connected = true;
+            }
         });
     }
 
-    sendMessage(message: string){
-        if(this.socket && this.socket.readyState === WebSocket.OPEN){
+    send(message: string) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(message);
         }
     }
 
-    closeWebSocket(){ 
+    close() {
         if (this.socket) {
             this.socket.close();
         }
-    }  
+    }
 
-    isGhidraConnected(data: WebSocket.RawData){
-        if(data.toString() === "connected"){
-            //show green signal light
-        }
-        else{
-            //show red signal light
-        }
+    parseMessage(data: WebSocket.RawData): boolean {
+        return (data.toString() === "connected");
     }
 }

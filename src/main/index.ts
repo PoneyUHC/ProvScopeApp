@@ -7,6 +7,7 @@ import { GhidraCommunication } from "../common/src/software/ghidra/GhidraCommuni
 import getMenu from './menuBuilder'
 import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
 
+export let ghidraCommunication: GhidraCommunication | null = null 
 
 function createWindow(): void {
 
@@ -64,9 +65,8 @@ app.whenReady().then(() => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
 
-    const ghidra_communication = new GhidraCommunication('ws://localhost:8765');
-    ghidra_communication.webSocketConnection();
-    setTimeout(() => { ghidra_communication.sendMessage("Hello from Electron App") }, 1000);
+    ghidraCommunication = GhidraCommunication.getInstance()
+    setTimeout(() => { ghidraCommunication!.send("00101200") }, 1000);
 })
 
 
