@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import DataflowGraph from '@common/DataflowGraph';
 import ResizableControlsContainer from './ResizableControlsContainer';
 
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
+
 import { Event } from '@common/types';
-import { PatternValue, EventPattern } from '@common/causality';
+import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
 
 
 interface PatternPanelProps {
     dataflowGraph: DataflowGraph,
-    selectedNodes: string[]
-    addPatternGroup: (patternGroup: EventPattern[]) => void
+    selectedNodes: string[],
+    patternGroups: Set<PatternGroup>,
+    addPatternGroup: (patternGroup: PatternGroup) => void
+    removePatternGroup: (patternGroup: PatternGroup) => void
 }
 
 
-const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNodes, addPatternGroup }) => {
+const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNodes, patternGroups, addPatternGroup, removePatternGroup }) => {
 
     const [lockedFields, setLockedFields] = useState<Map<Event, string[]>>(new Map());
     const [description, setDescription] = useState<string>('');
@@ -56,8 +61,7 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
             patternGroup.push(pattern);
         }
 
-        console.log("Created pattern group:", patternGroup);
-        addPatternGroup(patternGroup);
+        addPatternGroup(new PatternGroup(patternGroup, description));
     };
 
     const graph = dataflowGraph.graph;
@@ -114,6 +118,8 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
         );
     }
 
+
+
     let createButton: JSX.Element;
     if (description.trim() === '') {
         createButton = (
@@ -147,22 +153,67 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
         );
     }
 
+
+    const getVisual = (patternGroup: PatternGroup): React.ReactNode => {
+        return (
+            <>
+                <div key={JSON.stringify(patternGroup)} className="mb-4 p-2 border rounded bg-white shadow-sm">
+                    <p className="font-bold mb-2">{patternGroup.name}</p>
+                    {Array.from(patternGroup.patterns).map((pattern, index) => (
+                        <div key={index} className="mb-2">
+                            {Array.from(pattern.pattern.entries()).filter(([_field, value]) => (
+                                !value.isWildcard
+                            )).map(([field, value]) => (
+                                <div key={field}>
+                                    <span className="font-semibold">{field}:</span> {JSON.stringify(value.value)}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={() => removePatternGroup(patternGroup)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
+                >
+                    Remove Pattern Group
+                </button>
+            </>
+        );
+    };
+
+
     return (
         <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-right'>
             <div className='w-full h-full flex flex-col p-2 bg-gray-100 rounded-lg shadow-md overflow-x-hidden'>
+                <Tabs>
+                    <TabList>
+                        <Tab>New pattern</Tab>
+                        <Tab>Patterns</Tab>
+                    </TabList>
+                    <TabPanel>
+                        <div
+                            className="w-full flex-grow overflow-y-auto overflow-x-hidden"
+                        >
+                            {body}
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Description ..."
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-3 py-2 mt-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {createButton}
+                    </TabPanel>
+                    <TabPanel>
+                        <div className='overflow-y-auto'>
+                            {Array.from(patternGroups).map((patternGroup) => (
+                                getVisual(patternGroup)
+                            ))}
+                        </div>
+                    </TabPanel>
+                </Tabs>
 
-                <div
-                    className="w-full flex-grow overflow-y-auto overflow-x-hidden"
-                >
-                    {body}
-                </div>
-                <input
-                    type="text"
-                    placeholder="Description ..."
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3 py-2 mt-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {createButton}
+                
             </div>
         </ResizableControlsContainer>
     );

@@ -43,6 +43,18 @@ export class EventPattern {
 }
 
 
+export class PatternGroup {
+
+    patterns: EventPattern[];
+    name: string;
+
+    constructor(patterns: EventPattern[], name: string) {
+        this.patterns = patterns;
+        this.name = name;
+    }
+}
+
+
 export class ProcessVariable {
 
     name: string 
