@@ -1,8 +1,8 @@
 
 import DirectedGraph from 'graphology'
-import { ExitReadEvent, IPCTrace, WriteEvent, Event } from './types'
+import { ExitReadEvent, IPCTrace, WriteEvent, Event, Process } from './types'
 import { IPCTraceGraph } from './IPCTraceGraph'
-import { CausalLink, EventPattern, FollowUpCL, PatternValue } from './causality'
+import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './causality'
 
 
 
@@ -16,6 +16,7 @@ class DataflowGraph {
 
     eventCausalLinks: Map<Event, CausalLink[]>
     testCausalLink: CausalLink[]
+    testSource: EventPattern[]
 
     constructor(trace: Readonly<IPCTrace>) {
         this.graph = new DirectedGraph()
@@ -25,29 +26,29 @@ class DataflowGraph {
         this.excludedNodes = new Set<string>()
         this.eventCausalLinks = new Map<Event, CausalLink[]>()
 
-        this.testCausalLink = [new FollowUpCL([
+        const routerProcess = trace.processes.find(p => p.name === 'router.bin' && p.pid === 26607);
+        this.testCausalLink = [
+            new SourceTargetCL(
+                new EventPattern(new Map<string, PatternValue>([
+                    ['eventType', new PatternValue('ExitReadEvent')],
+                    ['process', new PatternValue(routerProcess)],
+                    ['filepath', new PatternValue('run/client1_r')],
+                ])),
+                new EventPattern(new Map<string, PatternValue>([
+                    ['eventType', new PatternValue('WriteEvent')],
+                    ['process', new PatternValue(routerProcess)],
+                    ['filepath', new PatternValue('run/logs_1')],
+                ]))
+            ),
+        ]
+
+        const clientProcess = trace.processes.find(p => p.name === 'client.bin' && p.pid === 26609);
+        this.testSource = [
             new EventPattern(new Map<string, PatternValue>([
-                ['eventType', new PatternValue('ExitReadEvent')],
-                ['process', new PatternValue('', true)],
-                ['fd', new PatternValue('', true)],
-            ])),
-            new EventPattern(new Map<string, PatternValue>([
-                ['eventType', new PatternValue('ExitReadEvent')],
-                ['process', new PatternValue('', true)],
-                ['fd', new PatternValue('', true)],
-            ])),
-            new EventPattern(new Map<string, PatternValue>([
-                ['eventType', new PatternValue('ExitReadEvent')],
-                ['process', new PatternValue('', true)],
-                ['fd', new PatternValue('', true)],
-            ])),
-            new EventPattern(new Map<string, PatternValue>([
-                ['eventType', new PatternValue('WriteEvent')],
-                ['process', new PatternValue('', true)],
-                ['fd', new PatternValue('', true)],
-            ])),
-        ])]
-        
+                ['process', new PatternValue(clientProcess)],
+            ]))
+        ]
+
         this.loadTrace(trace)
     }
 
@@ -279,16 +280,40 @@ class DataflowGraph {
 
     getCausesOfEvent(event: Event): Set<Event> {
 
-        const causes: Set<Event> = new Set<Event>();
-        const causalLinks = this.testCausalLink
-        if (!causalLinks) {
-            return new Set<Event>();
+        for( const sourcePattern of this.testSource ) {
+            if (sourcePattern.matches(event)) {
+                console.debug("Source pattern matched for event", event);
+                return new Set<Event>();
+            }
         }
 
+        const causes: Set<Event> = new Set<Event>();
+        const causalLinks = this.testCausalLink
+    
         for (const causalLink of causalLinks) {
             const partialCauses = causalLink.getCauses(event, this)
             partialCauses.forEach(cause => causes.add(cause))
         }
+
+        const node = this.graph.findNode((n) => this.graph.getNodeAttribute(n, 'event') == event);
+        const parents = this.graph.inNeighbors(node);
+
+        parents.forEach((parent) => {
+            if (this.graph.getNodeAttribute(parent, 'objectType') === 'resource') {
+                const parentEvent = this.graph.getNodeAttribute(parent, 'event');
+                if (parentEvent) {
+                    causes.add(parentEvent);
+                    this.graph.inNeighbors(parent).forEach((gp) => {
+                        if (this.graph.getNodeAttribute(gp, 'objectType') === 'process') {
+                            const grandparentEvent = this.graph.getNodeAttribute(gp, 'event');
+                            if (grandparentEvent) {
+                                causes.add(grandparentEvent);
+                            }
+                        }
+                    });
+                }
+            }
+        });
 
         return causes
     }
