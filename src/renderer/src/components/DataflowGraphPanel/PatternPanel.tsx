@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import DataflowGraph from '@common/DataflowGraph';
 import ResizableControlsContainer from './ResizableControlsContainer';
 
@@ -119,40 +119,40 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
     }
 
 
-
-    let createButton: JSX.Element;
+    // Calculate button properties
+    const events = selectedNodes.map(node => graph.getNodeAttribute(node, 'event'));
+    
+    let buttonDisabled = true;
+    let buttonTitle = "";
+    
     if (description.trim() === '') {
-        createButton = (
-            <button
-                disabled={true}
-                title="Description cannot be empty"
-                className="w-full bg-blue-300 text-white py-2 mt-1 rounded cursor-not-allowed opacity-60"
-            >
-                Create Pattern Group
-            </button>
-        );
-
+        buttonTitle = "Description cannot be empty";
     } else if (selectedNodes.length === 0) {
-        createButton = (
-            <button
-                disabled={true}
-                title="No nodes selected"
-                className="w-full bg-blue-300 text-white py-2 mt-1 rounded cursor-not-allowed opacity-60"
-            >
-                Create Pattern Group
-            </button>
-        );
+        buttonTitle = "No nodes selected";
+    } else if (events.some(event => !event)) {
+        buttonTitle = "Some nodes do not have event data";
+    } else if (events.some(event => lockedFields.get(event)?.length === 0)) {
+        buttonTitle = "All events must have locked fields";
     } else {
-        createButton = (
-            <button
-                onClick={createPatternGroup}
-                className="w-full bg-blue-500 text-white py-2 mt-1 rounded hover:bg-blue-600 transition-colors"
-            >
-                Create Pattern Group
-            </button>
-        );
+        buttonDisabled = false;
+        buttonTitle = "Create new pattern group";
     }
 
+    const disabledButtonStyle = "w-full bg-blue-300 text-white py-2 mt-1 rounded cursor-not-allowed opacity-60";
+    const enabledButtonStyle = "w-full bg-blue-500 text-white py-2 mt-1 rounded hover:bg-blue-600 transition-colors";
+    const buttonClassName = buttonDisabled ? disabledButtonStyle : enabledButtonStyle;
+
+    const createButton: ReactElement = (
+        <button
+            disabled={buttonDisabled}
+            onClick={createPatternGroup}
+            title={buttonTitle}
+            className={buttonClassName}
+        >
+            Create Pattern Group
+        </button>
+    );
+    
 
     const getVisual = (patternGroup: PatternGroup): React.ReactNode => {
         return (
@@ -212,8 +212,6 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
                         </div>
                     </TabPanel>
                 </Tabs>
-
-                
             </div>
         </ResizableControlsContainer>
     );
