@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useEffect, useState } from 'react';
 import DataflowGraph from '@common/DataflowGraph';
 import ResizableControlsContainer from './ResizableControlsContainer';
 
@@ -7,6 +7,7 @@ import 'react-tabs/style/react-tabs.css';
 
 import { Event } from '@common/types';
 import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
+import { areConnected } from '@common/utils';
 
 
 interface PatternPanelProps {
@@ -22,6 +23,11 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
 
     const [lockedFields, setLockedFields] = useState<Map<Event, string[]>>(new Map());
     const [description, setDescription] = useState<string>('');
+
+    useEffect(() => {
+        setDescription('');
+        setLockedFields(new Map());
+    }, [selectedNodes]);
 
     const toggleLock = (event: Event, field: string) => {
         setLockedFields(prev => {
@@ -118,6 +124,7 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
         );
     }
 
+    
 
     // Calculate button properties
     const events = selectedNodes.map(node => graph.getNodeAttribute(node, 'event'));
@@ -131,8 +138,10 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNode
         buttonTitle = "No nodes selected";
     } else if (events.some(event => !event)) {
         buttonTitle = "Some nodes do not have event data";
-    } else if (events.some(event => lockedFields.get(event)?.length === 0)) {
+    } else if (events.some(event => !lockedFields.get(event) || lockedFields.get(event)!.length === 0)) {
         buttonTitle = "All events must have locked fields";
+    } else if (!areConnected(selectedNodes, graph)) {
+        buttonTitle = "Selected nodes must be connected";
     } else {
         buttonDisabled = false;
         buttonTitle = "Create new pattern group";
