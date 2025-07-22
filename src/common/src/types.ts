@@ -181,12 +181,14 @@ export abstract class Event {
     process: Process
     eventType: string
     id: number
+    address: string | null
 
     constructor(timestamp: number, process: Process) {
         this.timestamp = timestamp
         this.process = process
         this.eventType = this.constructor.name
         this.id = -1 // Placeholder for unique ID, can be set later
+        this.address = "00100498"
     }
 
     abstract getKeyword(): string

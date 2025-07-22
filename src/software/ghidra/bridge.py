@@ -1,24 +1,33 @@
 import websockets
 import asyncio
+import subprocess
+import time
 from proxy import GhidraMethods
 
 
 async def ws_server(websocket): 
     print("WebSocket: Client connected. \n")
 
-    ghidra = GhidraMethods()
-    bridge, status = ghidra.connect_to_ghidra()
-
     try:
         async for message in websocket:
-            print(f"message received: {message}")
-            await websocket.send(status)
+            print(f"message received: {message}\n")
 
+            #call ghidraHeadless (create a new project with the bin file & open ghidra on this project)
+            subprocess.run(["bash","src/software/ghidra/headlessGhidra.sh"])
+
+            print("You need to connect to ghidraBridge...\n")
+            ghidra = GhidraMethods()
+            bridge, status = ghidra.connect_to_ghidra()
+            
+            while (status != "connected"):
+                time.sleep(5)
+                await websocket.send(status)
+                bridge, status = ghidra.connect_to_ghidra()
+            
+            await websocket.send(status)
             if (status == "connected"):
                 ghidra.go_to_address(message)
-                ghidra.open_new_file("~/Documents/ghidraProjects/test_file")
-
-
+           
     except websockets.exceptions.ConnectionClosed as e:
         print("WebSocket: Client deconnected.")
 

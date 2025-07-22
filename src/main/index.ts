@@ -66,7 +66,7 @@ app.whenReady().then(() => {
     })
 
     ghidraCommunication = GhidraCommunication.getInstance()
-    setTimeout(() => { ghidraCommunication!.send("00101200") }, 1000);
+    setTimeout(() => { ghidraCommunication!.send("0000000") }, 1000);
 })
 
 

@@ -1,3 +1,4 @@
+import { ipcMain } from 'electron';
 import WebSocket from 'ws';
 
 
@@ -6,6 +7,9 @@ export class GhidraCommunication {
     private socket: WebSocket | null;
     private connected: boolean;
     private static instance: GhidraCommunication | null = null
+    static api = {
+        isConnected: () => GhidraCommunication.getInstance().isConnected(),
+    }
 
     private constructor() {
         this.url = "ws://localhost:8765";
@@ -36,7 +40,12 @@ export class GhidraCommunication {
             const message = data.toString();
             console.log("Message received from the WebSocket server : ", message);
             if (this.parseMessage(message)) {
+                ipcMain.emit("ghidraConnected")
                 this.connected = true;
+            }
+            else{
+                ipcMain.emit('ghidraDisconnected');
+                this.connected = false;
             }
         });
     }

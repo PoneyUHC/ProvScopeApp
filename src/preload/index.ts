@@ -10,7 +10,11 @@ const api = {
     offRequestExportTrace: (callback: () => void) => ipcRenderer.off('requestExportTrace', callback),
     offAll: () => ipcRenderer.removeAllListeners(),
     exportTrace: (filename: string, content: string) => ipcRenderer.send('exportTrace', filename, content),
-    getGhidraCommunicationInstance: () => GhidraCommunication.getInstance()
+    ghidra: GhidraCommunication.api,
+    onGhidraIsConnected: (callback: () => void) => ipcRenderer.on('ghidraConnected', callback),
+    offGhidraIsConnected: (callback: () => void) => ipcRenderer.off('ghidraConnected', callback),
+    onGhidraIsDisconnected: (callback: () => void) => ipcRenderer.on('ghidraDisconnected', callback),
+    offGhidraIsDisconnected: (callback: () => void) => ipcRenderer.off('ghidraDisconnected', callback),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
