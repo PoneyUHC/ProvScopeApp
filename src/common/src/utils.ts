@@ -1,4 +1,6 @@
 
+import Graph from 'graphology'
+
 export function toUniform(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -18,6 +20,27 @@ export function toUniform(str: string): number {
 
 interface IClonable<T> {
     clone(): T
+}
+
+
+export function areConnected(nodes: string[], graph: Graph): boolean {
+    
+    const visited = new Set<string>()
+    const toVisit = [nodes[0]];
+
+    while (toVisit.length > 0) {
+        const current = toVisit.pop()!;
+        if (visited.has(current)) continue;
+        visited.add(current);
+
+        for (const neighbor of graph.neighbors(current)) {
+            if (!visited.has(neighbor) && nodes.includes(neighbor)) {
+                toVisit.push(neighbor);
+            }
+        }
+    }
+
+    return visited.size === nodes.length;
 }
 
 

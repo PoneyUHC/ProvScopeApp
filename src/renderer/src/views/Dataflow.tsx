@@ -60,11 +60,11 @@ const Dataflow: React.FC = () => {
         <div className='w-screen h-screen flex flex-col'>
             <Header/>
             <Title content="Dataflow"/>
-            <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
-                    <DataflowGraphPanel
-                        className="h-full"
-                        dataflowGraph={dataflowGraph}
-                    />
+            <div className="w-full h-5/6 flex flex-col flex-grow overflow-auto pr-2 pl-2 pt-2">
+                <DataflowGraphPanel
+                    className="h-full"
+                    dataflowGraph={dataflowGraph}
+                />
             </div>
         </div>
         

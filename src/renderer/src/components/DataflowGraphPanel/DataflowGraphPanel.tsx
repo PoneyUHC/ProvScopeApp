@@ -22,6 +22,7 @@ import { Event } from '@common/types';
 import PatternPanel from './PatternPanel';
 import DragDropListPanel from '../DragDropListPanel';
 import { Allotment } from 'allotment';
+import { EventPattern, PatternGroup } from '@common/causality';
 
 
 interface DataflowGraphPanelProps {
@@ -38,6 +39,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
+    const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
 
 
     const getObjectNames = (): Set<string> => {
@@ -151,6 +153,16 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     }
 
 
+    const addPatternGroup = (patternGroup: PatternGroup) => {
+        setPatternGroups(prev => new Set([...prev, patternGroup]));
+    }
+
+
+    const removePatternGroup = (patternGroup: PatternGroup) => {
+        setPatternGroups(prev => new Set([...prev].filter(pg => pg !== patternGroup)));
+    }
+
+
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
              <Allotment onDragEnd={onDrag}>
@@ -183,7 +195,13 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
                         <EventInfosPanel event={detailsEvent} />
 
-                        <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />
+                        <PatternPanel 
+                            dataflowGraph={dataflowGraph} 
+                            selectedNodes={selectedNodes}
+                            patternGroups={patternGroups}
+                            addPatternGroup={addPatternGroup}
+                            removePatternGroup={removePatternGroup}
+                        />
 
                     </SigmaContainer>
                 

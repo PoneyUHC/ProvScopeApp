@@ -5,9 +5,9 @@ import DataflowGraph from './DataflowGraph';
 
 export class PatternValue {
 
-    isWildcard: boolean;
     value: unknown;
-
+    isWildcard: boolean;
+    
     constructor(value: unknown, isWildcard: boolean = false) {
         this.value = value;
         this.isWildcard = isWildcard;
@@ -39,6 +39,18 @@ export class EventPattern {
         }
         console.debug("EventPattern.matches: match found");
         return true;
+    }
+}
+
+
+export class PatternGroup {
+
+    patterns: EventPattern[];
+    name: string;
+
+    constructor(patterns: EventPattern[], name: string) {
+        this.patterns = patterns;
+        this.name = name;
     }
 }
 
