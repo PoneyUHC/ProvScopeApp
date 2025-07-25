@@ -10,7 +10,7 @@ import {
 
 import GraphEvents from './GraphPanelEvents';
 import { useContext, useEffect, useState } from 'react';
-import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
+import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
 
 import DirectedGraph from 'graphology'
 
@@ -30,8 +30,8 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty,
     const [sigma, setSigma] = useState<Sigma | null>(null);
 
     const { 
-        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
-    } = useContext(IPCTraceGraphContext)
+        topologyGraph: [topologyGraph, _setTopologyGraph], 
+    } = useContext(TopologyGraphContext)
 
     useEffect(() => {
         if( sigma && isDirty ) {
@@ -40,7 +40,7 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty,
         }     
     }, [isDirty])
 
-    if ( ! ipcTraceGraph ){
+    if ( ! topologyGraph ){
         return <Error message='No graph loaded'/>
     }
 
@@ -51,7 +51,7 @@ const GraphPanel: React.FC<GraphPanelProps> = ({ className, isDirty, setIsDirty,
                     <ZoomControl />
                     <FullScreenControl />
                 </ControlsContainer>
-                <GraphEvents ipcTraceGraph={ipcTraceGraph}/>
+                <GraphEvents topologyGraph={topologyGraph}/>
             </SigmaContainer>
         </div>
         

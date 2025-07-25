@@ -3,63 +3,64 @@ import { useCallback, useEffect, useState } from "react";
 
 
 import Workspace from "@renderer/components/Workspace";
-import { IPCTraceGraphProvider } from "@renderer/components/IPCTraceGraphContext";
-import { IPCTrace } from "@common/types";
+import { TopologyGraphProvider } from "@renderer/components/TopologyGraphContext";
+import { ExecutionTrace } from "@common/types";
 import Header from "@renderer/components/Header";
-import { IPCTraceGraph } from "@common/IPCTraceGraph";
+import { TopologyGraph } from "@common/TopologyGraph";
 import Title from "@renderer/components/Title";
 import TabButton from "@renderer/components/TabButton";
 
-const tabSelectedButton = "bg-white border border-b-transparent border-black-200 text-black"
-const tabNotSelectedButton = "bg-gray-200 text-gray-600 border border-b-black-300 hover:bg-black-300"
+const tabSelectedButtonStyle = "bg-white border border-b-transparent border-black-200 text-black"
+const tabNotSelectedButtonStyle = "bg-gray-200 text-gray-600 border border-b-black-300 hover:bg-black-300"
 
-const Dashboard: React.FC = () => {
 
-    const [ipcTraceGraphs, setIPCTraceGraphs] = useState<IPCTraceGraph[]>([])
+const TopologyView: React.FC = () => {
+
+    const [topologyGraphs, setTopologyGraphs] = useState<TopologyGraph[]>([])
     const [currentWorkspace, setCurrentWorkspace] = useState<number | null>(null)
 
 
-    const addTrace = useCallback((ipcTraceGraph: IPCTraceGraph) => {
-        setIPCTraceGraphs(prevIpcTraceGraphs => [...prevIpcTraceGraphs, ipcTraceGraph])
-        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : ipcTraceGraphs.length)
-    }, [ipcTraceGraphs])
+    const addTrace = useCallback((topologyGraph: TopologyGraph) => {
+        setTopologyGraphs(prevTopologyGraphs => [...prevTopologyGraphs, topologyGraph])
+        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : topologyGraphs.length)
+    }, [topologyGraphs])
         
     const loadTrace = useCallback((filename: string, content: string) => {
         console.log(`Loading trace ${filename}`)
         const json = JSON.parse(content)
-        const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
-        const ipcTraceGraph = IPCTraceGraph.create(ipcTrace)
-        addTrace(ipcTraceGraph)
+        const trace = ExecutionTrace.createInstanceFromJSON(filename, json)
+        const topologyGraph = TopologyGraph.create(trace)
+        addTrace(topologyGraph)
     }, [addTrace])
 
 
     const exportTrace = useCallback(() => {
         
-        if ( ipcTraceGraphs.length === 0 || currentWorkspace === null ) {   
+        if ( topologyGraphs.length === 0 || currentWorkspace === null ) {   
             return
         }
 
-        const ipcTraceGraph = ipcTraceGraphs[currentWorkspace]
+        const topologyGraph = topologyGraphs[currentWorkspace]
 
-        const filenameParts = ipcTraceGraph.getTrace().filename.split('.');
+        const filenameParts = topologyGraph.getTrace().filename.split('.');
         const filenamePrefix = filenameParts[0]
         const extension = filenameParts[1]
         const defaultFilename = `${filenamePrefix}_export.${extension}`
 
-        const content = ipcTraceGraph.toJSON()
+        const content = topologyGraph.toJSON()
         
         window.api.exportTrace(defaultFilename, content)
-    }, [currentWorkspace, ipcTraceGraphs])
+    }, [currentWorkspace, topologyGraphs])
 
 
     const deleteClick = useCallback((index) => { 
-        if (ipcTraceGraphs.length === 1) {
+        if (topologyGraphs.length === 1) {
             setCurrentWorkspace(null);
-            setIPCTraceGraphs([]);
+            setTopologyGraphs([]);
             return;
         }
         
-        setIPCTraceGraphs((prev) => {
+        setTopologyGraphs((prev) => {
             const newGraphs = prev.filter((_, i) => i !== index);
             // We adjust the current workspace index if necessary
             if (currentWorkspace !== null) {
@@ -71,7 +72,7 @@ const Dashboard: React.FC = () => {
             }
             return newGraphs;
         });
-    }, [ipcTraceGraphs, currentWorkspace]) 
+    }, [topologyGraphs, currentWorkspace]) 
 
  
     const isSelected = useCallback((index) => {
@@ -90,13 +91,13 @@ const Dashboard: React.FC = () => {
             window.api.offAll()
         }
 
-    }, [loadTrace, exportTrace])
+    }, [])
 
         
 
     let body: JSX.Element
 
-    if ( ipcTraceGraphs.length === 0 || currentWorkspace === null ) {
+    if ( topologyGraphs.length === 0 || currentWorkspace === null ) {
         body = (
             <div className="flex items-center justify-center h-full text-red-600">
                 No graphs loaded
@@ -107,9 +108,9 @@ const Dashboard: React.FC = () => {
             <div className="w-full h-full flex flex-col">
                 <div className="flex flex-row overflow-auto">
                 {
-                    Array.from(ipcTraceGraphs).map((ipcTraceGraph, index) => {
+                    Array.from(topologyGraphs).map((topologyGraph, index) => {
 
-                        const text = ipcTraceGraph.traceName;
+                        const text = topologyGraph.traceName;
 
                         return (
                             <div className="flex items-center">
@@ -120,8 +121,8 @@ const Dashboard: React.FC = () => {
                                     className="p-2 border-b-2 border-black-200"
                                     text={text}
                                     isSelected={isSelected(index)}
-                                    selectedButtonStyle={tabSelectedButton}
-                                    notSelectedButtonStyle={tabNotSelectedButton}
+                                    selectedButtonStyle={tabSelectedButtonStyle}
+                                    notSelectedButtonStyle={tabNotSelectedButtonStyle}
                                 />
                             </div>
                         )
@@ -129,9 +130,9 @@ const Dashboard: React.FC = () => {
                 }
                 </div>
                 
-                <IPCTraceGraphProvider>
-                    <Workspace ipcTraceGraph={ipcTraceGraphs[currentWorkspace]} addTrace={addTrace}/>
-                </IPCTraceGraphProvider>
+                <TopologyGraphProvider>
+                    <Workspace topologyGraph={topologyGraphs[currentWorkspace]} addTrace={addTrace}/>
+                </TopologyGraphProvider>
             </div>
         )
     }
@@ -146,4 +147,4 @@ const Dashboard: React.FC = () => {
 }
 
 
-export default Dashboard;
+export default TopologyView;

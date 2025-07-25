@@ -1,24 +1,24 @@
 
-import { IPCTraceGraph } from "@common/IPCTraceGraph";
+import { TopologyGraph } from "@common/TopologyGraph";
 import { useState, createContext, useCallback } from "react";
 
-import { Event, IPCTrace } from "@common/types";
+import { Event, ExecutionTrace } from "@common/types";
 
 
-interface IPCTraceGraphContextType {
-    ipcTraceGraph: [IPCTraceGraph | null, React.Dispatch<React.SetStateAction<IPCTraceGraph | null>>],
+interface TopologyGraphContextType {
+    topologyGraph: [TopologyGraph | null, React.Dispatch<React.SetStateAction<TopologyGraph | null>>],
     selectedNode: [string | null, (node: string) => void],
     selectedEvent: [Event | null, (event: Event) => void],
     hiddenNodes: [Set<string>, (node: string) => void, (nodes: string) => void],
     hiddenEvents: [Set<Event>, (event: Event) => void, (event: Event) => void],
     loadFile: (filename: string, content: string) => void,
-    loadTrace: (ipcTrace: IPCTrace) => void,
-    loadTraceGraph: (ipcTraceGraph: IPCTraceGraph) => void,
+    loadTrace: (trace: ExecutionTrace) => void,
+    loadTraceGraph: (topologyGraph: TopologyGraph) => void,
 }
 
 
-const IPCTraceGraphContext = createContext<IPCTraceGraphContextType>({
-    ipcTraceGraph: [null, () => {}], 
+const TopologyGraphContext = createContext<TopologyGraphContextType>({
+    topologyGraph: [null, () => {}], 
     selectedNode: [null, () => {}], 
     selectedEvent: [null, () => {}],
     hiddenNodes: [new Set<string>(), () => {}, () => {}],
@@ -29,8 +29,8 @@ const IPCTraceGraphContext = createContext<IPCTraceGraphContextType>({
 });
 
 
-const IPCTraceGraphProvider = ({ children }) => {
-    const [ipcTraceGraph, setIPCTraceGraph] = useState<IPCTraceGraph | null>(null);
+const TopologyGraphProvider = ({ children }) => {
+    const [topologyGraph, setTopologyGraph] = useState<TopologyGraph | null>(null);
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [hiddenNodes, setHiddenNodes] = useState<Set<string>>(new Set<string>())
@@ -38,7 +38,7 @@ const IPCTraceGraphProvider = ({ children }) => {
     
     
     const externalSetSelectedNode = useCallback((node: string) => {
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set selected node")
             return
         }
@@ -46,112 +46,112 @@ const IPCTraceGraphProvider = ({ children }) => {
         // we have a state to trigger a re-render
         setSelectedNode(node)
         // and a redondent field in the graph to save the selected node event when 
-        // <IPCTraceGraphProvider> is not mounted
-        ipcTraceGraph.selectedNode = node
+        // <TopologyGraphProvider> is not mounted
+        topologyGraph.selectedNode = node
 
-        ipcTraceGraph.clearHighlights()
-        ipcTraceGraph.highlightNode(node)
-    }, [ipcTraceGraph])
+        topologyGraph.clearHighlights()
+        topologyGraph.highlightNode(node)
+    }, [topologyGraph])
 
 
     const externalSetSelectedEvent = useCallback((event: Event) => {
 
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set selected event")
             return
         }
 
         // same reason as above for duplicity
         setSelectedEvent(event)
-        ipcTraceGraph.selectedEvent = event
+        topologyGraph.selectedEvent = event
 
-        ipcTraceGraph.applyUntilEvent(event)
-        ipcTraceGraph.clearHighlights()
-        ipcTraceGraph.highlightNode(event.process.getUUID())
-    }, [ipcTraceGraph])
+        topologyGraph.applyUntilEvent(event)
+        topologyGraph.clearHighlights()
+        topologyGraph.highlightNode(event.process.getUUID())
+    }, [topologyGraph])
 
 
     const hideNode = useCallback((node: string) => {
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set hidden nodes")
             return
         }
 
         setHiddenNodes(new Set([...hiddenNodes, node]))
-        ipcTraceGraph.hideNode(node)
-    }, [ipcTraceGraph, hiddenNodes])
+        topologyGraph.hideNode(node)
+    }, [topologyGraph, hiddenNodes])
 
 
     const showNode = useCallback((node: string) => {
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set hidden nodes")
             return
         }
 
         setHiddenNodes(new Set([...hiddenNodes].filter((n) => n !== node)))
-        ipcTraceGraph.showNode(node)
-    }, [ipcTraceGraph, hiddenNodes])
+        topologyGraph.showNode(node)
+    }, [topologyGraph, hiddenNodes])
 
 
     const hideEvent = useCallback((event: Event) => {
 
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set hidden events")
             return
         }
 
         setHiddenEvents(new Set([...hiddenEvents, event]))
-        ipcTraceGraph.hideEvent(event)
-    }, [ipcTraceGraph, hiddenEvents])
+        topologyGraph.hideEvent(event)
+    }, [topologyGraph, hiddenEvents])
 
 
     const showEvent = useCallback((event: Event) => {
 
-        if ( ! ipcTraceGraph ) {
+        if ( ! topologyGraph ) {
             console.error("No IPC Trace Graph to set hidden events")
             return
         }
 
         setHiddenEvents(new Set([...hiddenEvents].filter((e) => e !== event)))
-        ipcTraceGraph.showEvent(event)
-    }, [ipcTraceGraph, hiddenEvents])
+        topologyGraph.showEvent(event)
+    }, [topologyGraph, hiddenEvents])
 
 
-    const loadTrace = useCallback((ipcTrace: IPCTrace) => {
-        const newIpcTraceGraph = IPCTraceGraph.create(ipcTrace)
-        
-        const initialEvent = ipcTrace.events[0]
-    
-        setIPCTraceGraph(newIpcTraceGraph)
-        externalSetSelectedEvent(newIpcTraceGraph.selectedEvent)
-        newIpcTraceGraph.applyUntilEvent(initialEvent)
+    const loadTrace = useCallback((trace: ExecutionTrace) => {
+        const newTopologyGraph = TopologyGraph.create(trace)
 
-        externalSetSelectedNode(newIpcTraceGraph.selectedNode)
-        newIpcTraceGraph.clearHighlights()
-        newIpcTraceGraph.highlightNode(initialEvent.process.getUUID())
+        const initialEvent = trace.events[0]
 
-        setHiddenNodes(newIpcTraceGraph.hiddenNodes)
-        setHiddenEvents(newIpcTraceGraph.hiddenEvents)
+        setTopologyGraph(newTopologyGraph)
+        externalSetSelectedEvent(newTopologyGraph.selectedEvent)
+        newTopologyGraph.applyUntilEvent(initialEvent)
+
+        externalSetSelectedNode(newTopologyGraph.selectedNode)
+        newTopologyGraph.clearHighlights()
+        newTopologyGraph.highlightNode(initialEvent.process.getUUID())
+
+        setHiddenNodes(newTopologyGraph.hiddenNodes)
+        setHiddenEvents(newTopologyGraph.hiddenEvents)
     }, [externalSetSelectedEvent, externalSetSelectedNode])
 
 
     const loadFile = useCallback((filename: string, content: string) => {
 
         const json = JSON.parse(content)
-        const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
-        loadTrace(ipcTrace)
+        const trace = ExecutionTrace.createInstanceFromJSON(filename, json)
+        loadTrace(trace)
     }, [loadTrace])
 
 
-    const loadTraceGraph = (ipcTraceGraph: IPCTraceGraph) => {
-        setIPCTraceGraph(ipcTraceGraph)
-        setSelectedEvent(ipcTraceGraph.selectedEvent)
-        setSelectedNode(ipcTraceGraph.selectedNode)
+    const loadTraceGraph = (topologyGraph: TopologyGraph) => {
+        setTopologyGraph(topologyGraph)
+        setSelectedEvent(topologyGraph.selectedEvent)
+        setSelectedNode(topologyGraph.selectedNode)
     }
 
     
-    const value: IPCTraceGraphContextType = {
-        ipcTraceGraph: [ipcTraceGraph, setIPCTraceGraph],
+    const value: TopologyGraphContextType = {
+        topologyGraph: [topologyGraph, setTopologyGraph],
         selectedNode: [selectedNode, externalSetSelectedNode],
         selectedEvent: [selectedEvent, externalSetSelectedEvent],
         hiddenNodes: [hiddenNodes, hideNode, showNode],
@@ -162,11 +162,11 @@ const IPCTraceGraphProvider = ({ children }) => {
     }
 
     return (
-        <IPCTraceGraphContext.Provider value={value}>
+        <TopologyGraphContext.Provider value={value}>
             {children}
-        </IPCTraceGraphContext.Provider>
+        </TopologyGraphContext.Provider>
     );
 };
 
-export { IPCTraceGraphContext, IPCTraceGraphProvider };
-export type { IPCTraceGraphContextType };
+export { TopologyGraphContext , TopologyGraphProvider };
+export type { TopologyGraphContextType };

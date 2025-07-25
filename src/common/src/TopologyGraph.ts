@@ -1,5 +1,5 @@
 
-import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, IPCTrace, OpenEvent, WriteEvent } from "./types"
+import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, ExecutionTrace, OpenEvent, WriteEvent } from "./types"
 
 import DirectedGraph from 'graphology'
 import { toUniform, IClonable } from "./utils"
@@ -15,10 +15,10 @@ interface EventInfos {
 }
 
 
-export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
+export class TopologyGraph implements IClonable<TopologyGraph> {
 
     private graph: DirectedGraph
-    private ipcTrace: IPCTrace
+    private trace: ExecutionTrace
     selectedNode: string
     selectedEvent: Event
     traceName: string;
@@ -26,14 +26,14 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     hiddenEvents: Set<Event>
 
     // shouldInit is used to make more efficient copies
-    private constructor(ipcTrace: IPCTrace, shouldInit: boolean) {
-        this.ipcTrace = ipcTrace
+    private constructor(trace: ExecutionTrace, shouldInit: boolean) {
+        this.trace = trace
         this.graph = new DirectedGraph()
-        this.selectedNode = ipcTrace.events[0].process.getUUID()
-        this.selectedEvent = ipcTrace.events[0]
+        this.selectedNode = trace.events[0].process.getUUID()
+        this.selectedEvent = trace.events[0]
         this.hiddenNodes = new Set<string>()
         this.hiddenEvents = new Set<Event>()
-        this.traceName = ipcTrace.filename.split('/').pop() || ""
+        this.traceName = trace.filename.split('/').pop() || ""
 
         if ( shouldInit ) {
             this.graph = this.computeGraphFromTrace()
@@ -41,19 +41,19 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             this.setEventFilepaths()
             this.setEventIDs()
 
-            this.applyUntilEvent(ipcTrace.events[0])
+            this.applyUntilEvent(trace.events[0])
         }
     }
 
     // create instead of public constructor to avoid giving the user the ability to create 
     // non-initialized instances of the class
-    static create(ipcTrace: IPCTrace): IPCTraceGraph {
-        return new IPCTraceGraph(ipcTrace, true)
+    static create(trace: ExecutionTrace): TopologyGraph {
+        return new TopologyGraph(trace, true)
     }
 
 
-    clone (): IPCTraceGraph {
-        const other = new IPCTraceGraph(this.ipcTrace, false)
+    clone (): TopologyGraph {
+        const other = new TopologyGraph(this.trace, false)
         other.graph = this.graph.copy()
         
         other.selectedEvent = this.selectedEvent
@@ -72,7 +72,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
     // TODO: add visible events set for more efficient computation
     getEvents(): Event[] {
-        return this.ipcTrace.events.filter(e => !this.hiddenEvents.has(e))
+        return this.trace.events.filter(e => !this.hiddenEvents.has(e))
     }
 
 
@@ -102,17 +102,17 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
         const graph = new DirectedGraph();
 
-        for (const file of this.ipcTrace.files) {
+        for (const file of this.trace.files) {
             const fileLabel = file.path;
             graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel, group: 'Files' });
         }
     
-        for (const process of this.ipcTrace.processes) {
+        for (const process of this.trace.processes) {
             const processLabel = process.getUUID();
             graph.addNode(processLabel, { x: toUniform(processLabel)*10, y: toUniform(processLabel+'1')*10, size: 10, color: "red", label: processLabel, group: 'Processes' });
         }
 
-        for (const event of this.ipcTrace.events) {
+        for (const event of this.trace.events) {
             if ( (event instanceof EnterReadEvent ||
                 event instanceof ExitReadEvent ||
                 event instanceof WriteEvent) && event.fd === 1
@@ -180,7 +180,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         const tmpGraph = this.graph.copy()
         this.applyUntilEvent(targetEvent, tmpGraph)
 
-        const eventInfos = IPCTraceGraph.getDataTransferInfos(targetEvent, tmpGraph)
+        const eventInfos = TopologyGraph.getDataTransferInfos(targetEvent, tmpGraph)
 
         nodesReached.add(eventInfos.processUUID)
         if ( eventInfos.dataTransfer ){
@@ -194,7 +194,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         for( const event of previousEvents ) {
             
             this.applyUntilEvent(event, tmpGraph)
-            const eventInfos = IPCTraceGraph.getDataTransferInfos(event, tmpGraph)
+            const eventInfos = TopologyGraph.getDataTransferInfos(event, tmpGraph)
             
             if ( ! eventInfos.dataTransfer ){
                 continue
@@ -211,7 +211,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
 
 
-    backwardTraceFrom(targetEvent: Event): IPCTraceGraph {
+    backwardTraceFrom(targetEvent: Event): TopologyGraph {
 
         const backwardEvents = this.getBackwardEvents(targetEvent)
         
@@ -248,11 +248,11 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
             graph = this.graph
         }
 
-        IPCTraceGraph.cleanGraph(graph);
+        TopologyGraph.cleanGraph(graph);
     
         let highlightCallback = () => {};
     
-        for (const event of this.ipcTrace.events) {
+        for (const event of this.trace.events) {
             highlightCallback = this.applyEventToGraph(event as FSEvent, graph);
             
             if (event === targetEvent) {
@@ -268,7 +268,7 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
         let highlightCallback: () => void = () => {};
 
         const processUUID = event.process.getUUID();
-        const eventIndex = this.ipcTrace.events.indexOf(event)
+        const eventIndex = this.trace.events.indexOf(event)
 
         if ( ! (event instanceof FSEvent) ) {
             console.error(`Can only apply FSEvent to graph, got ${event}`)
@@ -334,23 +334,23 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
     setEventFilepaths() {
 
         const tmpGraph = this.graph.copy()
-        IPCTraceGraph.cleanGraph(tmpGraph)
+        TopologyGraph.cleanGraph(tmpGraph)
 
-        for (const event of this.ipcTrace.events) {
+        for (const event of this.trace.events) {
             if ( ! (event instanceof FSEvent) ) {
                 console.error(`Can only set filename for FSEvent, got ${event}`)
                 continue
             }
-            const filename1 = IPCTraceGraph.getEventFilename(event, tmpGraph)
+            const filename1 = TopologyGraph.getEventFilename(event, tmpGraph)
             this.applyEventToGraph(event, tmpGraph)
-            const filename2 = IPCTraceGraph.getEventFilename(event, tmpGraph)
+            const filename2 = TopologyGraph.getEventFilename(event, tmpGraph)
             event.filepath = filename1 || filename2 || "Error"
         }
     }
 
 
     setEventIDs() {
-        for (const [id, event] of this.ipcTrace.events.entries()) {
+        for (const [id, event] of this.trace.events.entries()) {
             event.id = id;
         }
     }
@@ -358,31 +358,31 @@ export class IPCTraceGraph implements IClonable<IPCTraceGraph> {
 
     toJSON() {
 
-        const removeFile = (path: string, ipcTrace: IPCTrace) => {
-            ipcTrace.files = ipcTrace.files.filter(f => f.path !== path)
-            ipcTrace.events = ipcTrace.events.filter(e => (e as FSEvent).filepath !== path)
+        const removeFile = (path: string, trace: ExecutionTrace) => {
+            trace.files = trace.files.filter(f => f.path !== path)
+            trace.events = trace.events.filter(e => (e as FSEvent).filepath !== path)
         }
 
-        const removeProcess = (processUUID: string, ipcTrace: IPCTrace) => {
-            ipcTrace.processes = ipcTrace.processes.filter(p => p.getUUID() !== processUUID)
-            ipcTrace.events = ipcTrace.events.filter(e => e.process.getUUID() !== processUUID)
+        const removeProcess = (processUUID: string, trace: ExecutionTrace) => {
+            trace.processes = trace.processes.filter(p => p.getUUID() !== processUUID)
+            trace.events = trace.events.filter(e => e.process.getUUID() !== processUUID)
         }
 
-        const modifiedIpcTrace = this.ipcTrace.clone()
+        const modifiedTrace = this.trace.clone()
         const graph = this.graph
 
         for (const node of this.hiddenNodes) {
             const group = graph.getNodeAttribute(node, 'group')
             if ( group === 'Processes' ){
-                removeProcess(node, modifiedIpcTrace)
+                removeProcess(node, modifiedTrace)
             } else if ( group === 'Files'){
-                removeFile(node, modifiedIpcTrace)
+                removeFile(node, modifiedTrace)
             } else if ( group === 'Channels'){
-                removeFile(node, modifiedIpcTrace)
+                removeFile(node, modifiedTrace)
             }
         }
 
-        return IPCTrace.toJSON(modifiedIpcTrace)
+        return ExecutionTrace.toJSON(modifiedTrace)
     }
 
 

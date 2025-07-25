@@ -3,8 +3,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import ExplorerPanel from './ExplorerPanel/ExplorerPanel';
 import GraphPanel from './GraphPanel/GraphPanel';
 import EventPanel from './EventPanel/EventsPanel';
-import { IPCTraceGraphContext, IPCTraceGraphContextType } from './IPCTraceGraphContext';
-import { IPCTraceGraph } from '@common/IPCTraceGraph';
+import { TopologyGraphContext, TopologyGraphContextType } from '@renderer/components/TopologyGraphContext';
+import { TopologyGraph } from '@common/TopologyGraph';
 import { Event } from '@common/types';
 
 import { Allotment } from 'allotment';
@@ -15,15 +15,15 @@ const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border 
 
 
 interface WorkspaceProps {
-    ipcTraceGraph: IPCTraceGraph;
-    addTrace: (ipcTraceGraph: IPCTraceGraph) => void;
+    topologyGraph: TopologyGraph;
+    addTrace: (topologyGraph: TopologyGraph) => void;
 }
 
 
-const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
+const Workspace: React.FC<WorkspaceProps> = ({topologyGraph, addTrace}) => {
     
     const [isGraphLoaded, setIsGraphLoaded] = useState<boolean>(false);
-    const { loadTraceGraph } = useContext<IPCTraceGraphContextType>(IPCTraceGraphContext)
+    const { loadTraceGraph } = useContext<TopologyGraphContextType>(TopologyGraphContext)
     const [isDirty, setIsDirty] = useState<boolean>(false);
 
     
@@ -33,10 +33,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
 
 
     useEffect(() => {
-        loadTraceGraph(ipcTraceGraph)
+        loadTraceGraph(topologyGraph)
         setIsGraphLoaded(true)
         setIsDirty(true);
-    }, [ipcTraceGraph])
+    }, [topologyGraph])
 
     if ( ! isGraphLoaded ){
         return (
@@ -47,7 +47,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
     }
 
     const onRightClick = (event: Event) => {
-        const backwardTrace = ipcTraceGraph.backwardTraceFrom(event)
+        const backwardTrace = topologyGraph.backwardTraceFrom(event)
         addTrace(backwardTrace)
     }   
 
@@ -64,7 +64,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ipcTraceGraph, addTrace}) => {
                         className={`h-full ${borderStyles}`}
                         isDirty={isDirty}
                         setIsDirty={setIsDirty}
-                        getGraph={() => ipcTraceGraph.getGraph()}
+                        getGraph={() => topologyGraph.getGraph()}
                     />
                 </Allotment.Pane>
                 <Allotment.Pane minSize={200} preferredSize={"15%"}>

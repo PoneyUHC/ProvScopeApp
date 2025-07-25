@@ -1,24 +1,26 @@
-import { IPCTraceGraph } from "@common/IPCTraceGraph";
+import { TopologyGraph } from "@common/TopologyGraph";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useContext, useEffect, useState } from "react";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
-import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
+import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
 
 
 interface GraphEventsProps {
-    ipcTraceGraph: IPCTraceGraph;
+    topologyGraph: TopologyGraph;
 }
 
 const GraphEvents: React.FC<GraphEventsProps> = () => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
-    const { ipcTraceGraph : [ipcTraceGraph], } = useContext(IPCTraceGraphContext)
+    const { 
+        topologyGraph : [topologyGraph, _setTopologyGraph], 
+    } = useContext(TopologyGraphContext)
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
     
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
-        if (ipcTraceGraph) {
-            ipcTraceGraph.clearHighlights();
+        if (topologyGraph) {
+            topologyGraph.clearHighlights();
         }
         setDraggedNode(e.node);
         sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
@@ -45,8 +47,8 @@ const GraphEvents: React.FC<GraphEventsProps> = () => {
 
     const onStageMouseUp = () => {
         setDraggedNode(null);
-        if (ipcTraceGraph) {
-            ipcTraceGraph.clearHighlights();
+        if (topologyGraph) {
+            topologyGraph.clearHighlights();
         }
     }
 

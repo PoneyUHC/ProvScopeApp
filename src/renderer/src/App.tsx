@@ -1,6 +1,6 @@
 
-import Dashboard from "./views/Dashboard";
-import Dataflow from "./views/Dataflow";
+import TopologyView from "./views/TopologyView";
+import DataflowGraphView from "./views/DataflowView";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -22,7 +22,7 @@ function App() {
     }, []);
 
     return currentView === "Dashboard" ? 
-        <Dashboard /> : <Dataflow />
+        <TopologyView /> : <DataflowGraphView />
 }
 
 export default App;

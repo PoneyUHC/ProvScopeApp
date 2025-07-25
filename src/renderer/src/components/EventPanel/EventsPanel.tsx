@@ -3,7 +3,7 @@ import React, { useCallback, useContext } from 'react';
 import EventButton from './EventButton';
 
 import { Event } from '@common/types';
-import { IPCTraceGraphContext } from '@renderer/components/IPCTraceGraphContext';
+import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
 import Error from '@renderer/components/Error';
 
 
@@ -17,20 +17,20 @@ interface EventPanelProps {
 const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
 
     const { 
-        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
+        topologyGraph: [topologyGraph, _setTopologyGraph], 
         selectedEvent: [selectedEvent, setSelectedEvent],
         selectedNode: [_selectedNode, setSelectedNode],
         hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
 
-    } = useContext(IPCTraceGraphContext)
+    } = useContext(TopologyGraphContext)
 
-    if ( ! ipcTraceGraph || ! selectedEvent ){
+    if ( ! topologyGraph || ! selectedEvent ){
         return <Error message='No graph loaded'/>
     }
 
     const getButtonBgColor = useCallback((event: Event) => {
 
-        const events = ipcTraceGraph.getEvents()
+        const events = topologyGraph.getEvents()
 
         const eventIndex = events.indexOf(event)
         const selectedEventIndex = events.indexOf(selectedEvent)
@@ -42,21 +42,21 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         } else {
             return "bg-red-600"
         }
-    }, [ipcTraceGraph, selectedEvent])
+    }, [topologyGraph, selectedEvent])
 
     const onLeftClick = (event: Event) => (_e: React.MouseEvent) => {
         setSelectedEvent(event)
         setSelectedNode(event.process.getUUID())
     }
 
-    const events = ipcTraceGraph.getEvents()
+    const events = topologyGraph.getEvents()
 
     const filterCallback = useCallback((e) => ! hiddenEvents.has(e), [hiddenEvents])
 
     const eventButtonList = events.filter(filterCallback).map((event, _i) => {
 
         let bgColor = getButtonBgColor(event)
-        const content = ipcTraceGraph.getEventDescription(event)
+        const content = topologyGraph.getEventDescription(event)
         const originalIndex = event.id
 
         return (

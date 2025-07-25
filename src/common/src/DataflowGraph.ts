@@ -1,7 +1,7 @@
 
 import DirectedGraph from 'graphology'
-import { ExitReadEvent, IPCTrace, WriteEvent, Event, Process } from './types'
-import { IPCTraceGraph } from './IPCTraceGraph'
+import { ExitReadEvent, ExecutionTrace, WriteEvent, Event, Process } from './types'
+import { TopologyGraph } from './TopologyGraph'
 import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './causality'
 
 
@@ -18,7 +18,7 @@ class DataflowGraph {
     testCausalLink: CausalLink[]
     testSource: EventPattern[]
 
-    constructor(trace: Readonly<IPCTrace>) {
+    constructor(trace: Readonly<ExecutionTrace>) {
         this.graph = new DirectedGraph()
         this.events = []
         this.versions = new Map<string, number>()
@@ -69,9 +69,9 @@ class DataflowGraph {
     }
 
 
-    loadTrace(trace: IPCTrace) {
+    loadTrace(trace: ExecutionTrace) {
 
-        const traceGraph = IPCTraceGraph.create(trace)
+        const traceGraph = TopologyGraph.create(trace)
 
         for (const file of trace.files) {
 
@@ -124,7 +124,7 @@ class DataflowGraph {
     }
 
 
-    loadEvents(traceGraph: IPCTraceGraph) {
+    loadEvents(traceGraph: TopologyGraph) {
         
         const allEvent = traceGraph.getEvents()
 

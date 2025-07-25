@@ -2,7 +2,7 @@
 import { IClonable } from "./utils"
 
 
-export class IPCTrace implements IClonable<IPCTrace> {
+export class ExecutionTrace implements IClonable<ExecutionTrace> {
 
     filename: string
 
@@ -22,7 +22,7 @@ export class IPCTrace implements IClonable<IPCTrace> {
 
     static createInstanceFromJSON(filename: string, json: any) {
 
-        const instance = new IPCTrace()
+        const instance = new ExecutionTrace()
 
         instance.filename = filename
 
@@ -39,7 +39,7 @@ export class IPCTrace implements IClonable<IPCTrace> {
         }
 
         for (const jsonEvent of json.events) {
-            const event = IPCTrace.createEventFromJSON(jsonEvent, instance)
+            const event = ExecutionTrace.createEventFromJSON(jsonEvent, instance)
             if ( event ) {
                 instance.events.push(event)
             }
@@ -49,7 +49,7 @@ export class IPCTrace implements IClonable<IPCTrace> {
     }
 
 
-    private static createEventFromJSON(json: any, trace: IPCTrace): Event | null {
+    private static createEventFromJSON(json: any, trace: ExecutionTrace): Event | null {
 
         switch (json.event_type) {
             case "OpenEvent":
@@ -99,7 +99,7 @@ export class IPCTrace implements IClonable<IPCTrace> {
     }
 
 
-    static toJSON(ipcTrace: IPCTrace): string {
+    static toJSON(trace: ExecutionTrace): string {
 
         const replacer = (key: string, value: any) => {
 
@@ -108,11 +108,11 @@ export class IPCTrace implements IClonable<IPCTrace> {
             }
 
             if (key === 'process') {
-                return ipcTrace.processes.map((process) => process.pid).indexOf(value.pid)
+                return trace.processes.map((process) => process.pid).indexOf(value.pid)
             }
 
             if (key === 'file') {
-                return ipcTrace.files.map((file) => file.path).indexOf(value.path)
+                return trace.files.map((file) => file.path).indexOf(value.path)
             }
 
             if (key === 'events') {
@@ -125,13 +125,13 @@ export class IPCTrace implements IClonable<IPCTrace> {
             return value
         }
 
-        const result = JSON.stringify(ipcTrace, replacer, 4)
+        const result = JSON.stringify(trace, replacer, 4)
         return result
     }
 
 
-    clone(): IPCTrace {
-        const clone = new IPCTrace()
+    clone(): ExecutionTrace {
+        const clone = new ExecutionTrace()
         clone.filename = this.filename
         clone.processes = this.processes.map((process) => process.clone())
         clone.files = this.files.map((file) => file.clone())

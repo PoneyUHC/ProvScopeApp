@@ -1,5 +1,5 @@
 
-import { IPCTraceGraphContext } from '../IPCTraceGraphContext';
+import { TopologyGraphContext } from '../TopologyGraphContext';
 import ShowHideButton from './ShowHideButton';
 import { useCallback, useContext } from 'react';
 
@@ -14,18 +14,18 @@ interface ExplorerPanelProps {
 const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const { 
-        ipcTraceGraph: [ipcTraceGraph, _setIpcTraceGraph], 
+        topologyGraph: [topologyGraph, _setTopologyGraph], 
         selectedNode: [selectedNode, setSelectedNode],
         hiddenNodes: [hiddenNodes, hideNode, showNode],
-    } = useContext(IPCTraceGraphContext)
+    } = useContext(TopologyGraphContext)
 
-    if ( ! ipcTraceGraph || ! selectedNode ){
+    if ( ! topologyGraph || ! selectedNode ){
         return <Error message='No graph loaded'/>
     }
 
     const getNodeGroupsButtons = useCallback(() => {
 
-        const nodesByGroup = ipcTraceGraph.getNodesByGroup()
+        const nodesByGroup = topologyGraph.getNodesByGroup()
 
         return Array.from(nodesByGroup).map((pair) => {
             return (
@@ -48,7 +48,7 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                 </div>
             )
         })
-    }, [ipcTraceGraph, selectedNode, hiddenNodes])
+    }, [topologyGraph, selectedNode, hiddenNodes])
 
     const buttons = getNodeGroupsButtons()
 

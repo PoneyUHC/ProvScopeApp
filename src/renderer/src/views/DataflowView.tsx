@@ -1,23 +1,23 @@
 
 import Header from '@renderer/components/Header';
 import React, { useEffect, useState } from 'react';
-import { IPCTrace } from '@common/types';
+import { ExecutionTrace } from '@common/types';
 import Title from '@renderer/components/Title';
 import DataflowGraph from '@common/DataflowGraph';
 import DataflowGraphPanel from '@renderer/components/DataflowGraphPanel/DataflowGraphPanel';
 
 
-const Dataflow: React.FC = () => {
+const DataflowGraphView: React.FC = () => {
 
-    const [ipcTrace, setIPCTrace] = useState<IPCTrace | null>(null)
+    const [trace, setTrace] = useState<ExecutionTrace | null>(null)
     const [dataflowGraph, setDataflowGraph] = useState<DataflowGraph | null>(null)
 
         
     const loadTrace = (filename: string, content: string) => {
         console.log(`Loading trace ${filename}`)
         const json = JSON.parse(content)
-        const ipcTrace = IPCTrace.createInstanceFromJSON(filename, json)
-        setIPCTrace(ipcTrace)
+        const trace = ExecutionTrace.createInstanceFromJSON(filename, json)
+        setTrace(trace)
     }
 
 
@@ -35,13 +35,13 @@ const Dataflow: React.FC = () => {
 
     useEffect(() => {
 
-        if ( ! ipcTrace ) {
+        if ( ! trace ) {
             return
         }
 
-        setDataflowGraph(new DataflowGraph(ipcTrace))
+        setDataflowGraph(new DataflowGraph(trace))
     
-    }, [ipcTrace])
+    }, [trace])
 
 
     if ( ! dataflowGraph ) {
@@ -71,4 +71,4 @@ const Dataflow: React.FC = () => {
     );
 };
 
-export default Dataflow;
+export default DataflowGraphView;
