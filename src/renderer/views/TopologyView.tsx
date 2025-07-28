@@ -1,14 +1,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-
-import Workspace from "@renderer/components/Workspace";
-import { TopologyGraphProvider } from "@renderer/components/TopologyGraphContext";
+import Workspace from "@renderer/components/TopologyGraphPanel/Workspace";
+import { TopologyGraphProvider } from "@renderer/components/TopologyGraphPanel/TopologyGraphContext";
+import Header from "@renderer/components/Misc/Header";
+import TabButton from "@renderer/components/Misc/TabButton";
+import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/types";
-import Header from "@renderer/components/Header";
 import { TopologyGraph } from "@common/TopologyGraph";
-import Title from "@renderer/components/Title";
-import TabButton from "@renderer/components/TabButton";
+
 
 const tabSelectedButtonStyle = "bg-white border border-b-transparent border-black-200 text-black"
 const tabNotSelectedButtonStyle = "bg-gray-200 text-gray-600 border border-b-black-300 hover:bg-black-300"

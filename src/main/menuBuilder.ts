@@ -1,6 +1,7 @@
 
-import { spawnSync } from "child_process";
 import { BrowserWindow, dialog, ipcMain, Menu } from "electron";
+
+import { spawnSync } from "child_process";
 import { readFileSync, writeFileSync } from "fs";
 
 

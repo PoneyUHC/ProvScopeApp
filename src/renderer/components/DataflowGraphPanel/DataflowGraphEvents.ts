@@ -1,6 +1,7 @@
 
-import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useCallback, useEffect, useState } from "react";
+import { useRegisterEvents, useSigma } from "@react-sigma/core";
+
 import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
 import { Event } from "@common/types";

@@ -1,10 +1,11 @@
 
 import React, { useCallback, useContext } from 'react';
-import EventButton from './EventButton';
 
+import { TopologyGraphContext } from '@renderer/components/TopologyGraphPanel/TopologyGraphContext';
+import Error from '@renderer/components/Misc/Error';
 import { Event } from '@common/types';
-import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
-import Error from '@renderer/components/Error';
+
+import EventButton from './EventButton';
 
 
 interface EventPanelProps {

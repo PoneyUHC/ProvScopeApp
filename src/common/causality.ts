@@ -1,6 +1,6 @@
 
-import { Process, Event } from "./types";
-import DataflowGraph from './DataflowGraph';
+import DataflowGraph from '@common/DataflowGraph';
+import { Process, Event } from "@common/types";
 
 
 export class PatternValue {

@@ -1,10 +1,11 @@
 
-import Header from '@renderer/components/Header';
 import React, { useEffect, useState } from 'react';
-import { ExecutionTrace } from '@common/types';
-import Title from '@renderer/components/Title';
-import DataflowGraph from '@common/DataflowGraph';
+
+import Header from '@renderer/components/Misc/Header';
+import Title from '@renderer/components/Misc/Title';
 import DataflowGraphPanel from '@renderer/components/DataflowGraphPanel/DataflowGraphPanel';
+import { ExecutionTrace } from '@common/types';
+import DataflowGraph from '@common/DataflowGraph';
 
 
 const DataflowGraphView: React.FC = () => {

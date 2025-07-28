@@ -1,5 +1,7 @@
+
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { GhidraCommunication } from '../common/src/software/ghidra/GhidraCommunication'
+
 
 declare global {
   interface Window {
@@ -25,5 +27,4 @@ declare global {
         onGhidraIsDisconnected2: (callback: () => void) => void,
         offGhidraIsDisconnected2: (callback: () => void) => void,
     }
-  }
 }

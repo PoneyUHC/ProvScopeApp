@@ -1,8 +1,9 @@
 
-import { TopologyGraph } from "@common/TopologyGraph";
 import { useState, createContext, useCallback } from "react";
 
+import { TopologyGraph } from "@common/TopologyGraph";
 import { Event, ExecutionTrace } from "@common/types";
+
 
 
 interface TopologyGraphContextType {

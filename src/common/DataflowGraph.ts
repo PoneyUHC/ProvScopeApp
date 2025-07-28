@@ -1,8 +1,9 @@
 
 import DirectedGraph from 'graphology'
-import { ExitReadEvent, ExecutionTrace, WriteEvent, Event, Process } from './types'
-import { TopologyGraph } from './TopologyGraph'
-import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './causality'
+
+import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from '@common/causality'
+import { ExitReadEvent, ExecutionTrace, WriteEvent, Event } from '@common/types'
+import { TopologyGraph } from '@common/TopologyGraph'
 
 
 

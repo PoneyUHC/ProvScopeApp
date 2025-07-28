@@ -1,14 +1,16 @@
 
 import React, { useContext, useEffect, useState } from 'react';
-import ExplorerPanel from './ExplorerPanel/ExplorerPanel';
-import GraphPanel from './GraphPanel/GraphPanel';
-import EventPanel from './EventPanel/EventsPanel';
-import { TopologyGraphContext, TopologyGraphContextType } from '@renderer/components/TopologyGraphContext';
-import { TopologyGraph } from '@common/TopologyGraph';
-import { Event } from '@common/types';
 
 import { Allotment } from 'allotment';
 import "allotment/dist/style.css";
+
+import { TopologyGraph } from '@common/TopologyGraph';
+import { Event } from '@common/types';
+
+import ExplorerPanel from './ExplorerPanel/ExplorerPanel';
+import GraphPanel from './TopologyGraphPanel';
+import EventPanel from './EventsPanel/EventsPanel';
+import { TopologyGraphContext, TopologyGraphContextType } from './TopologyGraphContext';
 
 
 const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"

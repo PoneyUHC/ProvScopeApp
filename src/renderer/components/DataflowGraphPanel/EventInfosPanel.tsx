@@ -1,7 +1,6 @@
 
-
+import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/ResizableControlsContainer';
 import { Event } from "@common/types";
-import ResizableControlsContainer from './ResizableControlsContainer';
 
 
 interface EventInfosPanelProps {

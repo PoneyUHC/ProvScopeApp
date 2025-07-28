@@ -1,28 +1,26 @@
 
+import { useEffect, useState } from 'react';
+import Sigma from 'sigma';
 import '@react-sigma/core/lib/style.css';
-
 import {
     SigmaContainer,
     ControlsContainer,
     FullScreenControl,
     ZoomControl,
 } from '@react-sigma/core'
-
 import { NodeSquareProgram } from "@sigma/node-square";
 import { NodeCircleProgram } from "sigma/rendering"
 
-import DataflowGraphEvents from '@renderer/components/DataflowGraphPanel/DataflowGraphEvents';
-import { useEffect, useState} from 'react';
-
-import Sigma from 'sigma';
-import DataflowGraph from '@common/DataflowGraph';
-import EventInfosPanel from './EventInfosPanel';
-
-import { Event } from '@common/types';
-import PatternPanel from './PatternPanel';
-import DragDropListPanel from '../DragDropListPanel';
 import { Allotment } from 'allotment';
+
+import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import { PatternGroup } from '@common/causality';
+import DataflowGraph from '@common/DataflowGraph';
+import { Event } from '@common/types';
+
+import DataflowGraphEvents from './DataflowGraphEvents';
+import PatternPanel from './PatternPanel';
+import EventInfosPanel from './EventInfosPanel';
 
 
 interface DataflowGraphPanelProps {

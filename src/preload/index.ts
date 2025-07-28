@@ -1,7 +1,8 @@
+
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
+
 const api = {
     onLoadTrace: (callback: (filename: string, content: string) => void) => ipcRenderer.on('loadTrace', (_event, filename:  string, content: string) => callback(filename, content)),
     offLoadTrace: (callback: (filename: string, content: string) => void) => ipcRenderer.off('loadTrace', (_event, filename:  string, content: string) => callback(filename, content)),
@@ -23,6 +24,7 @@ const api = {
     onGhidraIsDisconnected2: (callback: () => void) => ipcRenderer.on('ghidraDisconnectedStep2', (_event) => callback()),
     offGhidraIsDisconnected2: (callback: () => void) => ipcRenderer.off('ghidraDisconnectedStep2', (_event) => callback()),
 }
+
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

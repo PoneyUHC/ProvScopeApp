@@ -1,5 +1,5 @@
 
-import { IClonable } from "./utils"
+import { IClonable } from "@common/utils"
 
 
 export class ExecutionTrace implements IClonable<ExecutionTrace> {

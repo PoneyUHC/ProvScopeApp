@@ -1,10 +1,10 @@
 
-import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, ExecutionTrace, OpenEvent, WriteEvent } from "./types"
-
 import DirectedGraph from 'graphology'
-import { toUniform, IClonable } from "./utils"
-
 import FA2Layout from "graphology-layout-forceatlas2"
+
+import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, ExecutionTrace, OpenEvent, WriteEvent } from "@common/types"
+import { toUniform, IClonable } from "@common/utils"
+
 
 
 interface EventInfos {

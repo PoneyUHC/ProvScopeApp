@@ -4,8 +4,11 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { GhidraCommunication } from "../common/src/software/ghidra/GhidraCommunication";
 
-import getMenu from './menuBuilder'
-import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
+import { join } from 'path'
+
+import getMenu from '@main/menuBuilder'
+import goldoIcon from '@common/assets/goldo_icon.png?asset'
+
 
 export let ghidraCommunication: GhidraCommunication | null = null 
 

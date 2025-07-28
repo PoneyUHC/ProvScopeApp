@@ -1,13 +1,16 @@
+
 import React, { ReactElement, useEffect, useState } from 'react';
-import DataflowGraph from '@common/DataflowGraph';
-import ResizableControlsContainer from './ResizableControlsContainer';
 
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 
-import { Event } from '@common/types';
+import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/ResizableControlsContainer';
 import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
+import DataflowGraph from '@common/DataflowGraph';
+import { Event } from '@common/types';
 import { areConnected } from '@common/utils';
+
+
 
 
 interface PatternPanelProps {

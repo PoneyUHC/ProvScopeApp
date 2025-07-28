@@ -1,9 +1,12 @@
 
-import TopologyView from "./views/TopologyView";
-import DataflowGraphView from "./views/DataflowView";
 import { useState, useEffect } from "react";
 
-function App() {
+import TopologyView from "@renderer/views/TopologyView";
+import DataflowGraphView from "@renderer/views/DataflowView";
+
+
+const App = () => {
+
     const [currentView, setCurrentView] = useState<"Dashboard" | "Dataflow">("Dashboard");
 
     useEffect(() => {
@@ -23,6 +26,7 @@ function App() {
 
     return currentView === "Dashboard" ? 
         <TopologyView /> : <DataflowGraphView />
+        
 }
 
 export default App;

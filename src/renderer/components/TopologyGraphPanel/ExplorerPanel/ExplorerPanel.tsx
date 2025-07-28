@@ -1,9 +1,9 @@
 
-import { TopologyGraphContext } from '../TopologyGraphContext';
-import ShowHideButton from './ShowHideButton';
 import { useCallback, useContext } from 'react';
 
-import Error from '../Error';
+import { TopologyGraphContext } from '@renderer/components/TopologyGraphPanel/TopologyGraphContext';
+import ShowHideButton from '@renderer/components/TopologyGraphPanel/ExplorerPanel/ShowHideButton';
+import Error from '@renderer/components/Misc/Error';
 
 
 interface ExplorerPanelProps {

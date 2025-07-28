@@ -1,6 +1,7 @@
 
 import Graph from 'graphology'
 
+
 export function toUniform(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -18,7 +19,7 @@ export function toUniform(str: string): number {
 }
 
 
-interface IClonable<T> {
+export interface IClonable<T> {
     clone(): T
 }
 
@@ -42,6 +43,3 @@ export function areConnected(nodes: string[], graph: Graph): boolean {
 
     return visited.size === nodes.length;
 }
-
-
-export type { IClonable }

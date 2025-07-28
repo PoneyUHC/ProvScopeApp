@@ -1,21 +1,20 @@
 
+import { useContext, useEffect, useState } from 'react';
 import '@react-sigma/core/lib/style.css';
-
 import {
     SigmaContainer,
     ControlsContainer,
     FullScreenControl,
     ZoomControl,
 } from '@react-sigma/core'
-
-import GraphEvents from './GraphPanelEvents';
-import { useContext, useEffect, useState } from 'react';
-import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
-
 import DirectedGraph from 'graphology'
-
-import Error from '@renderer/components/Error';
 import Sigma from 'sigma';
+
+import Error from '@renderer/components/Misc/Error';
+
+import GraphEvents from './TopologyGraphPanelEvents';
+import { TopologyGraphContext } from './TopologyGraphContext';
+
 
 interface GraphPanelProps {
     className?: string;

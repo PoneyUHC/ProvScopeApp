@@ -1,8 +1,11 @@
-import { TopologyGraph } from "@common/TopologyGraph";
-import { useRegisterEvents, useSigma } from "@react-sigma/core";
+
 import { useContext, useEffect, useState } from "react";
+import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
-import { TopologyGraphContext } from '@renderer/components/TopologyGraphContext';
+
+import { TopologyGraph } from "@common/TopologyGraph";
+
+import { TopologyGraphContext } from './TopologyGraphContext';
 
 
 interface GraphEventsProps {
