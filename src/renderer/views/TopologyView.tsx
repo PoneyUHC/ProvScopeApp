@@ -3,9 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import Workspace from "@renderer/components/TopologyGraphPanel/Workspace";
 import { TopologyGraphProvider } from "@renderer/components/TopologyGraphPanel/TopologyGraphContext";
-import Header from "@renderer/components/Misc/Header";
 import TabButton from "@renderer/components/Misc/TabButton";
-import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/types";
 import { TopologyGraph } from "@common/TopologyGraph";
 
@@ -94,54 +92,44 @@ const TopologyView: React.FC = () => {
     }, [])
 
         
-
-    let body: JSX.Element
-
     if ( topologyGraphs.length === 0 || currentWorkspace === null ) {
-        body = (
+        return (
             <div className="flex items-center justify-center h-full text-red-600">
                 No graphs loaded
             </div>
         )
-    } else {
-        body = (
-            <div className="w-full h-full flex flex-col">
-                <div className="flex flex-row overflow-auto">
-                {
-                    Array.from(topologyGraphs).map((topologyGraph, index) => {
-
-                        const text = topologyGraph.traceName;
-
-                        return (
-                            <div className="flex items-center">
-                                <TabButton
-                                    mainClick={() => setCurrentWorkspace(index)}
-                                    deleteClick={deleteClick}
-                                    index={index}
-                                    className="p-2 border-b-2 border-black-200"
-                                    text={text}
-                                    isSelected={isSelected(index)}
-                                    selectedButtonStyle={tabSelectedButtonStyle}
-                                    notSelectedButtonStyle={tabNotSelectedButtonStyle}
-                                />
-                            </div>
-                        )
-                    })
-                }
-                </div>
-                
-                <TopologyGraphProvider>
-                    <Workspace topologyGraph={topologyGraphs[currentWorkspace]} addTrace={addTrace}/>
-                </TopologyGraphProvider>
-            </div>
-        )
     }
-
+        
+    
     return (
-        <div className='w-screen h-screen flex flex-col'>
-            <Header/>
-            <Title content="Dashboard"/>  
-            {body}
+        <div className="w-full h-full flex flex-col">
+            <div className="flex flex-row overflow-auto">
+            {
+                Array.from(topologyGraphs).map((topologyGraph, index) => {
+
+                    const text = topologyGraph.traceName;
+
+                    return (
+                        <div className="flex items-center">
+                            <TabButton
+                                mainClick={() => setCurrentWorkspace(index)}
+                                deleteClick={deleteClick}
+                                index={index}
+                                className="p-2 border-b-2 border-black-200"
+                                text={text}
+                                isSelected={isSelected(index)}
+                                selectedButtonStyle={tabSelectedButtonStyle}
+                                notSelectedButtonStyle={tabNotSelectedButtonStyle}
+                            />
+                        </div>
+                    )
+                })
+            }
+            </div>
+            
+            <TopologyGraphProvider>
+                <Workspace topologyGraph={topologyGraphs[currentWorkspace]} addTrace={addTrace}/>
+            </TopologyGraphProvider>
         </div>
     )
 }

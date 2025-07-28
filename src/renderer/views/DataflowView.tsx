@@ -1,8 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 
-import Header from '@renderer/components/Misc/Header';
-import Title from '@renderer/components/Misc/Title';
 import DataflowGraphPanel from '@renderer/components/DataflowGraphPanel/DataflowGraphPanel';
 import { ExecutionTrace } from '@common/types';
 import DataflowGraph from '@common/DataflowGraph';
@@ -47,29 +45,21 @@ const DataflowGraphView: React.FC = () => {
 
     if ( ! dataflowGraph ) {
         return (
-            <div className='w-screen h-screen flex flex-col'>
-                <Header/>
-                <Title content="Dataflow"/>
-                <div className="flex items-center justify-center h-full text-red-600">
-                    No graphs loaded
-                </div>
+            <div className="flex items-center justify-center h-full text-red-600">
+                No graphs loaded
             </div>
         )
     }
 
     return (
-        <div className='w-screen h-screen flex flex-col'>
-            <Header/>
-            <Title content="Dataflow"/>
-            <div className="w-full h-5/6 flex flex-col flex-grow overflow-auto pr-2 pl-2 pt-2">
-                <DataflowGraphPanel
-                    className="h-full"
-                    dataflowGraph={dataflowGraph}
-                />
-            </div>
+        <div className="w-full h-5/6 flex flex-col flex-grow overflow-auto pr-2 pl-2 pt-2">
+            <DataflowGraphPanel
+                className="h-full"
+                dataflowGraph={dataflowGraph}
+            />
         </div>
         
     );
-};
+}
 
 export default DataflowGraphView;
