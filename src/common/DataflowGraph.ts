@@ -9,6 +9,8 @@ import { TopologyGraph } from '@common/TopologyGraph'
 
 class DataflowGraph {
 
+    trace: ExecutionTrace
+    topologyGraph: TopologyGraph
     graph: DirectedGraph
     events: Event[]
     versions: Map<string, number>
@@ -19,7 +21,9 @@ class DataflowGraph {
     testCausalLink: CausalLink[]
     testSource: EventPattern[]
 
-    constructor(trace: Readonly<ExecutionTrace>) {
+    constructor(trace: ExecutionTrace, topologyGraph: TopologyGraph) {
+        this.trace = trace
+        this.topologyGraph = topologyGraph
         this.graph = new DirectedGraph()
         this.events = []
         this.versions = new Map<string, number>()
@@ -43,14 +47,14 @@ class DataflowGraph {
             ),
         ]
 
-        const clientProcess = trace.processes.find(p => p.name === 'client.bin' && p.pid === 26609);
+        const clientProcess = this.trace.processes.find(p => p.name === 'client.bin' && p.pid === 26609);
         this.testSource = [
             new EventPattern(new Map<string, PatternValue>([
                 ['process', new PatternValue(clientProcess)],
             ]))
         ]
 
-        this.loadTrace(trace)
+        this.loadTrace()
     }
 
 
@@ -70,11 +74,9 @@ class DataflowGraph {
     }
 
 
-    loadTrace(trace: ExecutionTrace) {
+    loadTrace() {
 
-        const traceGraph = TopologyGraph.create(trace)
-
-        for (const file of trace.files) {
+        for (const file of this.trace.files) {
 
             const node = this.graph.addNode(file.path, {
                 x: 0, 
@@ -90,7 +92,7 @@ class DataflowGraph {
             this.versions.set(file.path, 0)
         }
 
-        for (const process of trace.processes) {
+        for (const process of this.trace.processes) {
 
             const processUUID = process.getUUID()
             const node = this.graph.addNode(processUUID, {
@@ -121,13 +123,13 @@ class DataflowGraph {
             this.versions.set(stdoutName, 0)
         }
 
-        this.loadEvents(traceGraph)
+        this.loadEvents()
     }
 
 
-    loadEvents(traceGraph: TopologyGraph) {
+    loadEvents() {
         
-        const allEvent = traceGraph.getEvents()
+        const allEvent = this.trace.events
 
         for (const event of allEvent) {
             if (event instanceof ExitReadEvent) {

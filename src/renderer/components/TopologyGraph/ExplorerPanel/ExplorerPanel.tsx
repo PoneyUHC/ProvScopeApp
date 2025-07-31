@@ -27,9 +27,9 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className, topologyGraph 
     const handleToggle = (node: string) => {
         const objectName = topologyGraph.getGraph().getNodeAttribute(node, 'objectName');
         if (hiddenObjects.includes(objectName)) {
-            hideObject(objectName);
-        } else {
             showObject(objectName);
+        } else {
+            hideObject(objectName);
         }
     }
 
@@ -39,12 +39,13 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className, topologyGraph 
 
         return Array.from(nodesByGroup).map((pair) => {
             return (
-                <div className='mb-5 rounded-t-2xl overflow-hidden border border-black flex flex-col'>
+                <div className='mb-5 rounded-t-2xl overflow-hidden border border-black flex flex-col' key={pair[0]}>
                     <h1 className='text-xl font-semibold pl-3 bg-gray-300 flex-grow'>{pair[0]}</h1>
                         {
                             pair[1].map((node) => {
                                 return (
-                                    <ShowHideButton 
+                                    <ShowHideButton
+                                        key={node}
                                         content={node}
                                         onClick={() => handleClick(node)}
                                         onToggle={() => handleToggle(node)}

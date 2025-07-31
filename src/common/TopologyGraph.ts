@@ -19,21 +19,17 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
 
     private graph: DirectedGraph
     private trace: ExecutionTrace
-    selectedNode: string
-    selectedEvent: Event
     traceName: string;
-    hiddenNodes: Set<string>
-    hiddenEvents: Set<Event>
+    hiddenObjects: Set<string>
+    currentEvent: Event 
 
     // shouldInit is used to make more efficient copies
     private constructor(trace: ExecutionTrace, shouldInit: boolean) {
         this.trace = trace
         this.graph = new DirectedGraph()
-        this.selectedNode = trace.events[0].process.getUUID()
-        this.selectedEvent = trace.events[0]
-        this.hiddenNodes = new Set<string>()
-        this.hiddenEvents = new Set<Event>()
         this.traceName = trace.filename.split('/').pop() || ""
+        this.hiddenObjects = new Set<string>()
+        this.currentEvent = trace.events[0]
 
         if ( shouldInit ) {
             this.graph = this.computeGraphFromTrace()
@@ -55,12 +51,9 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     clone (): TopologyGraph {
         const other = new TopologyGraph(this.trace, false)
         other.graph = this.graph.copy()
-        
-        other.selectedEvent = this.selectedEvent
-        other.selectedNode = this.selectedNode
-        other.hiddenNodes = new Set([...this.hiddenNodes])
-        other.hiddenEvents = new Set([...this.hiddenEvents])
-        other.applyUntilEvent(other.selectedEvent)        
+
+        other.hiddenObjects = new Set([...this.hiddenObjects])
+        other.applyUntilEvent(other.currentEvent)
         return other
     }
 
@@ -70,31 +63,10 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     }
 
 
-    // TODO: add visible events set for more efficient computation
-    getEvents(): Event[] {
-        return this.trace.events.filter(e => !this.hiddenEvents.has(e))
-    }
-
-
-    hideNode(node: string) {
-        this.hiddenNodes.add(node)
-        this.graph.setNodeAttribute(node, 'hidden', true)
-    }
-
-
-    showNode(node: string) {
-        this.hiddenNodes.delete(node)
-        this.graph.setNodeAttribute(node, 'hidden', false)
-    }
-
-
-    hideEvent(event: Event) {
-        this.hiddenEvents.add(event)
-    }
-
-
-    showEvent(event: Event) {
-        this.hiddenEvents.delete(event)
+    hideObjects(objectNames: string[]) {
+        for (const objectName of objectNames) {
+            this.hiddenObjects.add(objectName);
+        }
     }
 
 
@@ -104,12 +76,28 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
 
         for (const file of this.trace.files) {
             const fileLabel = file.path;
-            graph.addNode(fileLabel, { x: toUniform(fileLabel)*10, y: toUniform(fileLabel+'1')*10, size: 10, color: "green", label: fileLabel, group: 'Files' });
+            graph.addNode(fileLabel, {
+                x: toUniform(fileLabel)*10,
+                y: toUniform(fileLabel+'1')*10,
+                size: 10,
+                color: "green",
+                label: fileLabel,
+                objectName: fileLabel,
+                group: 'Files'
+            });
         }
     
         for (const process of this.trace.processes) {
             const processLabel = process.getUUID();
-            graph.addNode(processLabel, { x: toUniform(processLabel)*10, y: toUniform(processLabel+'1')*10, size: 10, color: "red", label: processLabel, group: 'Processes' });
+            graph.addNode(processLabel, { 
+                x: toUniform(processLabel)*10,
+                y: toUniform(processLabel+'1')*10,
+                size: 10,
+                color: "red",
+                label: processLabel,
+                objectName: processLabel,
+                group: 'Processes'
+            });
         }
 
         for (const event of this.trace.events) {
@@ -121,7 +109,15 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
                 // TODO: fd = 1 is always STDOUT
                 const nodeLabel = `${processLabel}-STDOUT`;
                 if (!graph.hasNode(nodeLabel)) {
-                    graph.addNode(nodeLabel, { x: toUniform(nodeLabel)*10, y: toUniform(nodeLabel+'1')*10, size: 10, color: "blue", label: nodeLabel, group: 'Channels' });
+                    graph.addNode(nodeLabel, { 
+                        x: toUniform(nodeLabel)*10,
+                        y: toUniform(nodeLabel+'1')*10,
+                        size: 10,
+                        color: "blue",
+                        label: nodeLabel,
+                        objectName: nodeLabel,
+                        group: 'Channels'
+                    });
                 }
                 
                 if ( !graph.hasEdge(processLabel, nodeLabel) ) {
@@ -168,64 +164,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         }
 
         return eventInfos
-    }
-
-
-
-    getBackwardEvents(targetEvent: Event): Event[] {
-        
-        const backwardCauses = [targetEvent]
-        const nodesReached = new Set<string>()
-
-        const tmpGraph = this.graph.copy()
-        this.applyUntilEvent(targetEvent, tmpGraph)
-
-        const eventInfos = TopologyGraph.getDataTransferInfos(targetEvent, tmpGraph)
-
-        nodesReached.add(eventInfos.processUUID)
-        if ( eventInfos.dataTransfer ){
-            nodesReached.add(eventInfos.dataSource)
-            nodesReached.add(eventInfos.dataDestination)
-        }
-
-        const startIndex = this.getEvents().indexOf(targetEvent)
-        const previousEvents = this.getEvents().slice(0, startIndex).reverse()
-
-        for( const event of previousEvents ) {
-            
-            this.applyUntilEvent(event, tmpGraph)
-            const eventInfos = TopologyGraph.getDataTransferInfos(event, tmpGraph)
-            
-            if ( ! eventInfos.dataTransfer ){
-                continue
-            }
-
-            if ( nodesReached.has(eventInfos.dataDestination) ) {
-                nodesReached.add(eventInfos.dataSource)
-                backwardCauses.push(event)
-            }
-        }
-
-        return backwardCauses
-    }
-
-
-
-    backwardTraceFrom(targetEvent: Event): TopologyGraph {
-
-        const backwardEvents = this.getBackwardEvents(targetEvent)
-        
-        const clone = this.clone()
-        const events = clone.getEvents()
-
-        clone.traceName = `${this.traceName} `+ "_" + targetEvent.id.toString()
-        for( const event of events ) {
-            if ( ! backwardEvents.includes(event) ){
-                clone.hideEvent(event)
-            }
-        }
-
-        return clone
     }
 
 
@@ -371,7 +309,8 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         const modifiedTrace = this.trace.clone()
         const graph = this.graph
 
-        for (const node of this.hiddenNodes) {
+        for (const objectName of this.hiddenObjects) {
+            const node = graph.filterNodes((_, nodeAttribs) => nodeAttribs.objectName === objectName)[0]
             const group = graph.getNodeAttribute(node, 'group')
             if ( group === 'Processes' ){
                 removeProcess(node, modifiedTrace)
@@ -415,8 +354,10 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     }
 
 
-    highlightNode(node: string) {
-        this.graph.setNodeAttribute(node, 'highlighted', true)
+    highlightNodes(nodes: string[]) {
+        for (const node of nodes) {
+            this.graph.setNodeAttribute(node, 'highlighted', true)
+        }
     }
 
 

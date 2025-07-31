@@ -1,5 +1,5 @@
 
-import React, { useCallback, useContext } from 'react';
+import React, { useContext } from 'react';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceContext';
 import { TopologyGraph } from '@common/TopologyGraph';
@@ -19,6 +19,7 @@ interface EventPanelProps {
 const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, eventsStyle, onRightClick}) => {
 
     const { 
+        executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent],
         selectedObjects: [_selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
@@ -49,7 +50,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, event
         setSelectedObjects([event.getObjectName()])
     }
 
-    const events = topologyGraph.getEvents()
+    const events = executionTrace?.events || [];
 
     const displayedEvents = events.filter((event) => {
         const objectName = event.getObjectName();

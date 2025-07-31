@@ -1,9 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
 import { TopologyGraph } from "@common/TopologyGraph";
+import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceContext";
 
 
 interface GraphEventsProps {
@@ -13,17 +14,50 @@ interface GraphEventsProps {
 
 const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
 
+    const {
+        selectedObjects: [selectedObjects, setSelectedObjects],
+        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+        selectedEvent: [selectedEvent, _setSelectedEvent],
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
     
 
-    const onDownNode = (e: SigmaNodeEventPayload) => {
+    useEffect(() => {
+
+        if (!selectedEvent) {
+            return;
+        }
+
+        topologyGraph.applyUntilEvent(selectedEvent);
+
+    }, [selectedEvent])
+
+
+    useEffect(() => {
 
         topologyGraph.clearHighlights();
+        
+        topologyGraph.highlightNodes(selectedObjects);
 
+    }, [selectedObjects])
+
+
+    useEffect(() => {
+
+        topologyGraph.hideObjects(hiddenObjects);
+
+    }, [hiddenObjects])
+
+
+    const onDownNode = (e: SigmaNodeEventPayload) => {
+
+        const objectName = topologyGraph.getGraph().getNodeAttribute(e.node, 'objectName');
+
+        setSelectedObjects([objectName]);
         setDraggedNode(e.node);
-        topologyGraph.highlightNode(e.node);
     }
 
     const onMouseMove = (event: MouseCoords) => {
