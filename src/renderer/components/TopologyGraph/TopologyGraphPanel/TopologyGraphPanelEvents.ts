@@ -3,22 +3,26 @@ import { useContext, useEffect, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
-import { TopologyGraph } from "@common/TopologyGraph";
-import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceContext";
+import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
+
+import { TopologyGraphContext, TopologyGraphContextType } from "../TopologyGraphProvider";
 
 
-interface GraphEventsProps {
-    topologyGraph: TopologyGraph;
-}
-
-
-const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
+const TopologyGraphEvents: React.FC = () => {
 
     const {
         selectedObjects: [selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
         selectedEvent: [selectedEvent, _setSelectedEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+    const {
+        topologyGraph 
+    } = useContext<TopologyGraphContextType>(TopologyGraphContext);
+
+    if (!topologyGraph) {
+        return null;
+    }
 
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
@@ -38,16 +42,19 @@ const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
 
     useEffect(() => {
 
-        topologyGraph.clearHighlights();
-        
-        topologyGraph.highlightNodes(selectedObjects);
-
+        const graph = topologyGraph.getGraph();
+        graph.forEachNode((node) => {
+            graph.setNodeAttribute(node, 'highlighted', selectedObjects.includes(node))
+        });
     }, [selectedObjects])
 
 
     useEffect(() => {
 
-        topologyGraph.hideObjects(hiddenObjects);
+        const graph = topologyGraph.getGraph();
+        graph.forEachNode((node) => {
+            graph.setNodeAttribute(node, 'hidden', hiddenObjects.includes(node))
+        });
 
     }, [hiddenObjects])
 
@@ -81,7 +88,7 @@ const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
 
     const onStageMouseUp = () => {
         setDraggedNode(null);
-        topologyGraph.clearHighlights();
+        setSelectedObjects([]);
     }
 
 
@@ -99,4 +106,4 @@ const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
 };
 
 
-export default GraphEvents;
+export default TopologyGraphEvents;

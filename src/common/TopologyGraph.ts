@@ -6,21 +6,11 @@ import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, ExecutionTra
 import { toUniform, IClonable } from "@common/utils"
 
 
-
-interface EventInfos {
-    processUUID: string;
-    dataTransfer: boolean;
-    dataSource: string;
-    dataDestination: string;
-}
-
-
 export class TopologyGraph implements IClonable<TopologyGraph> {
 
     private graph: DirectedGraph
     private trace: ExecutionTrace
     traceName: string;
-    hiddenObjects: Set<string>
     currentEvent: Event 
 
     // shouldInit is used to make more efficient copies
@@ -28,7 +18,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         this.trace = trace
         this.graph = new DirectedGraph()
         this.traceName = trace.filename.split('/').pop() || ""
-        this.hiddenObjects = new Set<string>()
         this.currentEvent = trace.events[0]
 
         if ( shouldInit ) {
@@ -52,7 +41,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         const other = new TopologyGraph(this.trace, false)
         other.graph = this.graph.copy()
 
-        other.hiddenObjects = new Set([...this.hiddenObjects])
         other.applyUntilEvent(other.currentEvent)
         return other
     }
@@ -60,13 +48,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
 
     getGraph = (): Readonly<DirectedGraph> => {
         return this.graph
-    }
-
-
-    hideObjects(objectNames: string[]) {
-        for (const objectName of objectNames) {
-            this.hiddenObjects.add(objectName);
-        }
     }
 
 
@@ -121,7 +102,13 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
                 }
                 
                 if ( !graph.hasEdge(processLabel, nodeLabel) ) {
-                    const edge = graph.addEdge(processLabel, nodeLabel, { size: 3, color: "black", type: 'arrow', label: '', forceLabel: true });
+                    const edge = graph.addEdge(processLabel, nodeLabel, { 
+                        size: 3, 
+                        color: "black", 
+                        type: 'arrow', 
+                        label: '', 
+                        forceLabel: true 
+                    });
                     graph.setEdgeAttribute(edge, "definitive", true);
                     graph.setEdgeAttribute(edge, "fd", 1);
                     graph.setEdgeAttribute(edge, "isOpened", true);            
@@ -132,38 +119,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         FA2Layout.assign(graph, {iterations: 50});
 
         return graph
-    }
-
-
-    static getDataTransferInfos(event: Event, lookupGraph: DirectedGraph): EventInfos {
-
-        const eventInfos = {} as EventInfos
-
-        eventInfos.processUUID = event.process.getUUID()
-
-        if ( event instanceof ExitReadEvent) {
-            
-            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
-            const dataSource = lookupGraph.target(edge)
-            eventInfos.dataTransfer = true
-            eventInfos.dataSource = dataSource
-            eventInfos.dataDestination = eventInfos.processUUID
-        
-        } else if ( event instanceof WriteEvent ) {
-
-            const edge = lookupGraph.findEdge((_, edgeAttribs, source) => source === eventInfos.processUUID && edgeAttribs.fd === event.fd && edgeAttribs.isOpened)
-            const dataDestination = lookupGraph.target(edge)
-            eventInfos.dataTransfer = true
-            eventInfos.dataSource = eventInfos.processUUID
-            eventInfos.dataDestination = dataDestination
-
-        } else {
-
-            eventInfos.dataTransfer = false
-
-        }
-
-        return eventInfos
     }
 
 
@@ -294,7 +249,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     }
 
 
-    toJSON() {
+    toJSON(hiddenObjects: string[]): string {
 
         const removeFile = (path: string, trace: ExecutionTrace) => {
             trace.files = trace.files.filter(f => f.path !== path)
@@ -309,7 +264,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         const modifiedTrace = this.trace.clone()
         const graph = this.graph
 
-        for (const objectName of this.hiddenObjects) {
+        for (const objectName of hiddenObjects) {
             const node = graph.filterNodes((_, nodeAttribs) => nodeAttribs.objectName === objectName)[0]
             const group = graph.getNodeAttribute(node, 'group')
             if ( group === 'Processes' ){
@@ -322,18 +277,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         }
 
         return ExecutionTrace.toJSON(modifiedTrace)
-    }
-
-
-    getEventDescription(event: Event) {
-    
-        const processUUID = event.process.getUUID();
-
-        if ( ! (event instanceof FSEvent) ) {
-            return "Error: not a FSEvent"
-        }
-
-        return `${processUUID} ${event.getKeyword()} ${event.filepath}`
     }
 
 
@@ -351,19 +294,5 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         }
 
         return nodesByGroup
-    }
-
-
-    highlightNodes(nodes: string[]) {
-        for (const node of nodes) {
-            this.graph.setNodeAttribute(node, 'highlighted', true)
-        }
-    }
-
-
-    clearHighlights() {
-        for (const n of this.graph.nodes()) {
-            this.graph.setNodeAttribute(n, 'highlighted', false)
-        }
     }
 }

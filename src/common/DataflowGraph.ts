@@ -3,14 +3,12 @@ import DirectedGraph from 'graphology'
 
 import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from '@common/causality'
 import { ExitReadEvent, ExecutionTrace, WriteEvent, Event } from '@common/types'
-import { TopologyGraph } from '@common/TopologyGraph'
 
 
 
 class DataflowGraph {
 
     trace: ExecutionTrace
-    topologyGraph: TopologyGraph
     graph: DirectedGraph
     events: Event[]
     versions: Map<string, number>
@@ -21,9 +19,8 @@ class DataflowGraph {
     testCausalLink: CausalLink[]
     testSource: EventPattern[]
 
-    constructor(trace: ExecutionTrace, topologyGraph: TopologyGraph) {
+    constructor(trace: ExecutionTrace) {
         this.trace = trace
-        this.topologyGraph = topologyGraph
         this.graph = new DirectedGraph()
         this.events = []
         this.versions = new Map<string, number>()

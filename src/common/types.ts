@@ -196,6 +196,8 @@ export abstract class Event {
         return this.process.getUUID()
     }
 
+    abstract getDescription(): string
+
     abstract getKeyword(): string
 }
 
@@ -209,6 +211,11 @@ export abstract class FSEvent extends Event {
         super(timestamp, process)
         this.fd = fd
         this.filepath = "TBD" // Placeholder, can be set later
+    }
+
+    getDescription() {
+        const processUUID = this.process.getUUID();
+        return `${processUUID} ${this.getKeyword()} ${this.filepath}`
     }
 }
 

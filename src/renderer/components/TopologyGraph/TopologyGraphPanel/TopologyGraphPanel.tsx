@@ -1,4 +1,5 @@
 
+import { useContext } from 'react';
 import '@react-sigma/core/lib/style.css';
 import {
     SigmaContainer,
@@ -8,19 +9,28 @@ import {
 } from '@react-sigma/core'
 import Sigma from 'sigma';
 
-import { TopologyGraph } from '@common/TopologyGraph';
+import Error from '@renderer/components/Misc/Error';
 
-import GraphEvents from './TopologyGraphPanelEvents';
+import { TopologyGraphContext, TopologyGraphContextType } from '../TopologyGraphProvider';
+import TopologyGraphEvents from './TopologyGraphPanelEvents';
 
 
 interface TopologyGraphPanelProps {
     className?: string;
-    topologyGraph: TopologyGraph;
     setSigma: (sigma: Sigma) => void;
 }
 
 
-const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, topologyGraph, setSigma }) => {
+const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, setSigma }) => {
+
+    const { 
+        topologyGraph 
+    } = useContext<TopologyGraphContextType>(TopologyGraphContext);
+
+    if (!topologyGraph) {
+        return <Error message={"Topology graph is not available."} />;
+    }
+
 
     return (
         <div className={`flex items-center justify-center font-mono ${className}`}>
@@ -36,7 +46,7 @@ const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, topo
                     <ZoomControl />
                     <FullScreenControl />
                 </ControlsContainer>
-                <GraphEvents topologyGraph={topologyGraph}/>
+                <TopologyGraphEvents topologyGraph={topologyGraph}/>
             </SigmaContainer>
         </div>
         

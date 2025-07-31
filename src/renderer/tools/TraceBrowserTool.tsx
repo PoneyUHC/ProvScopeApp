@@ -6,7 +6,7 @@ import DataflowGraphView from "@renderer/views/DataflowView";
 import Header from "@renderer/components/Misc/Header";
 import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/types";
-import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceContext";
+import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
 
 const TraceBrowserTool: FC = () => {

@@ -1,22 +1,22 @@
 
 import React, { useContext } from 'react';
 
-import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceContext';
-import { TopologyGraph } from '@common/TopologyGraph';
+import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { Event } from '@common/types';
+import Error from '@renderer/components/Misc/Error';
 
 import EventButton from './EventButton';
+import { TopologyGraphContext, TopologyGraphContextType } from '../TopologyGraphProvider';
 
 
 interface EventPanelProps {
     className?: string;
-    topologyGraph: TopologyGraph;
     eventsStyle?: string;
     onRightClick?: (event: Event) => void;
 }
 
 
-const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, eventsStyle, onRightClick}) => {
+const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
 
     const { 
         executionTrace: executionTrace,
@@ -24,6 +24,14 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, event
         selectedObjects: [_selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+    const {
+        topologyGraph: topologyGraph,
+    } = useContext<TopologyGraphContextType>(TopologyGraphContext);
+
+    if (!topologyGraph) {
+        return <Error message={"Topology graph is not available."} />;
+    }
 
 
     const getButtonBgColor = (event: Event) => {
@@ -60,7 +68,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, event
     const eventButtonList = displayedEvents.map((event, _i) => {
 
         let bgColor = getButtonBgColor(event)
-        const content = topologyGraph.getEventDescription(event)
+        const content = event.getDescription()
         const originalIndex = event.id
 
         return (

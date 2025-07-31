@@ -1,24 +1,33 @@
 
 import { useCallback, useContext } from 'react';
 
-import { ExecutionTraceContext } from '@renderer/components/TraceBrowserTool/ExecutionTraceContext';
+import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
+import { TopologyGraphContext, TopologyGraphContextType } from '@renderer/components/TopologyGraph/TopologyGraphProvider';
 import ShowHideButton from '@renderer/components/TopologyGraph/ExplorerPanel/ShowHideButton';
-import { TopologyGraph } from '@common/TopologyGraph';
+import Error from '@renderer/components/Misc/Error';
 
 
 interface ExplorerPanelProps {
     className?: string;
-    topologyGraph: TopologyGraph;
 }
 
 
-const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className, topologyGraph }) => {
+const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const {
         selectedObjects: [selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, hideObject, showObject],
-    } = useContext(ExecutionTraceContext);
-    
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+    const {
+        topologyGraph: topologyGraph,
+    } = useContext<TopologyGraphContextType>(TopologyGraphContext);
+
+    if (!topologyGraph) {
+        return <Error message={"Topology graph is not available."} />;
+    }
+
+
     const handleClick = (node: string) => {
         const objectName = topologyGraph.getGraph().getNodeAttribute(node, 'objectName');
         setSelectedObjects([objectName]);
@@ -61,11 +70,10 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className, topologyGraph 
         })
     }, [topologyGraph, selectedObjects, hiddenObjects])
 
-    const buttons = getNodeGroupsButtons()
 
     return (
         <div className={`${className} overflow-auto`}>
-            {buttons}
+            {getNodeGroupsButtons()}
         </div>
     )
 }
