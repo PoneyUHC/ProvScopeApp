@@ -1,138 +1,73 @@
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useContext, useState, useRef, useEffect } from 'react';
+import Sigma from 'sigma';
 
-import Workspace from "@renderer/components/TopologyGraphPanel/Workspace";
-import { TopologyGraphProvider } from "@renderer/components/TopologyGraphPanel/TopologyGraphContext";
-import TabButton from "@renderer/components/Misc/TabButton";
-import { ExecutionTrace } from "@common/types";
-import { TopologyGraph } from "@common/TopologyGraph";
+import { Allotment } from 'allotment';
+import "allotment/dist/style.css";
+
+import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceContext';
+import { TopologyGraph } from '@common/TopologyGraph';
+
+import ExplorerPanel from '@renderer/components/TopologyGraph/ExplorerPanel/ExplorerPanel';
+import TopologyGraphPanel from '@renderer/components/TopologyGraph/TopologyGraphPanel/TopologyGraphPanel';
+import EventPanel from '@renderer/components/TopologyGraph/EventsPanel/EventsPanel';
 
 
-const tabSelectedButtonStyle = "bg-white border border-b-transparent border-black-200 text-black"
-const tabNotSelectedButtonStyle = "bg-gray-200 text-gray-600 border border-b-black-300 hover:bg-black-300"
+const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
 
 
 const TopologyView: React.FC = () => {
-
-    const [topologyGraphs, setTopologyGraphs] = useState<TopologyGraph[]>([])
-    const [currentWorkspace, setCurrentWorkspace] = useState<number | null>(null)
-
-
-    const addTrace = useCallback((topologyGraph: TopologyGraph) => {
-        setTopologyGraphs(prevTopologyGraphs => [...prevTopologyGraphs, topologyGraph])
-        setCurrentWorkspace(prevCurrentWorkspace => prevCurrentWorkspace === null ? 0 : topologyGraphs.length)
-    }, [topologyGraphs])
-        
-    const loadTrace = useCallback((filename: string, content: string) => {
-        console.log(`Loading trace ${filename}`)
-        const json = JSON.parse(content)
-        const trace = ExecutionTrace.createInstanceFromJSON(filename, json)
-        const topologyGraph = TopologyGraph.create(trace)
-        addTrace(topologyGraph)
-    }, [addTrace])
-
-
-    const exportTrace = useCallback(() => {
-        
-        if ( topologyGraphs.length === 0 || currentWorkspace === null ) {   
-            return
-        }
-
-        const topologyGraph = topologyGraphs[currentWorkspace]
-
-        const filenameParts = topologyGraph.getTrace().filename.split('.');
-        const filenamePrefix = filenameParts[0]
-        const extension = filenameParts[1]
-        const defaultFilename = `${filenamePrefix}_export.${extension}`
-
-        const content = topologyGraph.toJSON()
-        
-        window.api.exportTrace(defaultFilename, content)
-    }, [currentWorkspace, topologyGraphs])
-
-
-    const deleteClick = useCallback((index) => { 
-        if (topologyGraphs.length === 1) {
-            setCurrentWorkspace(null);
-            setTopologyGraphs([]);
-            return;
-        }
-        
-        setTopologyGraphs((prev) => {
-            const newGraphs = prev.filter((_, i) => i !== index);
-            // We adjust the current workspace index if necessary
-            if (currentWorkspace !== null) {
-                if (index === currentWorkspace) {
-                    setCurrentWorkspace(newGraphs.length > 0 ? 0 : null);
-                } else if (index < currentWorkspace) {
-                    setCurrentWorkspace(currentWorkspace - 1);
-                }
-            }
-            return newGraphs;
-        });
-    }, [topologyGraphs, currentWorkspace]) 
-
- 
-    const isSelected = useCallback((index) => {
-        return currentWorkspace === index
-    }, [currentWorkspace])
-
     
-    useEffect(() => {
-        window.api.onLoadTrace( loadTrace )
-        window.api.onRequestExportTrace( exportTrace )
+    const {
+        executionTrace: trace,
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
-        return () => {
-            // FIXME: callback being updated each time, a simple off for specific events does no work
-            // as the callback is not the same and cannot be targeted for removal
-            // Or this is a problem in preload/index.ts, where a lambda is not considered the same code anyway
-            window.api.offAll()
-        }
-
-    }, [])
-
-        
-    if ( topologyGraphs.length === 0 || currentWorkspace === null ) {
-        return (
-            <div className="flex items-center justify-center h-full text-red-600">
-                No graphs loaded
-            </div>
-        )
+    const initGraph = (): TopologyGraph => {
+        return TopologyGraph.create(trace!)
     }
-        
-    
+    const topologyGraph = useRef<TopologyGraph>(initGraph());
+    const [sigma, setSigma] = useState<Sigma | null>(null);
+
+    useEffect(() => {
+        if (!sigma) return;
+        if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
+    }, [sigma]);
+
+
+    const onDragEnd = () => {
+        if (!sigma) return;
+        sigma.refresh();
+    }
+
+
     return (
-        <div className="w-full h-full flex flex-col">
-            <div className="flex flex-row overflow-auto">
-            {
-                Array.from(topologyGraphs).map((topologyGraph, index) => {
-
-                    const text = topologyGraph.traceName;
-
-                    return (
-                        <div className="flex items-center">
-                            <TabButton
-                                mainClick={() => setCurrentWorkspace(index)}
-                                deleteClick={deleteClick}
-                                index={index}
-                                className="p-2 border-b-2 border-black-200"
-                                text={text}
-                                isSelected={isSelected(index)}
-                                selectedButtonStyle={tabSelectedButtonStyle}
-                                notSelectedButtonStyle={tabNotSelectedButtonStyle}
-                            />
-                        </div>
-                    )
-                })
-            }
-            </div>
-            
-            <TopologyGraphProvider>
-                <Workspace topologyGraph={topologyGraphs[currentWorkspace]} addTrace={addTrace}/>
-            </TopologyGraphProvider>
+        <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
+            <Allotment className={`${borderStyles}`} onDragEnd={onDragEnd}>
+                <Allotment.Pane minSize={200} preferredSize={"15%"}>
+                    <ExplorerPanel
+                        className={`h-full ${borderStyles}`}
+                        topologyGraph={topologyGraph.current}
+                    />
+                </Allotment.Pane>
+                <Allotment.Pane minSize={200} preferredSize={"70%"} className="w-full">
+                    <TopologyGraphPanel
+                        className={`h-full ${borderStyles}`}
+                        topologyGraph={topologyGraph.current}
+                        setSigma={setSigma}
+                    />
+                </Allotment.Pane>
+                <Allotment.Pane minSize={200} preferredSize={"15%"}>
+                    <EventPanel
+                        className={`h-full ${borderStyles}`}
+                        eventsStyle="w-full h-auto border border-black"
+                        topologyGraph={topologyGraph.current}
+                        onRightClick={() => {}}
+                    />
+                </Allotment.Pane>
+            </Allotment>
         </div>
     )
-}
+};
 
 
 export default TopologyView;

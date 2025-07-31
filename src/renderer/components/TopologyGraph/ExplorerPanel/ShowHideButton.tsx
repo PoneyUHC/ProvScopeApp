@@ -6,7 +6,7 @@ import HiddenIcon from '@renderer/assets/hidden.svg';
 interface ShowHideButtonProps {
     content: string;
     onToggle: () => void;
-    onClick: (node: string) => void;
+    onClick: () => void;
     selected: boolean;
     visible: boolean;
 }
@@ -24,7 +24,7 @@ const ShowHideButton: React.FC<ShowHideButtonProps> = ({ content, onToggle, onCl
         <div className={`flex ${borderStyle}`}>
             <button key={1}
                 className="flex-1 border-r border-black"
-                onClick={() => onClick(content)}
+                onClick={() => onClick()}
             >
                 {content}
             </button>

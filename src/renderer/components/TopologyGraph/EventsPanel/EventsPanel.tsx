@@ -1,8 +1,8 @@
 
 import React, { useCallback, useContext } from 'react';
 
-import { TopologyGraphContext } from '@renderer/components/TopologyGraphPanel/TopologyGraphContext';
-import Error from '@renderer/components/Misc/Error';
+import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceContext';
+import { TopologyGraph } from '@common/TopologyGraph';
 import { Event } from '@common/types';
 
 import EventButton from './EventButton';
@@ -10,31 +10,29 @@ import EventButton from './EventButton';
 
 interface EventPanelProps {
     className?: string;
+    topologyGraph: TopologyGraph;
     eventsStyle?: string;
     onRightClick?: (event: Event) => void;
 }
 
 
-const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
+const EventPanel: React.FC<EventPanelProps> = ({ className, topologyGraph, eventsStyle, onRightClick}) => {
 
     const { 
-        topologyGraph: [topologyGraph, _setTopologyGraph], 
         selectedEvent: [selectedEvent, setSelectedEvent],
-        selectedNode: [_selectedNode, setSelectedNode],
-        hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
+        selectedObjects: [_selectedObjects, setSelectedObjects],
+        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
-    } = useContext(TopologyGraphContext)
 
-    if ( ! topologyGraph || ! selectedEvent ){
-        return <Error message='No graph loaded'/>
-    }
+    const getButtonBgColor = (event: Event) => {
 
-    const getButtonBgColor = useCallback((event: Event) => {
+        if ( !selectedEvent ) {
+            return "bg-gray-500 hover:bg-gray-400"
+        }
 
-        const events = topologyGraph.getEvents()
-
-        const eventIndex = events.indexOf(event)
-        const selectedEventIndex = events.indexOf(selectedEvent)
+        const eventIndex = event.id
+        const selectedEventIndex = selectedEvent.id
 
         if( eventIndex < selectedEventIndex ){
             return "bg-gray-500 hover:bg-gray-400"
@@ -43,18 +41,22 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         } else {
             return "bg-red-600"
         }
-    }, [topologyGraph, selectedEvent])
+    }
+
 
     const onLeftClick = (event: Event) => (_e: React.MouseEvent) => {
         setSelectedEvent(event)
-        setSelectedNode(event.process.getUUID())
+        setSelectedObjects([event.getObjectName()])
     }
 
     const events = topologyGraph.getEvents()
 
-    const filterCallback = useCallback((e) => ! hiddenEvents.has(e), [hiddenEvents])
+    const displayedEvents = events.filter((event) => {
+        const objectName = event.getObjectName();
+        return !hiddenObjects.includes(objectName)
+    });
 
-    const eventButtonList = events.filter(filterCallback).map((event, _i) => {
+    const eventButtonList = displayedEvents.map((event, _i) => {
 
         let bgColor = getButtonBgColor(event)
         const content = topologyGraph.getEventDescription(event)

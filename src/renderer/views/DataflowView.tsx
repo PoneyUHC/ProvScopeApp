@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import DataflowGraphPanel from '@renderer/components/DataflowGraphPanel/DataflowGraphPanel';
+import DataflowGraphPanel from '@renderer/components/DataflowGraph/DataflowGraphPanel';
 import { ExecutionTrace } from '@common/types';
 import DataflowGraph from '@common/DataflowGraph';
 

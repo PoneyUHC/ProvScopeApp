@@ -20,8 +20,9 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     }
 
 
-    static createInstanceFromJSON(filename: string, json: any) {
+    static loadTraceFromJSON(filename: string, jsonString: string) {
 
+        const json = JSON.parse(jsonString)
         const instance = new ExecutionTrace()
 
         instance.filename = filename
@@ -189,6 +190,10 @@ export abstract class Event {
         this.eventType = this.constructor.name
         this.id = -1 // Placeholder for unique ID, can be set later
         this.address = "00100498"
+    }
+
+    getObjectName(): string {
+        return this.process.getUUID()
     }
 
     abstract getKeyword(): string

@@ -1,32 +1,29 @@
 
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
 import { TopologyGraph } from "@common/TopologyGraph";
-
-import { TopologyGraphContext } from './TopologyGraphContext';
 
 
 interface GraphEventsProps {
     topologyGraph: TopologyGraph;
 }
 
-const GraphEvents: React.FC<GraphEventsProps> = () => {
+
+const GraphEvents: React.FC<GraphEventsProps> = ({ topologyGraph }) => {
+
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
-    const { 
-        topologyGraph : [topologyGraph, _setTopologyGraph], 
-    } = useContext(TopologyGraphContext)
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
     
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
-        if (topologyGraph) {
-            topologyGraph.clearHighlights();
-        }
+
+        topologyGraph.clearHighlights();
+
         setDraggedNode(e.node);
-        sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
+        topologyGraph.highlightNode(e.node);
     }
 
     const onMouseMove = (event: MouseCoords) => {
@@ -50,26 +47,19 @@ const GraphEvents: React.FC<GraphEventsProps> = () => {
 
     const onStageMouseUp = () => {
         setDraggedNode(null);
-        if (topologyGraph) {
-            topologyGraph.clearHighlights();
-        }
-    }
-
-    const onMouseDown = () => {
-        if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
+        topologyGraph.clearHighlights();
     }
 
 
     useEffect(() => {
-        // Register the events
         registerEvents({
             downNode: (e) => onDownNode(e),
             mousemovebody: (e) => onMouseMove(e),
             upNode: () => onNodeMouseUp(),
             upStage: () => onStageMouseUp(),
-            mousedown: () => onMouseDown()
         });
     }, [registerEvents, sigma, draggedNode]);
+
 
     return null;
 };
