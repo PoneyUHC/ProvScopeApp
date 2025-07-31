@@ -20,11 +20,11 @@ const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border 
 const TopologyView: React.FC = () => {
     
     const {
-        executionTrace: trace,
+        executionTrace: executionTrace,
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const initGraph = (): TopologyGraph => {
-        return TopologyGraph.create(trace!)
+        return TopologyGraph.create(executionTrace!)
     }
     const topologyGraph = useRef<TopologyGraph>(initGraph());
     const [sigma, setSigma] = useState<Sigma | null>(null);

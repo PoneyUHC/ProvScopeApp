@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Sigma from 'sigma';
 import '@react-sigma/core/lib/style.css';
 import {
@@ -14,22 +14,22 @@ import { NodeCircleProgram } from "sigma/rendering"
 import { Allotment } from 'allotment';
 
 import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
+import Error from '@renderer/components/Misc/Error';
 import { PatternGroup } from '@common/causality';
-import DataflowGraph from '@common/DataflowGraph';
 import { Event } from '@common/types';
 
 import DataflowGraphEvents from './DataflowGraphEvents';
 import PatternPanel from './PatternPanel';
 import EventInfosPanel from './EventInfosPanel';
+import { DataflowGraphContext, DataflowGraphContextType } from './DataflowGraphProvider';
 
 
 interface DataflowGraphPanelProps {
     className?: string;
-    dataflowGraph: DataflowGraph;
 }
 
 
-const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, dataflowGraph }) => {
+const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) => {
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -38,6 +38,14 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
+
+    const { 
+        dataflowGraph 
+    } = useContext<DataflowGraphContextType>(DataflowGraphContext);
+
+    if (!dataflowGraph) {
+        return <Error message={"Dataflow graph is not available."} />;
+    }
 
 
     const getObjectNames = (): Set<string> => {
@@ -55,7 +63,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
 
 
     useEffect(() => {
-
         if (!sigma) return;
 
         if (isDirty) {
