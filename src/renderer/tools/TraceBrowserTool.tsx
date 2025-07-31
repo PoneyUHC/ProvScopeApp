@@ -45,7 +45,7 @@ const TraceBrowserTool: FC = () => {
 
     const loadTraceFromJSON = (filename: string, content: string) => {
         console.log(`Loading trace ${filename}`);
-        const trace = ExecutionTrace.loadTraceFromJSON(filename, content);
+        const trace = new ExecutionTrace(filename, content);
         setTrace(trace);
     };
 

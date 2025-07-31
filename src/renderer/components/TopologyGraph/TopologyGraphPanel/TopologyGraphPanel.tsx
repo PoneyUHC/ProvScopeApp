@@ -46,7 +46,7 @@ const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, setS
                     <ZoomControl />
                     <FullScreenControl />
                 </ControlsContainer>
-                <TopologyGraphEvents topologyGraph={topologyGraph}/>
+                <TopologyGraphEvents/>
             </SigmaContainer>
         </div>
         

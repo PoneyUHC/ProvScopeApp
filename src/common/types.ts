@@ -11,53 +11,50 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     channels: string[]
     events: Event[]
 
-    constructor() {
-        this.filename = ""
+    constructor(filename: string, jsonString: string) {
+        this.filename = filename
         this.processes = []
         this.files = []
         this.channels = []
         this.events = []
+
+        this.loadTraceFromJSON(jsonString)
     }
 
 
-    static loadTraceFromJSON(filename: string, jsonString: string) {
+    loadTraceFromJSON(jsonString: string) {
 
         const json = JSON.parse(jsonString)
-        const instance = new ExecutionTrace()
-
-        instance.filename = filename
 
         for (const process of json.processes) {
-            instance.processes.push(new Process(process.name, process.pid))   
+            this.processes.push(new Process(process.name, process.pid))
         }
 
         for (const file of json.files) {
-            instance.files.push(new File(file.path))
+            this.files.push(new File(file.path))
         }
 
         for( const channel of json.channels) {
-            instance.channels.push(channel)
+            this.channels.push(channel)
         }
 
         for (const jsonEvent of json.events) {
-            const event = ExecutionTrace.createEventFromJSON(jsonEvent, instance)
+            const event = this.createEventFromJSON(jsonEvent)
             if ( event ) {
-                instance.events.push(event)
+                this.events.push(event)
             }
         }
-
-        return instance
     }
 
 
-    private static createEventFromJSON(json: any, trace: ExecutionTrace): Event | null {
+    createEventFromJSON(json: any): Event | null {
 
         switch (json.event_type) {
             case "OpenEvent":
                 return new OpenEvent(
                     json.timestamp,
-                    trace.processes[json.process],
-                    trace.files[json.file],
+                    this.processes[json.process],
+                    this.files[json.file],
                     json.fd,
                     json.mode,
                     json.flags
@@ -65,20 +62,20 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
             case "CloseEvent":
                 return new CloseEvent(
                     json.timestamp,
-                    trace.processes[json.process],
+                    this.processes[json.process],
                     json.fd
                 )
             case "EnterReadEvent":
                 return new EnterReadEvent(
                     json.timestamp,
-                    trace.processes[json.process],
+                    this.processes[json.process],
                     json.fd,
                     json.count
                 )
             case "ExitReadEvent":
                 return new ExitReadEvent(
                     json.timestamp,
-                    trace.processes[json.process],
+                    this.processes[json.process],
                     json.fd,
                     json.count,
                     json.content,
@@ -87,7 +84,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
             case "WriteEvent":
                 return new WriteEvent(
                     json.timestamp,
-                    trace.processes[json.process],
+                    this.processes[json.process],
                     json.fd,
                     json.count,
                     json.content
@@ -132,7 +129,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
 
 
     clone(): ExecutionTrace {
-        const clone = new ExecutionTrace()
+        const clone = { ...this }
         clone.filename = this.filename
         clone.processes = this.processes.map((process) => process.clone())
         clone.files = this.files.map((file) => file.clone())
