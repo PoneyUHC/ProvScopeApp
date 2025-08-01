@@ -1,36 +1,45 @@
 
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { ReactElement, useContext, useEffect, useState } from 'react';
 
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 
 import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/ResizableControlsContainer';
+import Error from '@renderer/components/Misc/Error';
 import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
-import DataflowGraph from '@common/DataflowGraph';
 import { Event } from '@common/types';
 import { areConnected } from '@common/utils';
+import { DataflowGraphContext, DataflowGraphContextType } from './DataflowGraphProvider';
 
 
 
 
 interface PatternPanelProps {
-    dataflowGraph: DataflowGraph,
-    selectedNodes: string[],
     patternGroups: Set<PatternGroup>,
     addPatternGroup: (patternGroup: PatternGroup) => void
     removePatternGroup: (patternGroup: PatternGroup) => void
 }
 
 
-const PatternPanel: React.FC<PatternPanelProps> = ({ dataflowGraph, selectedNodes, patternGroups, addPatternGroup, removePatternGroup }) => {
+const PatternPanel: React.FC<PatternPanelProps> = ({ patternGroups, addPatternGroup, removePatternGroup }) => {
 
     const [lockedFields, setLockedFields] = useState<Map<Event, string[]>>(new Map());
     const [description, setDescription] = useState<string>('');
+    const {
+        dataflowGraph: dataflowGraph,
+        selectedNodes: [selectedNodes, _setSelectedNodes],
+    } = useContext<DataflowGraphContextType>(DataflowGraphContext);
+
+    if (!dataflowGraph) {
+        return <Error message={"Dataflow graph is not available."} />;
+    }
+
 
     useEffect(() => {
         setDescription('');
         setLockedFields(new Map());
     }, [selectedNodes]);
+
 
     const toggleLock = (event: Event, field: string) => {
         setLockedFields(prev => {

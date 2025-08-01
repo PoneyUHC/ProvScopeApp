@@ -317,35 +317,7 @@ class DataflowGraph {
 
         return causes
     }
-
-
-    setNodeVersionsVisibility(node: string, visible: boolean) {
-
-        const nodes = this.nodes.get(node)
-        if (!nodes) {
-            console.error(`Node ${node} not found`)
-            return
-        }
-
-        for (const n of nodes.slice(1)) {
-            this.graph.setNodeAttribute(n, 'hidden', !visible)
-        }
-    }
-
-
-    toggleVisible(node: string) {
-
-        const objectName = this.graph.getNodeAttribute(node, 'objectName')
-
-        if (this.excludedNodes.has(objectName)) {
-            this.excludedNodes.delete(objectName)
-            this.setNodeVersionsVisibility(objectName, true)
-        }
-        else {
-            this.excludedNodes.add(node)
-            this.setNodeVersionsVisibility(objectName, false)
-        }
-    }
+    
 
     resetColoring() {
         this.graph.forEachEdge((edge, attr) => {

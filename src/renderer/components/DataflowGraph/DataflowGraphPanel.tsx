@@ -16,7 +16,6 @@ import { Allotment } from 'allotment';
 import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
 import { PatternGroup } from '@common/causality';
-import { Event } from '@common/types';
 
 import DataflowGraphEvents from './DataflowGraphEvents';
 import PatternPanel from './PatternPanel';
@@ -33,8 +32,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
     const [isDirty, setIsDirty] = useState(false);
-    const [detailsEvent, setDetailsEvent] = useState<Event | null>(null);
-    const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
@@ -42,7 +39,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
     const { 
         dataflowGraph 
     } = useContext<DataflowGraphContextType>(DataflowGraphContext);
-
+    
     if (!dataflowGraph) {
         return <Error message={"Dataflow graph is not available."} />;
     }
@@ -54,13 +51,16 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
         return new Set(objectNames)
     };
 
-
     useEffect(() => {
         const newItems = Array.from(getObjectNames());
         setObjectNames(newItems);
         dataflowGraph.computeCoords(newItems);
     }, []);
 
+    useEffect(() => {
+        if (!sigma) return;
+        if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
+    }, [sigma]);
 
     useEffect(() => {
         if (!sigma) return;
@@ -72,10 +72,10 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
     }, [isDirty])
 
 
-    const toggleNodeVersionsVisibility = (node: string) => {
-        dataflowGraph.toggleVisible(node)
-        setIsDirty(true)
-    }
+    
+
+
+
     
 
     const showDataflowFrom = (target: string | null) => {
@@ -191,18 +191,12 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
                             <FullScreenControl />
                         </ControlsContainer>
                         <DataflowGraphEvents 
-                            showDataflowFrom={showDataflowFrom} 
-                            toggleNodeVersionsVisibility={toggleNodeVersionsVisibility}
-                            setDetailsEvent={setDetailsEvent}
-                            selectedNodes={selectedNodes}
-                            setSelectedNodes={setSelectedNodes}
+                            showDataflowFrom={showDataflowFrom}
                         />
 
-                        <EventInfosPanel event={detailsEvent} />
+                        <EventInfosPanel />
 
-                        <PatternPanel 
-                            dataflowGraph={dataflowGraph} 
-                            selectedNodes={selectedNodes}
+                        <PatternPanel
                             patternGroups={patternGroups}
                             addPatternGroup={addPatternGroup}
                             removePatternGroup={removePatternGroup}

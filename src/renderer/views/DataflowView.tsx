@@ -1,5 +1,6 @@
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
+
 
 import DataflowGraphPanel from '@renderer/components/DataflowGraph/DataflowGraphPanel';
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';

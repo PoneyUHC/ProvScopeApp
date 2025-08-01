@@ -1,27 +1,33 @@
 
+import { useContext } from 'react';
+
+import Error from '@renderer/components/Misc/Error';
 import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/ResizableControlsContainer';
-import { Event } from "@common/types";
+import { ExecutionTraceContext, ExecutionTraceContextType } from '../TraceBrowserTool/ExecutionTraceProvider';
 
 
-interface EventInfosPanelProps {
-    event: Event | null;
-}
+const EventInfosPanel: React.FC = () => {
 
+    const { 
+        selectedEvent: [selectedEvent, _setSelectedEvent],
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+    
 
-const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
+    if(!selectedEvent) {
+        return (
+            <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-left'>
+                <Error message="No event selected." />
+            </ResizableControlsContainer>
+        );    
+    }
 
-    let body: JSX.Element;
-
-    if (!event) {
-        body = (
-            <div className='self-center h-full flex items-center justify-center overflow-hidden'> 
-                No event selected 
-            </div>
-        )
-    } else {
-        body = (
-            <div>
-                {Object.entries(event).map(([key, value]) => {
+    
+    return (
+        <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-left'>
+            <div
+                className="w-full h-full bg-gray-100 rounded-lg shadow-md overflow-auto"
+            >
+                {Object.entries(selectedEvent).map(([key, value]) => {
                     if (value === null || value === undefined) {
                         return null; // Skip null or undefined values
                     }
@@ -34,16 +40,6 @@ const EventInfosPanel: React.FC<EventInfosPanelProps> = ({ event }) => {
                         </p>
                     );
                 })}
-            </div>
-        )
-    }
-    
-    return (
-        <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-left'>
-            <div
-                className="w-full h-full bg-gray-100 rounded-lg shadow-md overflow-auto"
-            >
-                {body}
             </div>
         </ResizableControlsContainer>
     );
