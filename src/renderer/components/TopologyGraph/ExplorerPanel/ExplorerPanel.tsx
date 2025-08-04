@@ -15,12 +15,12 @@ interface ExplorerPanelProps {
 const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const {
-        selectedObjects: [selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, hideObject, showObject],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
         topologyGraph: topologyGraph,
+        selectedNodes: [selectedNodes, setSelectedNodes],
     } = useContext<TopologyGraphContextType>(TopologyGraphContext);
 
     if (!topologyGraph) {
@@ -29,12 +29,11 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
 
     const handleClick = (node: string) => {
-        const objectName = topologyGraph.getGraph().getNodeAttribute(node, 'objectName');
-        setSelectedObjects([objectName]);
+        setSelectedNodes([node]);
     }
 
     const handleToggle = (node: string) => {
-        const objectName = topologyGraph.getGraph().getNodeAttribute(node, 'objectName');
+        const objectName = topologyGraph.graph.getNodeAttribute(node, 'objectName');
         if (hiddenObjects.includes(objectName)) {
             showObject(objectName);
         } else {
@@ -58,8 +57,8 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                                         content={node}
                                         onClick={() => handleClick(node)}
                                         onToggle={() => handleToggle(node)}
-                                        selected={selectedObjects.includes(node)}
-                                        visible={!hiddenObjects.includes(node)}
+                                        selected={selectedNodes.includes(node)}
+                                        visible={!hiddenObjects.includes(topologyGraph.graph.getNodeAttribute(node, 'objectName'))}
                                     />
                                 )
                             })  
@@ -68,7 +67,7 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                 </div>
             )
         })
-    }, [topologyGraph, selectedObjects, hiddenObjects])
+    }, [topologyGraph, selectedNodes, hiddenObjects])
 
 
     return (

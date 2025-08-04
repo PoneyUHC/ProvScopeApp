@@ -30,6 +30,7 @@ const DataflowGraphProvider = ({ dataflowGraph, children }: DataflowGraphProvide
         selectedEvent: [_selectedEvent, setSelectedEvent]
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext)
 
+
     const externalSetSelectedNodes = (valueOrUpdater: string[] | ((prevNodes: string[]) => string[])) => {
 
         const newValue = 
@@ -46,6 +47,7 @@ const DataflowGraphProvider = ({ dataflowGraph, children }: DataflowGraphProvide
         const event = dataflowGraph.graph.getNodeAttribute(newValue[0], 'event');
         setSelectedEvent(event)
     }
+    
 
     const value: DataflowGraphContextType = {
         dataflowGraph: dataflowGraph,

@@ -21,12 +21,12 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     const { 
         executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent],
-        selectedObjects: [_selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
         topologyGraph: topologyGraph,
+        selectedNodes: [_selectedNodes, setSelectedNodes],
     } = useContext<TopologyGraphContextType>(TopologyGraphContext);
 
     if (!topologyGraph) {
@@ -55,7 +55,12 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
 
     const onLeftClick = (event: Event) => (_e: React.MouseEvent) => {
         setSelectedEvent(event)
-        setSelectedObjects([event.getObjectName()])
+
+        const nodes = topologyGraph.graph.filterNodes((node) => {
+            const objectName = topologyGraph.graph.getNodeAttribute(node, 'objectName');
+            return event.getObjectName() === objectName;
+        });
+        setSelectedNodes(nodes);
     }
 
     const events = executionTrace?.events || [];

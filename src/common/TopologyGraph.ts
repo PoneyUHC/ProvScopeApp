@@ -8,8 +8,8 @@ import { toUniform, IClonable } from "@common/utils"
 
 export class TopologyGraph implements IClonable<TopologyGraph> {
 
-    private graph: DirectedGraph
-    private trace: ExecutionTrace
+    graph: DirectedGraph
+    trace: ExecutionTrace
     traceName: string;
     currentEvent: Event 
 
@@ -44,12 +44,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         other.applyUntilEvent(other.currentEvent)
         return other
     }
-
-
-    getGraph = (): Readonly<DirectedGraph> => {
-        return this.graph
-    }
-
 
     computeGraphFromTrace(): DirectedGraph {
 

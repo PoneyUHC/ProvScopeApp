@@ -1,5 +1,5 @@
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
@@ -11,13 +11,13 @@ import { TopologyGraphContext, TopologyGraphContextType } from "../TopologyGraph
 const TopologyGraphEvents: React.FC = () => {
 
     const {
-        selectedObjects: [selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
         selectedEvent: [selectedEvent, _setSelectedEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
-        topologyGraph 
+        topologyGraph,
+        selectedNodes: [selectedNodes, setSelectedNodes],
     } = useContext<TopologyGraphContextType>(TopologyGraphContext);
 
     if (!topologyGraph) {
@@ -27,7 +27,11 @@ const TopologyGraphEvents: React.FC = () => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
-    
+
+    // optimization not to reset attributes on every nodes
+    const previousSelectedNodes = useRef<string[]>(selectedNodes);
+    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+
 
     useEffect(() => {
 
@@ -42,28 +46,53 @@ const TopologyGraphEvents: React.FC = () => {
 
     useEffect(() => {
 
-        const graph = topologyGraph.getGraph();
-        graph.forEachNode((node) => {
-            graph.setNodeAttribute(node, 'highlighted', selectedObjects.includes(node))
-        });
-    }, [selectedObjects])
+        const graph = topologyGraph.graph;
+        for (const node of selectedNodes) {
+            if ( !previousSelectedNodes.current.includes(node) ) {
+                graph.setNodeAttribute(node, 'highlighted', true);
+            }
+        }
+
+        for (const node of previousSelectedNodes.current) {
+            if ( !selectedNodes.includes(node) ) {
+                graph.setNodeAttribute(node, 'highlighted', false);
+            }
+        }
+
+        previousSelectedNodes.current = selectedNodes;
+
+    }, [selectedNodes])
 
 
     useEffect(() => {
 
-        const graph = topologyGraph.getGraph();
-        graph.forEachNode((node) => {
-            graph.setNodeAttribute(node, 'hidden', hiddenObjects.includes(node))
-        });
+        const graph = topologyGraph.graph;
+        for (const objectName of hiddenObjects) {
+            if ( !previousHiddenObjects.current.includes(objectName) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+                for (const node of nodes) {
+                    graph.setNodeAttribute(node, 'hidden', true);
+                }
+            }
+        }
+
+        for (const objectName of previousHiddenObjects.current) {
+            if ( !hiddenObjects.includes(objectName) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+                for (const node of nodes) {
+                    graph.setNodeAttribute(node, 'hidden', false);
+                }
+            }
+        }
+
+        previousHiddenObjects.current = hiddenObjects;
 
     }, [hiddenObjects])
 
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
 
-        const objectName = topologyGraph.getGraph().getNodeAttribute(e.node, 'objectName');
-
-        setSelectedObjects([objectName]);
+        setSelectedNodes([e.node]);
         setDraggedNode(e.node);
     }
 
@@ -88,7 +117,7 @@ const TopologyGraphEvents: React.FC = () => {
 
     const onStageMouseUp = () => {
         setDraggedNode(null);
-        setSelectedObjects([]);
+        setSelectedNodes([]);
     }
 
 

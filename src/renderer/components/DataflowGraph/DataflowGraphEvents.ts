@@ -1,8 +1,9 @@
 
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
+import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
 import { DataflowGraphContext, DataflowGraphContextType } from "./DataflowGraphProvider";
 
 
@@ -18,15 +19,62 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
     const [_downStageCameraState, setDownStageCameraState] = useState<CameraState | null>(null);
 
     const {
+        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+    const {
         selectedNodes: [selectedNodes, setSelectedNodes],
     } = useContext<DataflowGraphContextType>(DataflowGraphContext);
 
+    const previousSelectedNodes = useRef<string[]>(selectedNodes);
+    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+
 
     useEffect(() => {
-        sigma.getGraph().forEachNode((node) => {
-            sigma.getGraph().setNodeAttribute(node, 'highlighted', selectedNodes.includes(node));
-        });
+        
+        const graph = sigma.getGraph();
+        for (const node of selectedNodes) {
+            if (!previousSelectedNodes.current.includes(node)) {
+                graph.setNodeAttribute(node, 'highlighted', true);
+            }
+        }
+
+        for (const node of previousSelectedNodes.current) {
+            if (!selectedNodes.includes(node)) {
+                graph.setNodeAttribute(node, 'highlighted', false);
+            }
+        }
+
+        previousSelectedNodes.current = selectedNodes;
+
     }, [selectedNodes]);
+
+
+    useEffect(() => {
+
+        const graph = sigma.getGraph();
+        for (const objectName of hiddenObjects) {
+            if ( !previousHiddenObjects.current.includes(objectName) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+                for (const node of nodes) {
+                    graph.setNodeAttribute(node, 'hidden', true);
+                }
+            }
+        }
+
+        for (const objectName of previousHiddenObjects.current) {
+            if ( !hiddenObjects.includes(objectName) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+                for (const node of nodes) {
+                    graph.setNodeAttribute(node, 'hidden', false);
+                }
+            }
+        }
+
+        previousHiddenObjects.current = hiddenObjects;
+
+    }, [hiddenObjects])
+
 
     const addNodeToSelection = (node: string, prevSelectedNodes) => {
         return [...prevSelectedNodes, node];
@@ -81,8 +129,10 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
         const isRightMouseButtonPressed = (e.event.original as MouseEvent).button === 2;
         const isShiftPressed = (e.event.original as MouseEvent).shiftKey;
         const isAltPressed = (e.event.original as MouseEvent).altKey;
+        const isGPressed = isGKeyPressed()
         
         const currentNode = e.node;
+
 
         // priority to right click
         if (isRightMouseButtonPressed) {
@@ -92,19 +142,27 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
         if (!isLeftMouseButtonPressed) return;
 
+        if( isGPressed ){
+            //collect the adress and the file path
+
+            //call ghidraCommunication instance with the address
+            //ghidraCommunication!.send(address)
+            //ghidraCommunication!.send(filePath)
+        }
+
         if (isShiftPressed) {
             handleMultiSelection(currentNode);
         }
 
         if (isAltPressed) {
-            const selectedNode = sigma.getGraph().getNodeAttribute(e.node, 'objectName');
-            const nodeFamily = sigma.getGraph().filterNodes((node) => { 
-                return sigma.getGraph().getNodeAttribute(node, 'objectName') === selectedNode 
+            const selectedObjectName = sigma.getGraph().getNodeAttribute(e.node, 'objectName');
+            const sameObjectNameNodes = sigma.getGraph().filterNodes((node) => { 
+                return sigma.getGraph().getNodeAttribute(node, 'objectName') === selectedObjectName 
             });
-            setSelectedNodes(nodeFamily);
+            setSelectedNodes(sameObjectNameNodes);
         }
 
-        if (!isShiftPressed && !isAltPressed) {
+        if (!isShiftPressed && !isAltPressed && !isGPressed) {
             handleSelectSingleNode(currentNode);
         }
 

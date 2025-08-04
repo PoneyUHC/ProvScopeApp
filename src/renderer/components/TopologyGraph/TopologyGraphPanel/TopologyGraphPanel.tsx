@@ -36,7 +36,7 @@ const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, setS
         <div className={`flex items-center justify-center font-mono ${className}`}>
             <SigmaContainer 
                 ref={setSigma} 
-                graph={topologyGraph.getGraph()} 
+                graph={topologyGraph.graph} 
                 settings={{
                     renderEdgeLabels: true, 
                     allowInvalidContainer: true

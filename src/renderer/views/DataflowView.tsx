@@ -23,9 +23,7 @@ const DataflowGraphView: React.FC = () => {
     return (
         <div className="w-full h-5/6 flex flex-col flex-grow overflow-auto pr-2 pl-2 pt-2">
             <DataflowGraphProvider dataflowGraph={dataflowGraph}>
-                <DataflowGraphPanel
-                    className="h-full"
-                />
+                <DataflowGraphPanel/>
             </DataflowGraphProvider>
         </div>
         

@@ -7,7 +7,6 @@ import { ExecutionTrace, Event } from "@common/types";
 interface ExecutionTraceContextType {
     executionTrace: ExecutionTrace | null,
     selectedEvent: [Event | null, React.Dispatch<React.SetStateAction<Event | null>>],
-    selectedObjects: [string[], React.Dispatch<React.SetStateAction<string[]>>],
     hiddenObjects: [string[], (objectName: string) => void, (objectName: string) => void],
 }
 
@@ -15,7 +14,6 @@ interface ExecutionTraceContextType {
 const ExecutionTraceContext = createContext<ExecutionTraceContextType>({
     executionTrace: null,
     selectedEvent: [null, () => {}],
-    selectedObjects: [[], () => {}],
     hiddenObjects: [[], () => {}, () => {}],
 })
 
@@ -29,7 +27,6 @@ interface ExecutionTraceProviderType {
 const ExecutionTraceProvider = ({ trace, children }: ExecutionTraceProviderType) => {
 
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [selectedObjects, setSelectedObjects] = useState<string[]>([]);
     const [hiddenObjects, setHiddenObjects] = useState<string[]>([]);
 
     const hideObject = (objectName: string) => {
@@ -43,7 +40,6 @@ const ExecutionTraceProvider = ({ trace, children }: ExecutionTraceProviderType)
     const value: ExecutionTraceContextType = {
         executionTrace: trace,
         selectedEvent: [selectedEvent, setSelectedEvent],
-        selectedObjects: [selectedObjects, setSelectedObjects],
         hiddenObjects: [hiddenObjects, hideObject, showObject],
     }
 

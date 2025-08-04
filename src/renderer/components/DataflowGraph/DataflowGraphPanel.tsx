@@ -1,5 +1,5 @@
 
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Sigma from 'sigma';
 import '@react-sigma/core/lib/style.css';
 import {
@@ -21,19 +21,20 @@ import DataflowGraphEvents from './DataflowGraphEvents';
 import PatternPanel from './PatternPanel';
 import EventInfosPanel from './EventInfosPanel';
 import { DataflowGraphContext, DataflowGraphContextType } from './DataflowGraphProvider';
+import { ExecutionTraceContext, ExecutionTraceContextType } from '../TraceBrowserTool/ExecutionTraceProvider';
 
 
-interface DataflowGraphPanelProps {
-    className?: string;
-}
+const DataflowGraphPanel: React.FC = () => {
 
-
-const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) => {
+    const {
+        hiddenObjects: [hiddenObjects, hideObject, showObject],
+    } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
     const [isDirty, setIsDirty] = useState(false);
-    const [objectNames, setObjectNames] = useState<string[]>([]);
-    const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
+    const [orderedObjectNames, setOrderedObjectNames] = useState<string[]>([]);
+
+    const hiddenObjectsIndexLookup = useRef<Map<string, number>>(new Map());
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
 
     const { 
@@ -44,6 +45,8 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
         return <Error message={"Dataflow graph is not available."} />;
     }
 
+    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+
 
     const getObjectNames = (): Set<string> => {
         const graph = dataflowGraph.graph;
@@ -53,7 +56,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
 
     useEffect(() => {
         const newItems = Array.from(getObjectNames());
-        setObjectNames(newItems);
+        setOrderedObjectNames(newItems);
         dataflowGraph.computeCoords(newItems);
     }, []);
 
@@ -71,11 +74,32 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
         }
     }, [isDirty])
 
+    useEffect(() => {
 
-    
+        for (const objectName of hiddenObjects) {
+            if ( !previousHiddenObjects.current.includes(objectName) ) {
+                const index = orderedObjectNames.indexOf(objectName);
+                hiddenObjectsIndexLookup.current.set(objectName, index);
+                const newList = [...orderedObjectNames];
+                newList.splice(index, 1);
+                hiddenObjectsIndexLookup.current.set(objectName, index);
+                setOrderedObjectNames(newList);
+            }
+        }
 
+        for (const objectName of previousHiddenObjects.current) {
+            if ( !hiddenObjects.includes(objectName) ) {
+                const index = hiddenObjectsIndexLookup.current.get(objectName) || 0;
+                const safeIndex = Math.min(index, orderedObjectNames.length);
+                const newList = [...orderedObjectNames.slice(0, safeIndex), objectName, ...orderedObjectNames.slice(safeIndex)]; //we add the name at it's original place
+                hiddenObjectsIndexLookup.current.delete(objectName);
+                setOrderedObjectNames(newList);
+            }
+        }
 
-
+        previousHiddenObjects.current = hiddenObjects;
+        
+    }, [hiddenObjects]);
     
 
     const showDataflowFrom = (target: string | null) => {
@@ -117,39 +141,17 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
 
     const onListChanged = (newOrder: string[]) => {
         dataflowGraph.computeCoords(newOrder);
-        setObjectNames(newOrder);
+        setOrderedObjectNames(newOrder);
     };
 
 
     const onRemove = (name: string, index: number) => {
-        const newList = [...objectNames];
-        newList.splice(index, 1);
-
-        dataflowGraph.graph.forEachNode( (node: string) => {
-            const currentObjectName = dataflowGraph.graph.getNodeAttribute(node, 'objectName');
-            if(currentObjectName === name){
-                dataflowGraph.graph.setNodeAttribute(node, 'hidden', true)
-            }
-        })
-
-        setObjectNames(newList);
-        setRemovedItems(prev => [...prev, { name, index }]);
+        hideObject(name);
     }
 
 
-    const onRestore = (name: string, index: number) => {
-        const safeIndex = Math.min(index, objectNames.length);
-        const newList = [...objectNames.slice(0, safeIndex), name, ...objectNames.slice(safeIndex)]; //we add the name at it's original place 
-
-        dataflowGraph.graph.forEachNode( (node: string) => {
-            const currentObjectName = dataflowGraph.graph.getNodeAttribute(node, 'objectName');
-            if(currentObjectName === name){
-                dataflowGraph.graph.setNodeAttribute(node, 'hidden', false)
-            }
-        })
-
-        setObjectNames(newList);
-        setRemovedItems(prev => prev.filter(item => item.name !== name));
+    const onRestore = (name: string) => {
+        showObject(name);
     }
 
 
@@ -169,7 +171,7 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
 
 
     return (
-        <div className={`flex items-center justify-center font-mono ${className}`}>
+        <div className={`flex items-center justify-center font-mono h-full`}>
              <Allotment onDragEnd={onDrag}>
                 <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full w-full">
 
@@ -211,17 +213,17 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className }) =>
                     <Allotment vertical={true}>
                         <Allotment.Pane minSize={200} preferredSize={"70%"}>
                             <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
-                                <DragDropListPanel itemNames={objectNames} onListChanged={onListChanged} onRemove={onRemove} />
+                                <DragDropListPanel itemNames={orderedObjectNames} onListChanged={onListChanged} onRemove={onRemove} />
                             </div>
                         </Allotment.Pane>
                         <Allotment.Pane minSize={200} preferredSize={"30%"} className="w-full h-full overflow-auto">
                             <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
                                 {
-                                    removedItems.map(({ name, index }) => (
+                                    hiddenObjects.map((objectName) => (
                                         <div className="w-full flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
-                                            {name}
+                                            {objectName}
                                             <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
-                                                    onClick={() => onRestore(name, index)} 
+                                                    onClick={() => onRestore(objectName)} 
                                             >
                                                 👁
                                             </button>
