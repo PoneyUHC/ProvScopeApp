@@ -20,14 +20,9 @@ import EventInfosPanel from './EventInfosPanel';
 
 import { Event } from '@common/types';
 import PatternPanel from './PatternPanel';
-<<<<<<< HEAD
 import DragDropListPanel from '../DragDropListPanel';
 import { Allotment } from 'allotment';
-import { EventPattern, PatternGroup } from '@common/causality';
-import { GhidraCommunication } from '@common/software/ghidra/GhidraCommunication';
-=======
-import GhidraManager from '../GhidraManager';
->>>>>>> 854f9da (WP ghidra)
+import { PatternGroup } from '@common/causality';
 
 
 interface DataflowGraphPanelProps {
@@ -42,15 +37,9 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
     const [isDirty, setIsDirty] = useState(false);
     const [detailsEvent, setDetailsEvent] = useState<Event | null>(null);
     const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
-<<<<<<< HEAD
     const [objectNames, setObjectNames] = useState<string[]>([]);
     const [removedItems, setRemovedItems] = useState<{ name: string, index: number }[]>([]);
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
-    
-    const ghidraCommunication = useRef<GhidraCommunication>(window.api.getGhidraCommunicationInstance())
-=======
-    //const ghidraCommunication = useRef<GhidraCommunication>(window.api.getGhidraCommunicationInstance())
->>>>>>> 854f9da (WP ghidra)
 
 
     const getObjectNames = (): Set<string> => {
@@ -204,7 +193,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                             setSelectedNodes={setSelectedNodes}
                         />
 
-<<<<<<< HEAD
                         <EventInfosPanel event={detailsEvent} />
 
                         <PatternPanel 
@@ -244,12 +232,6 @@ const DataflowGraphPanel: React.FC<DataflowGraphPanelProps> = ({ className, data
                             </div>
                         </Allotment.Pane>
                     </Allotment>
-=======
-                <PatternPanel dataflowGraph={dataflowGraph} selectedNodes={selectedNodes} />              
-            </SigmaContainer>
-            <GhidraManager />
-        </div>
->>>>>>> 854f9da (WP ghidra)
         
                 </Allotment.Pane>
             </Allotment>

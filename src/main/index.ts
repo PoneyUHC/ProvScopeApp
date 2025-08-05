@@ -9,7 +9,15 @@ import goldoIcon from '../common/src/assets/goldo_icon.png?asset'
 
 export let ghidraCommunication: GhidraCommunication | null = null 
 
-function createWindow(): void {
+const request_quit = () => {
+    if (ghidraCommunication) {
+        ghidraCommunication?.stopPythonBridge();
+        ghidraCommunication.close(); 
+        app.quit();
+    }
+}
+
+function createWindow(): BrowserWindow {
 
     const mainWindow = new BrowserWindow({
         width: 900,
@@ -42,6 +50,8 @@ function createWindow(): void {
     } else {
         mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+
+    return mainWindow;
 }
 
 
@@ -57,7 +67,7 @@ app.whenReady().then(() => {
         optimizer.watchWindowShortcuts(window)
     })
 
-    createWindow()
+    const mainWindow = createWindow()
 
     app.on('activate', function () {
         // On macOS it's common to re-create a window in the app when the
@@ -66,7 +76,7 @@ app.whenReady().then(() => {
     })
 
     ghidraCommunication = GhidraCommunication.getInstance()
-    setTimeout(() => { ghidraCommunication!.send("0000000") }, 1000);
+    ghidraCommunication.initWindow(mainWindow)
 })
 
 
@@ -75,6 +85,6 @@ app.whenReady().then(() => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-        app.quit()
+        request_quit();
     }
 })

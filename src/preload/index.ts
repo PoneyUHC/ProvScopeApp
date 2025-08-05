@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { GhidraCommunication } from '../common/src/software/ghidra/GhidraCommunication'
 
 // Custom APIs for renderer
 const api = {
@@ -10,11 +9,19 @@ const api = {
     offRequestExportTrace: (callback: () => void) => ipcRenderer.off('requestExportTrace', callback),
     offAll: () => ipcRenderer.removeAllListeners(),
     exportTrace: (filename: string, content: string) => ipcRenderer.send('exportTrace', filename, content),
-    ghidra: GhidraCommunication.api,
-    onGhidraIsConnected: (callback: () => void) => ipcRenderer.on('ghidraConnected', callback),
-    offGhidraIsConnected: (callback: () => void) => ipcRenderer.off('ghidraConnected', callback),
-    onGhidraIsDisconnected: (callback: () => void) => ipcRenderer.on('ghidraDisconnected', callback),
-    offGhidraIsDisconnected: (callback: () => void) => ipcRenderer.off('ghidraDisconnected', callback),
+
+    sendClick: (message: string) => ipcRenderer.send('open_ghidra', message),
+    sendGClick: (address: string) => ipcRenderer.send('ghidra_go_to_adress', address),
+
+    onGhidraIsConnected1: (callback: () => void) => ipcRenderer.on('ghidraConnectedStep1', (_event) => callback()), // webSocket connexion 
+    offGhidraIsConnected1: (callback: () => void) => ipcRenderer.off('ghidraConnectedStep1', (_event) => callback()),
+    onGhidraIsDisconnected1: (callback: () => void) => ipcRenderer.on('ghidraDisconnectedStep1', (_event) => callback()),
+    offGhidraIsDisconnected1: (callback: () => void) => ipcRenderer.off('ghidraDisconnectedStep1', (_event) => callback()),
+
+    onGhidraIsConnected2: (callback: () => void) => ipcRenderer.on('ghidraConnectedStep2', (_event) => callback()), // ghidraBridge connexion
+    offGhidraIsConnected2: (callback: () => void) => ipcRenderer.off('ghidraConnectedStep2', (_event) => callback()),
+    onGhidraIsDisconnected2: (callback: () => void) => ipcRenderer.on('ghidraDisconnectedStep2', (_event) => callback()),
+    offGhidraIsDisconnected2: (callback: () => void) => ipcRenderer.off('ghidraDisconnectedStep2', (_event) => callback()),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

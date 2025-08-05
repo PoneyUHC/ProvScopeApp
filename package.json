@@ -20,7 +20,10 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@hello-pangea/dnd": "^18.0.1",
+    "@mui/material": "^7.2.0",
     "@react-sigma/core": "^5.0.2",
     "@sigma/node-square": "^3.0.0",
     "@tailwindcss/vite": "^4.0.13",
@@ -45,6 +48,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/sigmajs": "^1.0.32",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^34.2.0",
     "electron-builder": "^25.1.8",

@@ -11,13 +11,19 @@ declare global {
         offRequestExportTrace: (callback: () => void) => void,
         offAll: () => void,
         exportTrace: (filename: string, content: string) => void,
-        ghidra: {
-            isConnected: () => boolean
-        }
-        onGhidraIsConnected: (callback: () => void) => void,
-        offGhidraIsConnected: (callback: () => void) => void,
-        onGhidraIsDisconnected: (callback: () => void) => void,
-        offGhidraIsDisconnected: (callback: () => void) => void,
+
+        sendClick: (message: string) => void,
+        sendGClick: (address: string) => void,
+        
+        onGhidraIsConnected1: (callback: () => void) => void,
+        offGhidraIsConnected1: (callback: () => void) => void,
+        onGhidraIsDisconnected1: (callback: () => void) => void,
+        offGhidraIsDisconnected1: (callback: () => void) => void,
+
+        onGhidraIsConnected2: (callback: () => void) => void,
+        offGhidraIsConnected2: (callback: () => void) => void,
+        onGhidraIsDisconnected2: (callback: () => void) => void,
+        offGhidraIsDisconnected2: (callback: () => void) => void,
     }
   }
 }

@@ -96,11 +96,8 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
         const currentNode = e.node;
 
         if( gKeyPressed && isLeftMouseButtonPressed){
-            //collect the adress and the file path
-
-            //call ghidraCommunication instance with the address
-            const address = sigma.getGraph().getNodeAttribute(e.node, 'address');
-            // TODO: do send through api
+            const address = sigma.getGraph().getNodeAttribute(e.node, "event").address
+            window.api.sendGClick(address);
         }
 
         if (isShiftPressed && isLeftMouseButtonPressed) { // Shift + Left Click
