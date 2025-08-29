@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_NAME=testProject
+PROJECT_NAME=project
 PROJECT_DIR=~/Documents/ghidraProjects
 GHIDRA_DIR=~/Documents/ghidraProjects/ghidra_11.4_PUBLIC_20250620/ghidra_11.4_PUBLIC
 BIN_FILE=test_file
