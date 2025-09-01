@@ -85,7 +85,7 @@ class ProvenanceGraph {
                 label: `${resource.path}-0`, 
                 version: 0, 
                 entity: resource, 
-                event: null, 
+                event: null,
                 type: 'square'
             })
             this.nodes.set(resource, [node])
