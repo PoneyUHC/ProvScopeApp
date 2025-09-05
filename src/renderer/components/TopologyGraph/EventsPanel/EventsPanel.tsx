@@ -1,5 +1,5 @@
 
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { Event } from '@common/types';
@@ -24,6 +24,8 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
+    if( !executionTrace ) return null;
+
     const {
         topologyGraph: topologyGraph,
         selectedNodes: [_selectedNodes, setSelectedNodes],
@@ -32,6 +34,18 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     if (!topologyGraph) {
         return <Error message={"Topology graph is not available."} />;
     }
+
+
+    useEffect(() => {
+
+        if (!selectedEvent) return;
+
+        const eventElement = document.getElementById(`event-button-${selectedEvent.id}`);
+        if (eventElement) {
+            eventElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+    }, [selectedEvent])
 
 
     const getButtonBgColor = (event: Event) => {
@@ -74,11 +88,11 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
 
         let bgColor = getButtonBgColor(event)
         const content = event.getDescription()
-        const originalIndex = event.id
+        const id = event.id
 
         return (
-            <li key={originalIndex} className='flex flex-row'>
-                <p>{originalIndex}</p>
+            <li id={`event-button-${id}`} key={id} className='flex flex-row'>
+                <p>{id}</p>
                 <EventButton 
                     className={`${bgColor} ${eventsStyle}`} 
                     content={content}

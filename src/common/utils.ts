@@ -43,3 +43,8 @@ export function areConnected(nodes: string[], graph: Graph): boolean {
 
     return visited.size === nodes.length;
 }
+
+
+export function clamp(value: number, lower: number, upper: number) {
+    return Math.max( Math.min( value, upper), lower)
+}

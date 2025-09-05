@@ -7,6 +7,7 @@ import "allotment/dist/style.css";
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { TopologyGraph } from '@common/TopologyGraph';
+import { clamp } from '@common/utils';
 
 import ExplorerPanel from '@renderer/components/TopologyGraph/ExplorerPanel/ExplorerPanel';
 import TopologyGraphPanel from '@renderer/components/TopologyGraph/TopologyGraphPanel/TopologyGraphPanel';
@@ -21,7 +22,10 @@ const TopologyView: React.FC = () => {
     
     const {
         executionTrace: executionTrace,
+        selectedEvent: [selectedEvent, setSelectedEvent]
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+    if( !executionTrace ) return;
 
     const initGraph = (): TopologyGraph => {
         return TopologyGraph.create(executionTrace!)
@@ -36,11 +40,34 @@ const TopologyView: React.FC = () => {
     }, [sigma]);
 
 
+    useEffect(() => {
+
+        if( !selectedEvent ) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "ArrowUp") {
+                const currentIndex = executionTrace.events.indexOf(selectedEvent)
+                const newIndex = clamp(currentIndex-1, 0, executionTrace.events.length)
+                setSelectedEvent(executionTrace.events[newIndex])
+            } else if (event.key === "ArrowDown") {
+                const currentIndex = executionTrace.events.indexOf(selectedEvent)
+                const newIndex = clamp(currentIndex+1, 0, executionTrace.events.length)
+                setSelectedEvent(executionTrace.events[newIndex])
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [selectedEvent]);
+
+
     const onDragEnd = () => {
         if (!sigma) return;
         sigma.refresh();
     }
-
+    
 
     return (
         <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
