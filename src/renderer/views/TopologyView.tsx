@@ -20,10 +20,10 @@ const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border 
 
 interface TopologyViewProps {
     topologyGraph: TopologyGraph,
-};
+    isViewSelected: boolean;
+}
 
-
-const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph }) => {
+const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelected }) => {
 
     const {
         executionTrace: executionTrace,
@@ -62,6 +62,24 @@ const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph }) => {
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [selectedEvent]);
+
+
+    useEffect(() => {
+        
+        console.log("here")
+        if (!isViewSelected) return;
+        if (!selectedEvent) return;
+
+        const eventButtonContainer = document.getElementById(`event-button-container`);
+        const eventElement = document.getElementById(`event-button-${selectedEvent.id}`);
+        if (eventElement) {
+            eventButtonContainer?.scrollTo({
+                top: eventElement.offsetTop,
+                behavior: 'smooth'
+            });
+        }
+
+    }, [selectedEvent, isViewSelected]);
 
 
     const onDragEnd = () => {

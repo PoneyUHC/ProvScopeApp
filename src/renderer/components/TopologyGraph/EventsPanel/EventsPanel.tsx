@@ -1,5 +1,5 @@
 
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { Event } from '@common/types';
@@ -34,18 +34,6 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     if (!topologyGraph) {
         return <Error message={"Topology graph is not available."} />;
     }
-
-
-    useEffect(() => {
-
-        if (!selectedEvent) return;
-
-        const eventElement = document.getElementById(`event-button-${selectedEvent.id}`);
-        if (eventElement) {
-            eventElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-    }, [selectedEvent])
 
 
     const getButtonBgColor = (event: Event) => {
@@ -106,7 +94,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
 
 
     return (
-        <ul className={`overflow-scroll flex flex-col ${className}`}>
+        <ul id={`event-button-container`} className={`overflow-scroll flex flex-col ${className}`}>
             {eventButtonList}
         </ul>
     )

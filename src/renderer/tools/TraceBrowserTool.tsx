@@ -97,10 +97,15 @@ const TraceBrowserTool: FC = () => {
             <ExecutionTraceProvider trace={trace}>
                 <div className="w-full h-full flex flex-row overflow-x-hidden">
                     <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
-                        <TopologyView topologyGraph={topologyGraphRef.current!} />
+                        <TopologyView 
+                            topologyGraph={topologyGraphRef.current!} 
+                            isViewSelected={currentView === "Topology"} 
+                        />
                     </div>
                     <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
-                        <ProvenanceGraphView provenanceGraph={provenanceGraphRef.current!} />
+                        <ProvenanceGraphView 
+                            provenanceGraph={provenanceGraphRef.current!} 
+                        />
                     </div>
                 </div>
             </ExecutionTraceProvider>
