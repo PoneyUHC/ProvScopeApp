@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useRef, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import Sigma from 'sigma';
 
 import { Allotment } from 'allotment';
@@ -18,19 +18,20 @@ import { TopologyGraphProvider } from '@renderer/components/TopologyGraph/Topolo
 const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border border-opacity-30"
 
 
-const TopologyView: React.FC = () => {
-    
+interface TopologyViewProps {
+    topologyGraph: TopologyGraph,
+};
+
+
+const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph }) => {
+
     const {
         executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent]
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     if( !executionTrace ) return;
-
-    const initGraph = (): TopologyGraph => {
-        return TopologyGraph.create(executionTrace!)
-    }
-    const topologyGraph = useRef<TopologyGraph>(initGraph());
+    
     const [sigma, setSigma] = useState<Sigma | null>(null);
 
 
@@ -71,7 +72,7 @@ const TopologyView: React.FC = () => {
 
     return (
         <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
-            <TopologyGraphProvider topologyGraph={topologyGraph.current}>
+            <TopologyGraphProvider topologyGraph={topologyGraph}>
                 <Allotment className={`${borderStyles}`} onDragEnd={onDragEnd}>
                     <Allotment.Pane minSize={200} preferredSize={"15%"}>
                         <ExplorerPanel

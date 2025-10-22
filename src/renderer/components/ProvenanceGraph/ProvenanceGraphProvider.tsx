@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 import ProvenanceGraph from "@common/ProvenanceGraph";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
@@ -31,27 +31,19 @@ const ProvenanceGraphProvider = ({ provenanceGraph: provenanceGraph, children }:
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext)
 
 
-    const externalSetSelectedNodes = (valueOrUpdater: string[] | ((prevNodes: string[]) => string[])) => {
-
-        const newValue = 
-            typeof valueOrUpdater === 'function'
-                ? valueOrUpdater(selectedNodes)
-                : valueOrUpdater
-
-        setSelectedNodes(newValue);
-
-        if (newValue.length === 0) {
+    useEffect(() => {
+        if (selectedNodes.length === 0) {
             setSelectedEvent(null);
             return;
         }
-        const event = provenanceGraph.graph.getNodeAttribute(newValue[0], 'event');
+        const event = provenanceGraph.graph.getNodeAttribute(selectedNodes[0], 'event');
         setSelectedEvent(event)
-    }
+    }, [selectedNodes, provenanceGraph, setSelectedEvent]);
     
 
     const value: ProvenanceGraphContextType = {
         provenanceGraph: provenanceGraph,
-        selectedNodes: [selectedNodes, externalSetSelectedNodes],
+        selectedNodes: [selectedNodes, setSelectedNodes],
     };
 
     return (

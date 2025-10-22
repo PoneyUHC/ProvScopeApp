@@ -7,14 +7,20 @@ import Header from "@renderer/components/Misc/Header";
 import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/types";
 import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
+import { TopologyGraph } from "@common/TopologyGraph";
+import ProvenanceGraph from "@common/ProvenanceGraph";
 
 
 const TraceBrowserTool: FC = () => {
 
     const topologyViewRef = useRef<HTMLDivElement>(null);
+    const topologyGraphRef = useRef<TopologyGraph | null>(null);
     const provenanceViewRef = useRef<HTMLDivElement>(null);
+    const provenanceGraphRef = useRef<ProvenanceGraph | null>(null);
+    
     const [currentView, setCurrentView] = useState<"Topology" | "Provenance">("Topology");
     const [trace, setTrace] = useState<ExecutionTrace | null>(null);
+    const [init, setInit] = useState(false);
 
     //TODO: implement a customizable speed scrolling mechanism
     const scrollToView = (view: "Topology" | "Provenance") => {
@@ -45,6 +51,16 @@ const TraceBrowserTool: FC = () => {
     }, [trace]);
 
 
+    useEffect(() => {
+        if (!trace) return;
+
+        topologyGraphRef.current = TopologyGraph.create(trace);
+        provenanceGraphRef.current = new ProvenanceGraph(trace);
+        setInit(true);
+
+    }, [trace]);
+
+
     const loadTraceFromJSON = (filename: string, content: string) => {
         console.log(`Loading trace ${filename}`);
         const trace = new ExecutionTrace(filename, content);
@@ -63,7 +79,7 @@ const TraceBrowserTool: FC = () => {
     }, [])
 
 
-    if (!trace) {
+    if (!trace || !init) {
         return (
             <div className="w-screen h-screen flex flex-col">
                 <Header />
@@ -81,10 +97,10 @@ const TraceBrowserTool: FC = () => {
             <ExecutionTraceProvider trace={trace}>
                 <div className="w-full h-full flex flex-row overflow-x-hidden">
                     <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
-                        <TopologyView />
+                        <TopologyView topologyGraph={topologyGraphRef.current!} />
                     </div>
                     <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
-                        <ProvenanceGraphView />
+                        <ProvenanceGraphView provenanceGraph={provenanceGraphRef.current!} />
                     </div>
                 </div>
             </ExecutionTraceProvider>

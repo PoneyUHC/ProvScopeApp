@@ -16,7 +16,8 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
-    const [_downStageCameraState, setDownStageCameraState] = useState<CameraState | null>(null);
+    const downStageCameraStateRef = useRef<CameraState | null>(null);
+    const gKeyPressedRef = useRef<boolean>(false);
 
     const {
         hiddenObjects: [hiddenObjects, _hideObject, _showObject],
@@ -76,6 +77,29 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     }, [hiddenObjects])
 
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "KeyG") {
+                gKeyPressedRef.current = true;
+            }
+        };
+
+        const handleKeyUp = (event: KeyboardEvent) => {
+            if (event.code === "KeyG") {
+                gKeyPressedRef.current = false;
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("keyup", handleKeyUp);
+        };
+    }, []);
+
+
     const addNodeToSelection = (node: string, prevSelectedNodes) => {
         return [...prevSelectedNodes, node];
     }
@@ -104,24 +128,6 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
         })
     }
 
-    let gKeyPressed = false;
-
-    document.addEventListener("keydown", (event) => {
-        if (event.code === "KeyG") {
-            gKeyPressed = true;
-        }
-    });
-
-    document.addEventListener("keyup", (event) => {
-        if (event.code === "KeyG") {
-            gKeyPressed = false;
-        }
-    });
-
-    const isGKeyPressed = (): boolean => {
-        return gKeyPressed;
-    };
-
 
     const onDownNode = (e: SigmaNodeEventPayload) => {
 
@@ -129,8 +135,8 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
         const isRightMouseButtonPressed = (e.event.original as MouseEvent).button === 2;
         const isShiftPressed = (e.event.original as MouseEvent).shiftKey;
         const isAltPressed = (e.event.original as MouseEvent).altKey;
-        const isGPressed = isGKeyPressed()
-        
+        const isGPressed = gKeyPressedRef.current;
+
         const currentNode = e.node;
 
 
@@ -205,8 +211,7 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
 
     const onStageMouseDown = (_e: SigmaStageEventPayload) => {
         // used to differenciate between a click and a camera move
-        const cameraState = sigma.getCamera().getState()
-        setDownStageCameraState( cameraState );
+        downStageCameraStateRef.current = sigma.getCamera().getState();
     }
 
 
@@ -221,22 +226,16 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
             return;
         }
 
+        const startState = downStageCameraStateRef.current;
+        if ( ! startState ) return;
         const currentCameraState = sigma.getCamera().getState();
-        setDownStageCameraState( prevState => {
 
-            // movement started on node, do nothing
-            if ( ! prevState ) {
-                return null;
-            }
+        const hasCameraMoved = currentCameraState.x !== startState.x || currentCameraState.y !== startState.y;
+        if ( ! hasCameraMoved) {
+            setSelectedNodes([]);
+        }
 
-            const hasCameraMoved = currentCameraState.x !== prevState.x || currentCameraState.y !== prevState.y;
-            if ( ! hasCameraMoved) {
-                setSelectedNodes([]);
-                return prevState; 
-            }
-
-            return null; 
-        });
+        downStageCameraStateRef.current = null;
     }
 
 
