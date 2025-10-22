@@ -9,7 +9,7 @@ import Error from '@renderer/components/Misc/Error';
 import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
 import { Event } from '@common/types';
 import { areConnected } from '@common/utils';
-import { DataflowGraphContext, DataflowGraphContextType } from './DataflowGraphProvider';
+import { ProvenanceGraphContext, ProvenanceGraphContextType } from './ProvenanceGraphProvider';
 
 
 
@@ -26,12 +26,12 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ patternGroups, addPatternGr
     const [lockedFields, setLockedFields] = useState<Map<Event, string[]>>(new Map());
     const [description, setDescription] = useState<string>('');
     const {
-        dataflowGraph: dataflowGraph,
+        provenanceGraph: provenanceGraph,
         selectedNodes: [selectedNodes, _setSelectedNodes],
-    } = useContext<DataflowGraphContextType>(DataflowGraphContext);
+    } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
 
-    if (!dataflowGraph) {
-        return <Error message={"Dataflow graph is not available."} />;
+    if (!provenanceGraph) {
+        return <Error message={"Provenance graph is not available."} />;
     }
 
 
@@ -61,7 +61,7 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ patternGroups, addPatternGr
         const patternGroup: EventPattern[] = [];
 
         for (const node of selectedNodes) {
-            const event = dataflowGraph.graph.getNodeAttribute(node, 'event');
+            const event = provenanceGraph.graph.getNodeAttribute(node, 'event');
             if (!event) continue;
 
             const lockedFieldsForEvent = lockedFields.get(event) || [];
@@ -82,7 +82,7 @@ const PatternPanel: React.FC<PatternPanelProps> = ({ patternGroups, addPatternGr
         addPatternGroup(new PatternGroup(patternGroup, description));
     };
 
-    const graph = dataflowGraph.graph;
+    const graph = provenanceGraph.graph;
     
     let body: JSX.Element;
 

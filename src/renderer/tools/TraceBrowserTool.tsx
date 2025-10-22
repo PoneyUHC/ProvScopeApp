@@ -2,7 +2,7 @@
 import { useState, useEffect, FC, useRef } from "react";
 
 import TopologyView from "@renderer/views/TopologyView";
-import DataflowGraphView from "@renderer/views/DataflowView";
+import ProvenanceGraphView from "@renderer/views/ProvenanceView";
 import Header from "@renderer/components/Misc/Header";
 import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/types";
@@ -12,24 +12,26 @@ import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/Ex
 const TraceBrowserTool: FC = () => {
 
     const topologyViewRef = useRef<HTMLDivElement>(null);
-    const dataflowViewRef = useRef<HTMLDivElement>(null);
-    const [currentView, setCurrentView] = useState<"Topology" | "Dataflow">("Topology");
+    const provenanceViewRef = useRef<HTMLDivElement>(null);
+    const [currentView, setCurrentView] = useState<"Topology" | "Provenance">("Topology");
     const [trace, setTrace] = useState<ExecutionTrace | null>(null);
 
     //TODO: implement a customizable speed scrolling mechanism
-    const scrollToView = (view: "Topology" | "Dataflow") => {
+    const scrollToView = (view: "Topology" | "Provenance") => {
         if (view === "Topology" && topologyViewRef.current) {
             topologyViewRef.current.scrollIntoView({ behavior: "smooth" });
-        } else if (view === "Dataflow" && dataflowViewRef.current) {
-            dataflowViewRef.current.scrollIntoView({ behavior: "smooth" });
+        } else if (view === "Provenance" && provenanceViewRef.current) {
+            provenanceViewRef.current.scrollIntoView({ behavior: "smooth" });
         }
     };
 
     useEffect(() => {
+        if (!trace) return;
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (trace === null) return;
             if (event.key === "ArrowRight") {
-                setCurrentView("Dataflow");
-                scrollToView("Dataflow");
+                setCurrentView("Provenance");
+                scrollToView("Provenance");
             } else if (event.key === "ArrowLeft") {
                 setCurrentView("Topology");
                 scrollToView("Topology");
@@ -40,7 +42,7 @@ const TraceBrowserTool: FC = () => {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [trace]);
 
 
     const loadTraceFromJSON = (filename: string, content: string) => {
@@ -81,8 +83,8 @@ const TraceBrowserTool: FC = () => {
                     <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
                         <TopologyView />
                     </div>
-                    <div className="w-full h-full flex-shrink-0" ref={dataflowViewRef}>
-                        <DataflowGraphView />
+                    <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
+                        <ProvenanceGraphView />
                     </div>
                 </div>
             </ExecutionTraceProvider>

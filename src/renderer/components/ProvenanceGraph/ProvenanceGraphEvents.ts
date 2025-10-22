@@ -4,15 +4,15 @@ import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
-import { DataflowGraphContext, DataflowGraphContextType } from "./DataflowGraphProvider";
+import { ProvenanceGraphContext, ProvenanceGraphContextType } from "./ProvenanceGraphProvider";
 
 
-interface DataflowGraphEventsProps {
-    showDataflowFrom: (node: string | null) => void;
+interface ProvenanceGraphEventsProps {
+    showProvenanceFrom: (node: string | null) => void;
 }
 
 
-const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowFrom }) => {
+const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProvenanceFrom: showProvenanceFrom }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -24,7 +24,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
     const {
         selectedNodes: [selectedNodes, setSelectedNodes],
-    } = useContext<DataflowGraphContextType>(DataflowGraphContext);
+    } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
     const previousHiddenObjects = useRef<string[]>(hiddenObjects);
@@ -168,7 +168,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
 
     const onRightClickNode = (e: SigmaNodeEventPayload) => {
-        showDataflowFrom(e.node);
+        showProvenanceFrom(e.node);
     }
 
 
@@ -241,7 +241,7 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 
 
     const onRightClickStage = (_e: SigmaStageEventPayload) => {
-        showDataflowFrom(null);
+        showProvenanceFrom(null);
     }
 
 
@@ -261,4 +261,4 @@ const DataflowGraphEvents: React.FC<DataflowGraphEventsProps> = ({ showDataflowF
 };
 
 
-export default DataflowGraphEvents;
+export default ProvenanceGraphEvents;

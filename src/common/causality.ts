@@ -1,5 +1,5 @@
 
-import DataflowGraph from '@common/DataflowGraph';
+import ProvenanceGraph from '@common/ProvenanceGraph';
 import { Process, Event } from "@common/types";
 
 
@@ -78,11 +78,11 @@ export type AlterationType =
 
 export interface CausalLink {
     appliesTo: (event: Event) => boolean;
-    getCauses(event: Event, dfGraph: DataflowGraph): Set<Event>;
+    getCauses(event: Event, dfGraph: ProvenanceGraph): Set<Event>;
 }
 
 
-const getProcessPriorEvents = (dfGraph: DataflowGraph, baseEvent: Event): Event[] => {
+const getProcessPriorEvents = (dfGraph: ProvenanceGraph, baseEvent: Event): Event[] => {
     const graph = dfGraph.graph;
     const baseEventID = baseEvent.id;
     const nodes = graph.filterNodes((node) => { 
@@ -106,7 +106,7 @@ export class FollowUpCL implements CausalLink {
         return true;
     }
 
-    getCauses(event: Event, dfGraph: DataflowGraph): Set<Event> {
+    getCauses(event: Event, dfGraph: ProvenanceGraph): Set<Event> {
 
         console.debug("FollowUpCL.getCauses", event);
         const graph = dfGraph.graph;
@@ -154,7 +154,7 @@ export class SourceTargetCL implements CausalLink {
         return this.target.matches(event);
     }
 
-    getCauses(event: Event, dfGraph: DataflowGraph): Set<Event> {
+    getCauses(event: Event, dfGraph: ProvenanceGraph): Set<Event> {
         
         if (!this.target.matches(event)) {
             return new Set();

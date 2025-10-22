@@ -4,8 +4,6 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { GhidraCommunication } from "../common/src/software/ghidra/GhidraCommunication";
 
-import { join } from 'path'
-
 import getMenu from '@main/menuBuilder'
 import goldoIcon from '@common/assets/goldo_icon.png?asset'
 

@@ -1,29 +1,29 @@
 
 import { createContext, useContext, useState } from "react";
 
-import DataflowGraph from "@common/DataflowGraph";
+import ProvenanceGraph from "@common/ProvenanceGraph";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
 
 
-interface DataflowGraphContextType {
-    dataflowGraph: DataflowGraph | null,
+interface ProvenanceGraphContextType {
+    provenanceGraph: ProvenanceGraph | null,
     selectedNodes: [string[], (nodes: string[] | ((prevValue: string[]) => string[])) => void],
 }
 
 
-const DataflowGraphContext = createContext<DataflowGraphContextType>({
-    dataflowGraph: null,
+const ProvenanceGraphContext = createContext<ProvenanceGraphContextType>({
+    provenanceGraph: null,
     selectedNodes: [[], () => {}],
 })
 
 
-interface DataflowGraphProviderType {
-    dataflowGraph: DataflowGraph,
+interface ProvenanceGraphProviderType {
+    provenanceGraph: ProvenanceGraph,
     children: React.ReactNode,
 }
 
 
-const DataflowGraphProvider = ({ dataflowGraph, children }: DataflowGraphProviderType) => {
+const ProvenanceGraphProvider = ({ provenanceGraph: provenanceGraph, children }: ProvenanceGraphProviderType) => {
 
     const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
     const {
@@ -44,24 +44,24 @@ const DataflowGraphProvider = ({ dataflowGraph, children }: DataflowGraphProvide
             setSelectedEvent(null);
             return;
         }
-        const event = dataflowGraph.graph.getNodeAttribute(newValue[0], 'event');
+        const event = provenanceGraph.graph.getNodeAttribute(newValue[0], 'event');
         setSelectedEvent(event)
     }
     
 
-    const value: DataflowGraphContextType = {
-        dataflowGraph: dataflowGraph,
+    const value: ProvenanceGraphContextType = {
+        provenanceGraph: provenanceGraph,
         selectedNodes: [selectedNodes, externalSetSelectedNodes],
     };
 
     return (
-        <DataflowGraphContext.Provider value={value}>
+        <ProvenanceGraphContext.Provider value={value}>
             {children}
-        </DataflowGraphContext.Provider>
+        </ProvenanceGraphContext.Provider>
     )
 }
 
 
-export { DataflowGraphProvider, DataflowGraphContext };
-export type { DataflowGraphProviderType, DataflowGraphContextType };
+export { ProvenanceGraphProvider, ProvenanceGraphContext };
+export type { ProvenanceGraphProviderType, ProvenanceGraphContextType };
 

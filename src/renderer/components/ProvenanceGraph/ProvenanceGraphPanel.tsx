@@ -17,14 +17,14 @@ import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
 import { PatternGroup } from '@common/causality';
 
-import DataflowGraphEvents from './DataflowGraphEvents';
+import ProvenanceGraphEvents from './ProvenanceGraphEvents';
 import PatternPanel from './PatternPanel';
 import EventInfosPanel from './EventInfosPanel';
-import { DataflowGraphContext, DataflowGraphContextType } from './DataflowGraphProvider';
+import { ProvenanceGraphContextType, ProvenanceGraphContext } from './ProvenanceGraphProvider';
 import { ExecutionTraceContext, ExecutionTraceContextType } from '../TraceBrowserTool/ExecutionTraceProvider';
 
 
-const DataflowGraphPanel: React.FC = () => {
+const provenanceGraphPanel: React.FC = () => {
 
     const {
         hiddenObjects: [hiddenObjects, hideObject, showObject],
@@ -38,18 +38,18 @@ const DataflowGraphPanel: React.FC = () => {
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
 
     const { 
-        dataflowGraph 
-    } = useContext<DataflowGraphContextType>(DataflowGraphContext);
+        provenanceGraph: provenanceGraph 
+    } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
     
-    if (!dataflowGraph) {
-        return <Error message={"Dataflow graph is not available."} />;
+    if (!provenanceGraph) {
+        return <Error message={"Provenance graph is not available."} />;
     }
 
     const previousHiddenObjects = useRef<string[]>(hiddenObjects);
 
 
     const getObjectNames = (): Set<string> => {
-        const graph = dataflowGraph.graph;
+        const graph = provenanceGraph.graph;
         const objectNames = graph.mapNodes((node) => graph.getNodeAttribute(node, 'objectName'));
         return new Set(objectNames)
     };
@@ -57,7 +57,7 @@ const DataflowGraphPanel: React.FC = () => {
     useEffect(() => {
         const newItems = Array.from(getObjectNames());
         setOrderedObjectNames(newItems);
-        dataflowGraph.computeCoords(newItems);
+        provenanceGraph.computeCoords(newItems);
     }, []);
 
     useEffect(() => {
@@ -102,20 +102,20 @@ const DataflowGraphPanel: React.FC = () => {
     }, [hiddenObjects]);
     
 
-    const showDataflowFrom = (target: string | null) => {
+    const showProvenanceFrom = (target: string | null) => {
 
         if ( !target ) {
-            dataflowGraph.resetColoring()
+            provenanceGraph.resetColoring()
             return;
         }
 
-        const dataflow = dataflowGraph.computeDataflowFrom(target)
+        const provenance = provenanceGraph.computeProvenanceFrom(target)
 
-        const graph = dataflowGraph.graph
+        const graph = provenanceGraph.graph
 
         graph.forEachNode((node) => {
             graph.removeNodeAttribute(node, 'color')
-            if( dataflow.has(node) ) {
+            if( provenance.has(node) ) {
                 graph.setNodeAttribute(node, 'color', 'red')
             }
         })
@@ -125,7 +125,7 @@ const DataflowGraphPanel: React.FC = () => {
             const source = graph.source(edge)
             const target = graph.target(edge)
 
-            if (dataflow.has(source) && dataflow.has(target)) {
+            if (provenance.has(source) && provenance.has(target)) {
                 const eventType = graph.getEdgeAttribute(edge, 'event').eventType
                 if (eventType === 'ExitReadEvent') {
                     graph.setEdgeAttribute(edge, 'color', 'green')
@@ -140,7 +140,7 @@ const DataflowGraphPanel: React.FC = () => {
 
 
     const onListChanged = (newOrder: string[]) => {
-        dataflowGraph.computeCoords(newOrder);
+        provenanceGraph.computeCoords(newOrder);
         setOrderedObjectNames(newOrder);
     };
 
@@ -177,7 +177,7 @@ const DataflowGraphPanel: React.FC = () => {
 
                     <SigmaContainer 
                         ref={setSigma} 
-                        graph={dataflowGraph.graph} 
+                        graph={provenanceGraph.graph} 
                         settings={
                             {
                                 renderLabels: false,
@@ -192,8 +192,8 @@ const DataflowGraphPanel: React.FC = () => {
                             <ZoomControl />
                             <FullScreenControl />
                         </ControlsContainer>
-                        <DataflowGraphEvents 
-                            showDataflowFrom={showDataflowFrom}
+                        <ProvenanceGraphEvents 
+                            showProvenanceFrom={showProvenanceFrom}
                         />
 
                         <EventInfosPanel />
@@ -240,5 +240,5 @@ const DataflowGraphPanel: React.FC = () => {
     )
 }
 
-export default DataflowGraphPanel;
+export default provenanceGraphPanel;
 

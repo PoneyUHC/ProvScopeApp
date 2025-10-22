@@ -6,7 +6,7 @@ import { ExitReadEvent, ExecutionTrace, WriteEvent, Event } from '@common/types'
 
 
 
-class DataflowGraph {
+class ProvenanceGraph {
 
     trace: ExecutionTrace
     graph: DirectedGraph
@@ -136,7 +136,7 @@ class DataflowGraph {
                 this.addWriteEvent(event)
                 this.events.push(event)
             } else {
-                console.log(`${event} not handled by DataflowGraph`)
+                console.log(`${event} not handled by ProvenanceGraph`)
             }
         }
     }
@@ -243,7 +243,7 @@ class DataflowGraph {
     }
 
 
-    computeDataflowFrom(node: string): Set<string> {
+    computeProvenanceFrom(node: string): Set<string> {
 
         const event = this.graph.getNodeAttribute(node, 'event') as Event
         if (!event) {
@@ -251,30 +251,30 @@ class DataflowGraph {
             return new Set<string>()
         }
 
-        const dataflow = new Set<Event>()
+        const provenance = new Set<Event>()
         const queue: Event[] = [event]
         while (queue.length > 0) {
             const current = queue.shift()
             if (!current) continue
 
-            dataflow.add(current)
+            provenance.add(current)
 
             const causes = this.getCausesOfEvent(current)
             for (const cause of causes) {
-                if (!dataflow.has(cause)) {
+                if (!provenance.has(cause)) {
                     queue.push(cause)
                 }
             }
         }
 
-        const nodesInDataflow: Set<string> = new Set<string>();
-        for (const event of dataflow) {
+        const nodesInProvenance: Set<string> = new Set<string>();
+        for (const event of provenance) {
             const node = this.graph.findNode((n) => this.graph.getNodeAttribute(n, 'event') == event);
             if (node) {
-                nodesInDataflow.add(node);
+                nodesInProvenance.add(node);
             }
         }
-        return nodesInDataflow;
+        return nodesInProvenance;
     }
 
 
@@ -338,4 +338,4 @@ class DataflowGraph {
 }
 
 
-export default DataflowGraph;
+export default ProvenanceGraph;
