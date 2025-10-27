@@ -2,7 +2,7 @@
 import DirectedGraph from 'graphology'
 
 import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from '@common/causality'
-import { ExitReadEvent, ExecutionTrace, WriteEvent, Event } from '@common/types'
+import { ExitReadEvent, ExecutionTrace, WriteEvent, Event, OpenEvent, CloseEvent } from '@common/types'
 
 
 
@@ -11,7 +11,6 @@ class ProvenanceGraph {
     trace: ExecutionTrace
     graph: DirectedGraph
     events: Event[]
-    versions: Map<string, number>
     nodes: Map<string, string[]>
     excludedNodes: Set<string>
 
@@ -23,7 +22,6 @@ class ProvenanceGraph {
         this.trace = trace
         this.graph = new DirectedGraph()
         this.events = []
-        this.versions = new Map<string, number>()
         this.nodes = new Map<string, string[]>()
         this.excludedNodes = new Set<string>()
         this.eventCausalLinks = new Map<Event, CausalLink[]>()
@@ -73,6 +71,13 @@ class ProvenanceGraph {
 
     loadTrace() {
 
+        this.createInitialNodes()
+        this.loadEvents()
+    }
+
+
+    createInitialNodes() {
+
         for (const file of this.trace.files) {
 
             const node = this.graph.addNode(file.path, {
@@ -86,7 +91,6 @@ class ProvenanceGraph {
                 type: 'square'
             })
             this.nodes.set(file.path, [node])
-            this.versions.set(file.path, 0)
         }
 
         for (const process of this.trace.processes) {
@@ -103,7 +107,6 @@ class ProvenanceGraph {
                 type: 'circle'
             })
             this.nodes.set(processUUID, [node])
-            this.versions.set(processUUID, 0)
 
             const stdoutName = `${process.getUUID()}-STDOUT`
             const stdoutNode = this.graph.addNode(stdoutName, {
@@ -117,10 +120,7 @@ class ProvenanceGraph {
                 type: 'square'
             })
             this.nodes.set(stdoutName, [stdoutNode])
-            this.versions.set(stdoutName, 0)
         }
-
-        this.loadEvents()
     }
 
 
@@ -135,15 +135,49 @@ class ProvenanceGraph {
             } else if (event instanceof WriteEvent) {
                 this.addWriteEvent(event)
                 this.events.push(event)
+            } else if (event instanceof OpenEvent) {
+                this.addOpenEvent(event)
+                this.events.push(event)
+            } else if (event instanceof CloseEvent) {
+                this.addCloseEvent(event)
+                this.events.push(event)
             } else {
                 console.log(`${event} not handled by ProvenanceGraph`)
             }
         }
     }
 
-    
-    addReadEvent(event: ExitReadEvent) {
-        
+
+    //TODO check if OpenEvent indeed created a new file
+    addCloseEvent(event: CloseEvent) {
+        const processUUID = event.process.getUUID()
+        const id = event.id
+
+        const processNodes = this.nodes.get(processUUID)!
+        const lastProcessNode = processNodes.slice(-1)[0]
+        const currentProcessVersion = processNodes.length - 1
+
+        const newProcessNodeLabel = `${processUUID}-${currentProcessVersion + 1}`
+        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
+            x: 0, 
+            y: 0, 
+            id: id,
+            size: 4,
+            label: newProcessNodeLabel, 
+            version: currentProcessVersion + 1, 
+            objectName: processUUID, 
+            objectType: "process",
+            event: event, 
+            type: 'circle'
+        })
+        this.nodes.get(processUUID)!.push(newProcessNode)
+
+        this.graph.addEdge(lastProcessNode, newProcessNode, {event: event, color: 'black'})
+    }
+
+
+    //TODO check if OpenEvent indeed created a new file
+    addOpenEvent(event: OpenEvent) {
         const processUUID = event.process.getUUID()
         const filePath = event.filepath
         const id = event.id
@@ -153,43 +187,102 @@ class ProvenanceGraph {
             return
         }
 
-        const fileNodes = this.nodes.get(filePath)
-        const fileNode = fileNodes ? fileNodes[fileNodes.length - 1] : null
-        const processNodes = this.nodes.get(processUUID)
-        const processNode = processNodes ? processNodes[processNodes.length - 1] : null
-        if (!fileNode || !processNode) {
-            console.error(`File node or process node not found for event`)
-            console.error(event)
-            return
-        }
+        const fileNodes = this.nodes.get(filePath)!
+        const lastResourceNode = fileNodes.slice(-1)[0]
+        // const currentResourceVersion = fileNodes.length - 1
 
-        let currentVersion = this.versions.get(processUUID)
-        if (currentVersion === undefined) {
-            console.error(`Process version not found for event`)
-            console.error(event)
-            return
-        }
+        const processNodes = this.nodes.get(processUUID)!
+        const lastProcessNode = processNodes.slice(-1)[0]
+        const currentProcessVersion = processNodes.length - 1
 
-        const nextVersion = currentVersion + 1
-        this.versions.set(processUUID, nextVersion)
+        // const newResourceNodeLabel = `${filePath}-${currentResourceVersion + 1}`
+        // const newResourceNode = this.graph.addNode(newResourceNodeLabel, {
+        //     x: 0, 
+        //     y: 0, 
+        //     id: id,
+        //     size: 4,
+        //     label: newResourceNodeLabel, 
+        //     version: currentResourceVersion + 1, 
+        //     objectName: filePath, 
+        //     objectType: "resource",
+        //     event: event, 
+        //     type: 'square'
+        // })
+        // this.nodes.get(filePath)!.push(newResourceNode)
 
-        const newProcessNodeLabel = `${processUUID}-${nextVersion}`
+        const newProcessNodeLabel = `${processUUID}-${currentProcessVersion + 1}`
         const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
             x: 0, 
-            y: 0,
-            size: 4,
+            y: 0, 
             id: id,
+            size: 4,
             label: newProcessNodeLabel, 
-            version: nextVersion, 
+            version: currentProcessVersion + 1, 
             objectName: processUUID, 
-            event: event,
-            objectType: "process", 
+            objectType: "process",
+            event: event, 
             type: 'circle'
         })
-        this.nodes.get(processUUID)?.push(newProcessNode)
+        this.nodes.get(processUUID)!.push(newProcessNode)
 
-        this.graph.addEdge(fileNode, newProcessNode, {event: event, color: 'green'})
-        this.graph.addEdge(processNode, newProcessNode, {event: event, color: 'green'})
+        this.graph.addEdge(lastResourceNode, newProcessNode, {event: event, color: 'yellow'})
+        this.graph.addEdge(lastProcessNode, newProcessNode, {event: event, color: 'yellow'})
+    }
+
+
+    //TODO handle read on consumable vs storage resources
+    addReadEvent(event: ExitReadEvent) {
+        const processUUID = event.process.getUUID()
+        const filePath = event.filepath
+        const id = event.id
+        if (!filePath) {
+            console.error(`File not found for event`)
+            console.error(event)
+            return
+        }
+
+        const fileNodes = this.nodes.get(filePath)!
+        const lastResourceNode = fileNodes.slice(-1)[0]
+        const currentResourceVersion = fileNodes.length - 1
+
+        const processNodes = this.nodes.get(processUUID)!
+        const lastProcessNode = processNodes.slice(-1)[0]
+        const currentProcessVersion = processNodes.length - 1
+
+        const newResourceNodeLabel = `${filePath}-${currentResourceVersion + 1}`
+        const newResourceNode = this.graph.addNode(newResourceNodeLabel, {
+            x: 0, 
+            y: 0, 
+            id: id,
+            size: 4,
+            label: newResourceNodeLabel, 
+            version: currentResourceVersion + 1, 
+            objectName: filePath, 
+            objectType: "resource",
+            event: event, 
+            type: 'square'
+        })
+        this.nodes.get(filePath)!.push(newResourceNode)
+
+        const newProcessNodeLabel = `${processUUID}-${currentProcessVersion + 1}`
+        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
+            x: 0, 
+            y: 0, 
+            id: id,
+            size: 4,
+            label: newProcessNodeLabel, 
+            version: currentProcessVersion + 1, 
+            objectName: processUUID, 
+            objectType: "process",
+            event: event, 
+            type: 'circle'
+        })
+        this.nodes.get(processUUID)!.push(newProcessNode)
+
+        this.graph.addEdge(lastResourceNode, newResourceNode, {event: event, color: 'green'})
+        this.graph.addEdge(lastResourceNode, newProcessNode, {event: event, color: 'green'})
+        this.graph.addEdge(lastProcessNode, newResourceNode, {event: event, color: 'green'})
+        this.graph.addEdge(lastProcessNode, newProcessNode, {event: event, color: 'green'})
     }
 
 
@@ -203,43 +296,48 @@ class ProvenanceGraph {
             return
         }
 
-        const fileNodes = this.nodes.get(filePath)
-        const fileNode = fileNodes ? fileNodes[fileNodes.length - 1] : null
-        const processNodes = this.nodes.get(processUUID)
-        const processNode = processNodes ? processNodes[processNodes.length - 1] : null
-        if (!fileNode || !processNode) {
-            console.log(event.filepath)
-            console.error(event)
-            return
-        }
+        const fileNodes = this.nodes.get(filePath)!
+        const lastResourceNode = fileNodes.slice(-1)[0]
+        const currentResourceVersion = fileNodes.length - 1
 
-        const currentVersion = this.versions.get(filePath)
-        if (currentVersion === undefined) {
-            console.error(`File version not found for event`)
-            console.error(event)
-            return
-        }
+        const processNodes = this.nodes.get(processUUID)!
+        const lastProcessNode = processNodes.slice(-1)[0]
+        const currentProcessVersion = processNodes.length - 1
 
-        const nextVersion = currentVersion + 1
-        this.versions.set(filePath, nextVersion)
-
-        const newFileNodeLabel = `${filePath}-${nextVersion}`
-        const newFileNode = this.graph.addNode(newFileNodeLabel, {
+        const newResourceNodeLabel = `${filePath}-${currentResourceVersion + 1}`
+        const newResourceNode = this.graph.addNode(newResourceNodeLabel, {
             x: 0, 
             y: 0, 
             id: id,
             size: 4,
-            label: newFileNodeLabel, 
-            version: nextVersion, 
+            label: newResourceNodeLabel, 
+            version: currentResourceVersion + 1, 
             objectName: filePath, 
             objectType: "resource",
             event: event, 
             type: 'square'
         })
-        this.nodes.get(filePath)?.push(newFileNode)
+        this.nodes.get(filePath)!.push(newResourceNode)
 
-        this.graph.addEdge(fileNode, newFileNode, {event: event, color: 'blue'})
-        this.graph.addEdge(processNode, newFileNode, {event: event, color: 'blue'})
+        const newProcessNodeLabel = `${processUUID}-${currentProcessVersion + 1}`
+        const newProcessNode = this.graph.addNode(newProcessNodeLabel, {
+            x: 0, 
+            y: 0, 
+            id: id,
+            size: 4,
+            label: newProcessNodeLabel, 
+            version: currentProcessVersion + 1, 
+            objectName: processUUID, 
+            objectType: "process",
+            event: event, 
+            type: 'circle'
+        })
+        this.nodes.get(processUUID)!.push(newProcessNode)
+
+        this.graph.addEdge(lastResourceNode, newResourceNode, {event: event, color: 'blue'})
+        this.graph.addEdge(lastResourceNode, newProcessNode, {event: event, color: 'blue'})
+        this.graph.addEdge(lastProcessNode, newResourceNode, {event: event, color: 'blue'})
+        this.graph.addEdge(lastProcessNode, newProcessNode, {event: event, color: 'blue'})
     }
 
 

@@ -2,7 +2,7 @@
 import { app, shell, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { GhidraCommunication } from "../common/src/software/ghidra/GhidraCommunication";
+import { GhidraCommunication } from "../common/software/ghidra/GhidraCommunication";
 
 import getMenu from '@main/menuBuilder'
 import goldoIcon from '@common/assets/goldo_icon.png?asset'

@@ -66,7 +66,6 @@ const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelect
 
     useEffect(() => {
         
-        console.log("here")
         if (!isViewSelected) return;
         if (!selectedEvent) return;
 
