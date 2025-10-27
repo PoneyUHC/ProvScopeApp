@@ -18,10 +18,6 @@ export default class ExecutionTraceImporter {
             executionTrace.resources.push(new Resource(file.path, file.file_type))
         }
 
-        for( const channel of json.channels) {
-            executionTrace.channels.push(channel)
-        }
-
         for (const jsonEvent of json.events) {
             const event = ExecutionTraceImporter.createEventFromJSON(executionTrace, jsonEvent)
             if ( event ) {

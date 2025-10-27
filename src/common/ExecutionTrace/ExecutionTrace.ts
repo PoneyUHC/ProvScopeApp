@@ -11,7 +11,6 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
 
     processes: Process[]
     resources: Resource[]
-    channels: string[]
     events: Event[]
     
 
@@ -19,7 +18,6 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
         this.filename = filename
         this.processes = []
         this.resources = []
-        this.channels = []
         this.events = []
 
         ExecutionTraceImporter.loadTraceFromJSON(this, jsonString)
@@ -29,7 +27,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     static toJSON(trace: ExecutionTrace): string {
         return ExecutionTraceExporter.toJSON(trace)
     }
-    
+
 
     clone(): ExecutionTrace {
         const clone = { ...this }
