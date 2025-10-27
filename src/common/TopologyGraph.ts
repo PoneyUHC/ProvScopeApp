@@ -50,7 +50,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
 
         const graph = new DirectedGraph();
 
-        for (const file of this.trace.files) {
+        for (const file of this.trace.resources) {
             const fileLabel = file.path;
             graph.addNode(fileLabel, {
                 x: toUniform(fileLabel)*10,
@@ -233,6 +233,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
             this.applyEventToGraph(event, tmpGraph)
             const filename2 = TopologyGraph.getEventFilename(event, tmpGraph)
             event.filepath = filename1 || filename2 || "Error"
+            //TODO: instead of just resource name, shoulkd point to the resource struct
         }
     }
 
@@ -247,7 +248,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     toJSON(hiddenObjects: string[]): string {
 
         const removeFile = (path: string, trace: ExecutionTrace) => {
-            trace.files = trace.files.filter(f => f.path !== path)
+            trace.resources = trace.resources.filter(f => f.path !== path)
             trace.events = trace.events.filter(e => (e as FSEvent).filepath !== path)
         }
 

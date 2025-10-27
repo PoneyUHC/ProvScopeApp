@@ -22,16 +22,31 @@ export class Process implements IClonable<Process> {
 }
 
 
-export class File {
+export class Resource {
 
+    resourceType: ResourceType
     path: string
-    constructor(path: string) {
+
+    constructor(path: string, resourceType: ResourceType) {
         this.path = path
+        this.resourceType = resourceType
     }
 
-    clone(): File {
-        return new File(this.path)
+    clone(): Resource {
+        return new Resource(this.path, this.resourceType)
     }
+}
+
+
+export enum ResourceType {
+    FIFO = 0,
+    CHAR_DEVICE = 1,
+    DIRECTORY = 2,
+    BLOCK_DEVICE = 3,
+    REGULAR_FILE = 4,
+    SYMLINK = 5,
+    SOCKET = 6,
+    UNKNOWN = 7
 }
 
 
@@ -81,11 +96,11 @@ export abstract class FSEvent extends Event {
 
 export class OpenEvent extends FSEvent {
 
-    file: File
+    file: Resource
     mode: number
     flags: number
 
-    constructor(timestamp: number, process: Process, file: File, fd: number, mode: number, flags: number) {
+    constructor(timestamp: number, process: Process, file: Resource, fd: number, mode: number, flags: number) {
         super(timestamp, process, fd)
         this.file = file
         this.mode = mode

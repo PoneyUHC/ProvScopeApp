@@ -1,7 +1,7 @@
 
 import ExecutionTraceExporter from "./ExecutionTraceExporter"
 import ExecutionTraceImporter from "./ExecutionTraceImporter"
-import { Process, File, Event } from "../types"
+import { Process, Resource, Event } from "../types"
 import { IClonable } from "../utils"
 
 
@@ -10,7 +10,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     filename: string
 
     processes: Process[]
-    files: File[]
+    resources: Resource[]
     channels: string[]
     events: Event[]
     
@@ -18,7 +18,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     constructor(filename: string, jsonString: string) {
         this.filename = filename
         this.processes = []
-        this.files = []
+        this.resources = []
         this.channels = []
         this.events = []
 
@@ -35,7 +35,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
         const clone = { ...this }
         clone.filename = this.filename
         clone.processes = this.processes.map((process) => process.clone())
-        clone.files = this.files.map((file) => file.clone())
+        clone.resources = this.resources.map((file) => file.clone())
         clone.events = [...this.events]
         return clone
     }

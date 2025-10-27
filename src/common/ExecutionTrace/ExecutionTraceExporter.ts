@@ -16,7 +16,7 @@ export default class ExecutionTraceExporter {
             }
 
             if (key === 'file') {
-                return trace.files.map((file) => file.path).indexOf(value.path)
+                return trace.resources.map((file) => file.path).indexOf(value.path)
             }
 
             if (key === 'events') {

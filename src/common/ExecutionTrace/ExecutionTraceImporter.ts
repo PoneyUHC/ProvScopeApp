@@ -1,6 +1,6 @@
 
 import { ExecutionTrace } from "./ExecutionTrace"
-import { Process, Event, OpenEvent, CloseEvent, EnterReadEvent, ExitReadEvent, WriteEvent, File } from "../types"
+import { Process, Event, OpenEvent, CloseEvent, EnterReadEvent, ExitReadEvent, WriteEvent, Resource } from "../types"
 import { importerExtensionsMapping } from "./ExecutionTraceImporterExtensions.ts/ImporterExtensionsMapping"
 
 export default class ExecutionTraceImporter {
@@ -16,7 +16,7 @@ export default class ExecutionTraceImporter {
         }
 
         for (const file of json.files) {
-            executionTrace.files.push(new File(file.path))
+            executionTrace.resources.push(new Resource(file.path, file.file_type))
         }
 
         for( const channel of json.channels) {
@@ -48,7 +48,7 @@ export default class ExecutionTraceImporter {
                 return new OpenEvent(
                     json.timestamp,
                     executionTrace.processes[json.process],
-                    executionTrace.files[json.file],
+                    executionTrace.resources[json.file],
                     json.fd,
                     json.mode,
                     json.flags

@@ -79,7 +79,7 @@ class ProvenanceGraph {
 
     createInitialNodes() {
 
-        for (const file of this.trace.files) {
+        for (const file of this.trace.resources) {
 
             const node = this.graph.addNode(file.path, {
                 x: 0, 
