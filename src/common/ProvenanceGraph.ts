@@ -2,7 +2,7 @@
 import DirectedGraph from 'graphology'
 
 import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './causality'
-import { ExecutionTrace } from './ExecutionTrace'
+import { ExecutionTrace } from './ExecutionTrace/ExecutionTrace'
 import { ExitReadEvent, WriteEvent, Event, OpenEvent, CloseEvent } from './types'
 
 

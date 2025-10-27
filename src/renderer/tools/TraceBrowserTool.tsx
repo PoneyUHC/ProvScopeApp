@@ -5,7 +5,7 @@ import TopologyView from "@renderer/views/TopologyView";
 import ProvenanceGraphView from "@renderer/views/ProvenanceView";
 import Header from "@renderer/components/Misc/Header";
 import Title from "@renderer/components/Misc/Title";
-import { ExecutionTrace } from "@common/types";
+import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
 import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 import { TopologyGraph } from "@common/TopologyGraph";
 import ProvenanceGraph from "@common/ProvenanceGraph";

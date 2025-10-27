@@ -2,7 +2,7 @@
 import DirectedGraph from 'graphology'
 import FA2Layout from "graphology-layout-forceatlas2"
 
-import { ExecutionTrace } from "./ExecutionTrace"
+import { ExecutionTrace } from "./ExecutionTrace/ExecutionTrace"
 import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, OpenEvent, WriteEvent } from "./types"
 import { toUniform, IClonable } from "./utils"
 

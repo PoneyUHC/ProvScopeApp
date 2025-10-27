@@ -1,7 +1,8 @@
 
 import { createContext, useState } from "react";
 
-import { ExecutionTrace, Event } from "@common/types"; 
+import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
+import { Event } from "@common/types"; 
 
 
 interface ExecutionTraceContextType {
