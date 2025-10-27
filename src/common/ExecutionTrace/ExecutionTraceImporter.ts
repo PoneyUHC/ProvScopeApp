@@ -5,7 +5,6 @@ import { importerExtensionsMapping } from "./ExecutionTraceImporterExtensions.ts
 
 export default class ExecutionTraceImporter {
 
-
     static loadTraceFromJSON(executionTrace: ExecutionTrace, jsonString: string) {
 
         const json = JSON.parse(jsonString)
@@ -29,6 +28,8 @@ export default class ExecutionTraceImporter {
                 executionTrace.events.push(event)
             }
         }
+
+        ExecutionTraceImporter.addEventIDs(executionTrace)
 
         for(const extension in extensions) {
             const extensionImporter = importerExtensionsMapping.get(extension)
@@ -87,6 +88,13 @@ export default class ExecutionTraceImporter {
             default:
                 console.error(`Unknown event type: ${json.event_type}`)
                 return null
+        }
+    }
+
+
+    static addEventIDs(executionTrace: ExecutionTrace) {
+        for (const [id, event] of executionTrace.events.entries()) {
+            event.id = id;
         }
     }
 }

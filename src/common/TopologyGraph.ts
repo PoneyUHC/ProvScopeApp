@@ -25,7 +25,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
             this.graph = this.computeGraphFromTrace()
 
             this.setEventFilepaths()
-            this.setEventIDs()
 
             this.applyUntilEvent(trace.events[0])
         }
@@ -236,14 +235,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
             //TODO: instead of just resource name, shoulkd point to the resource struct
         }
     }
-
-
-    setEventIDs() {
-        for (const [id, event] of this.trace.events.entries()) {
-            event.id = id;
-        }
-    }
-
+    
 
     toJSON(hiddenObjects: string[]): string {
 

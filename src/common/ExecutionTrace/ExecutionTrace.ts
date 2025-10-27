@@ -29,7 +29,7 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     static toJSON(trace: ExecutionTrace): string {
         return ExecutionTraceExporter.toJSON(trace)
     }
-
+    
 
     clone(): ExecutionTrace {
         const clone = { ...this }
