@@ -2,8 +2,9 @@
 import DirectedGraph from 'graphology'
 import FA2Layout from "graphology-layout-forceatlas2"
 
-import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, ExecutionTrace, OpenEvent, WriteEvent } from "@common/types"
-import { toUniform, IClonable } from "@common/utils"
+import { ExecutionTrace } from "./ExecutionTrace"
+import { EnterReadEvent, Event, CloseEvent, ExitReadEvent, FSEvent, OpenEvent, WriteEvent } from "./types"
+import { toUniform, IClonable } from "./utils"
 
 
 export class TopologyGraph implements IClonable<TopologyGraph> {
