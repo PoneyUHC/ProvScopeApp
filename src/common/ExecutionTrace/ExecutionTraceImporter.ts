@@ -3,6 +3,7 @@ import { ExecutionTrace } from "./ExecutionTrace"
 import { Process, Event, OpenEvent, CloseEvent, EnterReadEvent, ExitReadEvent, WriteEvent, Resource } from "../types"
 import { importerExtensionsMapping } from "./ExecutionTraceImporterExtensions.ts/ImporterExtensionsMapping"
 
+
 export default class ExecutionTraceImporter {
 
     static loadTraceFromJSON(executionTrace: ExecutionTrace, jsonString: string) {
@@ -14,8 +15,8 @@ export default class ExecutionTraceImporter {
             executionTrace.processes.push(new Process(process.name, process.pid))
         }
 
-        for (const file of json.files) {
-            executionTrace.resources.push(new Resource(file.path, file.file_type))
+        for (const resource of json.resources) {
+            executionTrace.resources.push(new Resource(resource.path, resource.resource_type))
         }
 
         for (const jsonEvent of json.events) {
@@ -40,6 +41,8 @@ export default class ExecutionTraceImporter {
 
     private static createEventFromJSON(executionTrace: ExecutionTrace, json: any): Event | null {
 
+        // TODO: either create a specific importer for these events
+        // or do nothing related to event-specific treatment
         switch (json.event_type) {
             case "OpenEvent":
                 return new OpenEvent(
