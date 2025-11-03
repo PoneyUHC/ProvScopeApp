@@ -3,8 +3,10 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
-import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
+import { Entity } from "@common/types";
+
 import { ProvenanceGraphContext, ProvenanceGraphContextType } from "./ProvenanceGraphProvider";
+import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
 
 
 interface ProvenanceGraphEventsProps {
@@ -20,7 +22,7 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     const gKeyPressedRef = useRef<boolean>(false);
 
     const {
-        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+        hiddenEntities: [hiddenEntities, _hideEntity, _showEntity],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
@@ -28,7 +30,7 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
-    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+    const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
 
 
     useEffect(() => {
@@ -54,8 +56,8 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     useEffect(() => {
 
         const graph = sigma.getGraph();
-        for (const objectName of hiddenObjects) {
-            if ( !previousHiddenObjects.current.includes(objectName) ) {
+        for (const objectName of hiddenEntities) {
+            if ( !previousHiddenEntities.current.includes(objectName) ) {
                 const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', true);
@@ -63,8 +65,8 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
             }
         }
 
-        for (const objectName of previousHiddenObjects.current) {
-            if ( !hiddenObjects.includes(objectName) ) {
+        for (const objectName of previousHiddenEntities.current) {
+            if ( !hiddenEntities.includes(objectName) ) {
                 const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', false);
@@ -72,9 +74,9 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
             }
         }
 
-        previousHiddenObjects.current = hiddenObjects;
+        previousHiddenEntities.current = hiddenEntities;
 
-    }, [hiddenObjects])
+    }, [hiddenEntities])
 
 
     useEffect(() => {

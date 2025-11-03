@@ -2,20 +2,20 @@
 import { createContext, useState } from "react";
 
 import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
-import { Event } from "@common/types"; 
+import { Entity, Event } from "@common/types"; 
 
 
 interface ExecutionTraceContextType {
     executionTrace: ExecutionTrace | null,
     selectedEvent: [Event | null, React.Dispatch<React.SetStateAction<Event | null>>],
-    hiddenObjects: [string[], (objectName: string) => void, (objectName: string) => void],
+    hiddenEntities: [Entity[], (entity: Entity) => void, (entity: Entity) => void],
 }
 
 
 const ExecutionTraceContext = createContext<ExecutionTraceContextType>({
     executionTrace: null,
     selectedEvent: [null, () => {}],
-    hiddenObjects: [[], () => {}, () => {}],
+    hiddenEntities: [[], () => {}, () => {}],
 })
 
 
@@ -28,20 +28,20 @@ interface ExecutionTraceProviderType {
 const ExecutionTraceProvider = ({ trace, children }: ExecutionTraceProviderType) => {
 
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [hiddenObjects, setHiddenObjects] = useState<string[]>([]);
+    const [hiddenEntities, setHiddenEntities] = useState<Entity[]>([]);
 
-    const hideObject = (objectName: string) => {
-        setHiddenObjects((prev) => [...prev, objectName]);
+    const hideEntity = (entityName: Entity) => {
+        setHiddenEntities((prev) => [...prev, entityName]);
     }
 
-    const showObject = (objectName: string) => {
-        setHiddenObjects((prev) => prev.filter((obj) => obj !== objectName));
+    const showEntity = (entityName: Entity) => {
+        setHiddenEntities((prev) => prev.filter((obj) => obj !== entityName));
     }
 
     const value: ExecutionTraceContextType = {
         executionTrace: trace,
         selectedEvent: [selectedEvent, setSelectedEvent],
-        hiddenObjects: [hiddenObjects, hideObject, showObject],
+        hiddenEntities: [hiddenEntities, hideEntity, showEntity],
     }
 
     return (

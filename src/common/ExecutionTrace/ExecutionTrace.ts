@@ -1,7 +1,7 @@
 
 import ExecutionTraceExporter from "./ExecutionTraceExporter"
 import ExecutionTraceImporter from "./ExecutionTraceImporter"
-import { Process, Resource, Event } from "../types"
+import { Process, Resource, Event, Entity } from "../types"
 import { IClonable } from "../utils"
 
 
@@ -13,6 +13,8 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     resources: Resource[]
     events: Event[]
     
+    // redundant but useful for quick lookup
+    entities: Entity[]
 
     constructor(filename: string, jsonString: string) {
         this.filename = filename
@@ -21,6 +23,8 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
         this.events = []
 
         ExecutionTraceImporter.loadTraceFromJSON(this, jsonString)
+
+        this.entities = [...this.processes, ...this.resources]
     }
 
 

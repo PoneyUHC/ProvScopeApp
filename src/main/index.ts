@@ -12,7 +12,7 @@ export let ghidraCommunication: GhidraCommunication | null = null
 
 const request_quit = () => {
     if (ghidraCommunication) {
-        ghidraCommunication?.stopPythonBridge();
+        ghidraCommunication.stopPythonBridge();
         ghidraCommunication.close(); 
         app.quit();
     }

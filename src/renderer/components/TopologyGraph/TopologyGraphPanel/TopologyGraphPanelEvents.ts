@@ -6,12 +6,13 @@ import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
 import { TopologyGraphContext, TopologyGraphContextType } from "../TopologyGraphProvider";
+import { Entity } from "@common/types";
 
 
 const TopologyGraphEvents: React.FC = () => {
 
     const {
-        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+        hiddenEntities: [hiddenEntities, _hideObject, _showObject],
         selectedEvent: [selectedEvent, _setSelectedEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
@@ -30,7 +31,7 @@ const TopologyGraphEvents: React.FC = () => {
 
     // optimization not to reset attributes on every nodes
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
-    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+    const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
 
 
     useEffect(() => {
@@ -67,27 +68,27 @@ const TopologyGraphEvents: React.FC = () => {
     useEffect(() => {
 
         const graph = topologyGraph.graph;
-        for (const objectName of hiddenObjects) {
-            if ( !previousHiddenObjects.current.includes(objectName) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+        for (const entity of hiddenEntities) {
+            if ( !previousHiddenEntities.current.includes(entity) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', true);
                 }
             }
         }
 
-        for (const objectName of previousHiddenObjects.current) {
-            if ( !hiddenObjects.includes(objectName) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+        for (const entity of previousHiddenEntities.current) {
+            if ( !hiddenEntities.includes(entity) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', false);
                 }
             }
         }
 
-        previousHiddenObjects.current = hiddenObjects;
+        previousHiddenEntities.current = hiddenEntities;
 
-    }, [hiddenObjects])
+    }, [hiddenEntities])
 
 
     const onDownNode = (e: SigmaNodeEventPayload) => {

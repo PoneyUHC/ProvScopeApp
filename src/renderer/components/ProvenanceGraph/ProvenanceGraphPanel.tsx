@@ -16,6 +16,7 @@ import { Allotment } from 'allotment';
 import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
 import { PatternGroup } from '@common/causality';
+import { Entity } from '@common/types';
 
 import ProvenanceGraphEvents from './ProvenanceGraphEvents';
 import PatternPanel from './PatternPanel';
@@ -27,14 +28,14 @@ import { ExecutionTraceContext, ExecutionTraceContextType } from '../TraceBrowse
 const provenanceGraphPanel: React.FC = () => {
 
     const {
-        hiddenObjects: [hiddenObjects, hideObject, showObject],
+        hiddenEntities: [hiddenEntities, hideEntity, showEntity],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const [sigma, setSigma] = useState<Sigma | null>(null);
     const [isDirty, setIsDirty] = useState(false);
-    const [orderedObjectNames, setOrderedObjectNames] = useState<string[]>([]);
+    const [orderedEntities, setOrderedEntities] = useState<Entity[]>([]);
 
-    const hiddenObjectsIndexLookup = useRef<Map<string, number>>(new Map());
+    const hiddenEntitiesIndexLookup = useRef<Map<Entity, number>>(new Map());
     const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
 
     const { 
@@ -45,18 +46,12 @@ const provenanceGraphPanel: React.FC = () => {
         return <Error message={"Provenance graph is not available."} />;
     }
 
-    const previousHiddenObjects = useRef<string[]>(hiddenObjects);
+    const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
 
-
-    const getObjectNames = (): Set<string> => {
-        const graph = provenanceGraph.graph;
-        const objectNames = graph.mapNodes((node) => graph.getNodeAttribute(node, 'objectName'));
-        return new Set(objectNames)
-    };
 
     useEffect(() => {
-        const newItems = Array.from(getObjectNames());
-        setOrderedObjectNames(newItems);
+        const newItems = provenanceGraph.trace.entities;
+        setOrderedEntities(newItems);
         provenanceGraph.computeCoords(newItems);
     }, []);
 
@@ -76,30 +71,30 @@ const provenanceGraphPanel: React.FC = () => {
 
     useEffect(() => {
 
-        for (const objectName of hiddenObjects) {
-            if ( !previousHiddenObjects.current.includes(objectName) ) {
-                const index = orderedObjectNames.indexOf(objectName);
-                hiddenObjectsIndexLookup.current.set(objectName, index);
-                const newList = [...orderedObjectNames];
+        for (const entity of hiddenEntities) {
+            if ( !previousHiddenEntities.current.includes(entity) ) {
+                const index = orderedEntities.indexOf(entity);
+                hiddenEntitiesIndexLookup.current.set(entity, index);
+                const newList = [...orderedEntities];
                 newList.splice(index, 1);
-                hiddenObjectsIndexLookup.current.set(objectName, index);
-                setOrderedObjectNames(newList);
+                hiddenEntitiesIndexLookup.current.set(entity, index);
+                setOrderedEntities(newList);
             }
         }
 
-        for (const objectName of previousHiddenObjects.current) {
-            if ( !hiddenObjects.includes(objectName) ) {
-                const index = hiddenObjectsIndexLookup.current.get(objectName) || 0;
-                const safeIndex = Math.min(index, orderedObjectNames.length);
-                const newList = [...orderedObjectNames.slice(0, safeIndex), objectName, ...orderedObjectNames.slice(safeIndex)]; //we add the name at it's original place
-                hiddenObjectsIndexLookup.current.delete(objectName);
-                setOrderedObjectNames(newList);
+        for (const entity of previousHiddenEntities.current) {
+            if ( !hiddenEntities.includes(entity) ) {
+                const index = hiddenEntitiesIndexLookup.current.get(entity) || 0;
+                const safeIndex = Math.min(index, orderedEntities.length);
+                const newList = [...orderedEntities.slice(0, safeIndex), entity, ...orderedEntities.slice(safeIndex)]; //we add the name at it's original place
+                hiddenEntitiesIndexLookup.current.delete(entity);
+                setOrderedEntities(newList);
             }
         }
 
-        previousHiddenObjects.current = hiddenObjects;
+        previousHiddenEntities.current = hiddenEntities;
         
-    }, [hiddenObjects]);
+    }, [hiddenEntities]);
     
 
     const showProvenanceFrom = (target: string | null) => {
@@ -139,19 +134,20 @@ const provenanceGraphPanel: React.FC = () => {
     }
 
 
-    const onListChanged = (newOrder: string[]) => {
+    const onListChanged = (newOrder: Entity[]) => {
         provenanceGraph.computeCoords(newOrder);
-        setOrderedObjectNames(newOrder);
+        setOrderedEntities(newOrder);
     };
 
 
     const onRemove = (name: string, index: number) => {
-        hideObject(name);
+        const entity = provenanceGraph.trace.entities.find(e => e.getUUID() === name);
+        hideEntity(entity!);
     }
 
 
-    const onRestore = (name: string) => {
-        showObject(name);
+    const onRestore = (name: Entity) => {
+        showEntity(name);
     }
 
 
@@ -213,17 +209,17 @@ const provenanceGraphPanel: React.FC = () => {
                     <Allotment vertical={true}>
                         <Allotment.Pane minSize={200} preferredSize={"70%"}>
                             <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
-                                <DragDropListPanel itemNames={orderedObjectNames} onListChanged={onListChanged} onRemove={onRemove} />
+                                <DragDropListPanel itemNames={orderedEntities.map(entity => entity.getUUID())} onListChanged={onListChanged} onRemove={onRemove} />
                             </div>
                         </Allotment.Pane>
                         <Allotment.Pane minSize={200} preferredSize={"30%"} className="w-full h-full overflow-auto">
                             <div className='overflow-auto h-full w-full bg-gray-100 rounded-lg shadow-md'>
                                 {
-                                    hiddenObjects.map((objectName) => (
+                                    hiddenEntities.map((entity) => (
                                         <div className="w-full flex justify-between bg-[#f9f9f9] mb-2 rounded-md p-2" >
-                                            {objectName}
+                                            {entity.getUUID()}
                                             <button className="bg-[#d3d3d3] text-black px-3 py-1 rounded hover:bg-[#bfbfbf] transition-colors duration-200" 
-                                                    onClick={() => onRestore(objectName)} 
+                                                    onClick={() => onRestore(entity)} 
                                             >
                                                 👁
                                             </button>

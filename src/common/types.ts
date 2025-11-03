@@ -2,7 +2,14 @@
 import { IClonable } from "@common/utils"
 
 
-export class Process implements IClonable<Process> {
+export abstract class Entity implements IClonable<Entity> {
+
+    abstract getUUID(): string
+    abstract clone(): Entity
+}
+
+
+export class Process implements Entity {
 
     name: string
     pid: number
@@ -22,22 +29,6 @@ export class Process implements IClonable<Process> {
 }
 
 
-export class Resource {
-
-    resourceType: ResourceType
-    path: string
-
-    constructor(path: string, resourceType: ResourceType) {
-        this.path = path
-        this.resourceType = resourceType
-    }
-
-    clone(): Resource {
-        return new Resource(this.path, this.resourceType)
-    }
-}
-
-
 export enum ResourceType {
     FIFO = 0,
     CHAR_DEVICE = 1,
@@ -50,127 +41,54 @@ export enum ResourceType {
 }
 
 
-export abstract class Event {
+export class Resource implements Entity {
+
+    resourceType: ResourceType
+    path: string
+
+    constructor(path: string, resourceType: ResourceType) {
+        this.path = path
+        this.resourceType = resourceType
+    }
+
+    getUUID (): string {
+        return this.path
+    }
+
+    clone(): Resource {
+        return new Resource(this.path, this.resourceType)
+    }
+}
+
+
+export class Event {
 
     timestamp: number
     process: Process
     eventType: string
+
+    otherEntities: Set<Entity>
+    sourceEntities: Set<Entity>
+    targetEntities: Set<Entity>
+
+    description: string
     id: number
     address: string | null
 
-    constructor(timestamp: number, process: Process) {
+    constructor(timestamp: number, process: Process, eventType: string, otherEntities: Set<Entity>, sourceEntities: Set<Entity>, targetEntities: Set<Entity>, description: string) {
         this.timestamp = timestamp
         this.process = process
-        this.eventType = this.constructor.name
+        this.eventType = eventType
+
+        this.otherEntities = otherEntities
+        this.sourceEntities = sourceEntities
+        this.targetEntities = targetEntities
+
+        this.description = description
+
         this.id = -1 // Placeholder for unique ID, can be set later
-        this.address = "00100498"
-    }
 
-    getObjectName(): string {
-        return this.process.getUUID()
-    }
-
-    abstract getDescription(): string
-
-    abstract getKeyword(): string
-}
-
-
-export abstract class FSEvent extends Event {
-
-    fd: number
-    filepath: string
-
-    constructor(timestamp: number, process: Process, fd: number) {
-        super(timestamp, process)
-        this.fd = fd
-        this.filepath = "TBD" // Placeholder, can be set later
-    }
-
-    getDescription() {
-        const processUUID = this.process.getUUID();
-        return `${processUUID} ${this.getKeyword()} ${this.filepath}`
-    }
-}
-
-
-export class OpenEvent extends FSEvent {
-
-    file: Resource
-    mode: number
-    flags: number
-
-    constructor(timestamp: number, process: Process, file: Resource, fd: number, mode: number, flags: number) {
-        super(timestamp, process, fd)
-        this.file = file
-        this.mode = mode
-        this.flags = flags
-    }
-
-    getKeyword(): string {
-        return "opens"
-    }
-}
-
-
-export class CloseEvent extends FSEvent {
-
-    constructor(timestamp: number, process: Process, fd: number) {
-        super(timestamp, process, fd)
-    }
-
-    getKeyword(): string {
-        return "closes"
-    }
-}
-
-
-export class EnterReadEvent extends FSEvent {
-
-    count: number
-
-    constructor(timestamp: number, process: Process, fd: number, count: number) {
-        super(timestamp, process, fd)
-        this.count = count
-    }
-
-    getKeyword(): string {
-        return "enters read"
-    }
-}
-
-
-export class ExitReadEvent extends FSEvent {
-
-    count: number
-    content: string
-    ret: number
-
-    constructor(timestamp: number, process: Process, fd: number, count: number, content: string, ret: number) {
-        super(timestamp, process, fd)
-        this.count = count
-        this.content = content
-        this.ret = ret
-    }
-
-    getKeyword(): string {
-        return "exits read"
-    }
-}
-
-
-export class WriteEvent extends FSEvent {
-
-    count: number
-    content: string
-
-    constructor(timestamp: number, process: Process, fd: number, count: number, content: string) {
-        super(timestamp, process, fd)
-        this.count = count
-        this.content = content
-    }
-
-    getKeyword(): string {
-        return "writes"
+        // EXT_ADDR placeholder
+        this.address = "deadbeef"
     }
 }

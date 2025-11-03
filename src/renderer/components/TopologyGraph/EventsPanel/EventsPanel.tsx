@@ -21,7 +21,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     const { 
         executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent],
-        hiddenObjects: [hiddenObjects, _hideObject, _showObject],
+        hiddenEntities: [hiddenEntities, _hideObject, _showObject],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     if( !executionTrace ) return null;
@@ -59,8 +59,8 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         setSelectedEvent(event)
 
         const nodes = topologyGraph.graph.filterNodes((node) => {
-            const objectName = topologyGraph.graph.getNodeAttribute(node, 'objectName');
-            return event.getObjectName() === objectName;
+            const entity = topologyGraph.graph.getNodeAttribute(node, 'entity');
+            return [event.process, ...event.otherEntities].includes(entity);
         });
         setSelectedNodes(nodes);
     }
@@ -68,14 +68,14 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     const events = executionTrace?.events || [];
 
     const displayedEvents = events.filter((event) => {
-        const objectName = event.getObjectName();
-        return !hiddenObjects.includes(objectName)
+        const entities = [event.process, ...event.otherEntities];
+        return !hiddenEntities.some((hiddenEntity) => entities.includes(hiddenEntity));
     });
 
     const eventButtonList = displayedEvents.map((event, _i) => {
 
         let bgColor = getButtonBgColor(event)
-        const content = event.getDescription()
+        const content = event.description
         const id = event.id
 
         return (
