@@ -1,5 +1,5 @@
 
-import React, { useContext } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { List, useDynamicRowHeight } from 'react-window';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
@@ -32,6 +32,15 @@ const EventPanel: React.FC<EventPanelProps> = ({}) => {
         return <Error message={"Topology graph is not available."} />;
     }
 
+    const [displayedEvents, setDisplayedEvents] = useState<Event[]>(executionTrace.events);
+
+    useEffect(() => {
+        const filteredEvents = executionTrace.events.filter((event) => {
+            const entities = [event.process, ...event.otherEntities];
+            return entities.every(entity => !hiddenEntities.includes(entity));
+        });
+        setDisplayedEvents(filteredEvents);
+    }, [hiddenEntities]);
 
     const onLeftClick = (event: Event) => {
         console.log("Event clicked:", event);
@@ -44,13 +53,6 @@ const EventPanel: React.FC<EventPanelProps> = ({}) => {
         setSelectedNodes(nodes);
     }
 
-    const events = executionTrace.events;
-
-    const displayedEvents = events.filter((event) => {
-        const entities = [event.process, ...event.otherEntities];
-        return !hiddenEntities.some((hiddenEntity) => entities.includes(hiddenEntity));
-    });
-
     const rowHeight = useDynamicRowHeight({
         defaultRowHeight: 50
     });
@@ -60,10 +62,9 @@ const EventPanel: React.FC<EventPanelProps> = ({}) => {
             rowComponent={EventButton}
             rowCount={displayedEvents.length}
             rowHeight={rowHeight}
-            rowProps={{ events, selectedEvent, onLeftClick }}
+            rowProps={{ events: displayedEvents, selectedEvent, onLeftClick }}
             overscanCount={20}
         />
-
     );
 }
 

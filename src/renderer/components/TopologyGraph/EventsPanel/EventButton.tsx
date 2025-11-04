@@ -7,7 +7,7 @@ import { useCallback } from "react";
 interface EventButtonProps {
     events: Event[];
     selectedEvent: Event | null;
-    onLeftClick: (event: Event) => (_e: React.MouseEvent) => void;
+    onLeftClick: (event: Event) => void;
     className?: string;
 }
 
