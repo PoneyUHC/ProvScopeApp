@@ -34,6 +34,7 @@
     "postcss": "^8.5.3",
     "re-resizable": "^6.11.2",
     "react-tabs": "^6.1.0",
+    "react-window": "^2.2.2",
     "sigma": "^3.0.1",
     "ws": "^8.18.3"
   },

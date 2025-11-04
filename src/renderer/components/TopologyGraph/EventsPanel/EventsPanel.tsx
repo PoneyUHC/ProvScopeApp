@@ -1,5 +1,6 @@
 
 import React, { useContext } from 'react';
+import { List, useDynamicRowHeight } from 'react-window';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { Event } from '@common/types';
@@ -9,14 +10,10 @@ import EventButton from './EventButton';
 import { TopologyGraphContext, TopologyGraphContextType } from '../TopologyGraphProvider';
 
 
-interface EventPanelProps {
-    className?: string;
-    eventsStyle?: string;
-    onRightClick?: (event: Event) => void;
-}
+interface EventPanelProps {}
 
 
-const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRightClick}) => {
+const EventPanel: React.FC<EventPanelProps> = ({}) => {
 
     const { 
         executionTrace: executionTrace,
@@ -36,26 +33,8 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
     }
 
 
-    const getButtonBgColor = (event: Event) => {
-
-        if ( !selectedEvent ) {
-            return "bg-gray-500 hover:bg-gray-400"
-        }
-
-        const eventIndex = event.id
-        const selectedEventIndex = selectedEvent.id
-
-        if( eventIndex < selectedEventIndex ){
-            return "bg-gray-500 hover:bg-gray-400"
-        } else if (eventIndex > selectedEventIndex) {
-            return "bg-gray-400 hover:bg-gray-500"
-        } else {
-            return "bg-red-600"
-        }
-    }
-
-
-    const onLeftClick = (event: Event) => (_e: React.MouseEvent) => {
+    const onLeftClick = (event: Event) => {
+        console.log("Event clicked:", event);
         setSelectedEvent(event)
 
         const nodes = topologyGraph.graph.filterNodes((node) => {
@@ -65,40 +44,27 @@ const EventPanel: React.FC<EventPanelProps> = ({ className, eventsStyle, onRight
         setSelectedNodes(nodes);
     }
 
-    const events = executionTrace?.events || [];
+    const events = executionTrace.events;
 
     const displayedEvents = events.filter((event) => {
         const entities = [event.process, ...event.otherEntities];
         return !hiddenEntities.some((hiddenEntity) => entities.includes(hiddenEntity));
     });
 
-    const eventButtonList = displayedEvents.map((event, _i) => {
-
-        let bgColor = getButtonBgColor(event)
-        const content = event.description
-        const id = event.id
-
-        return (
-            <li id={`event-button-${id}`} key={id} className='flex flex-row'>
-                <p>{id}</p>
-                <EventButton 
-                    className={`${bgColor} ${eventsStyle}`} 
-                    content={content}
-                    onLeftClick={onLeftClick(event)} 
-                    onRightClick={onRightClick ? () => onRightClick(event) : () => {}}
-                />
-            </li>
-        );
-
+    const rowHeight = useDynamicRowHeight({
+        defaultRowHeight: 50
     });
 
-
     return (
-        <ul id={`event-button-container`} className={`overflow-scroll flex flex-col ${className}`}>
-            {eventButtonList}
-        </ul>
-    )
+        <List
+            rowComponent={EventButton}
+            rowCount={displayedEvents.length}
+            rowHeight={rowHeight}
+            rowProps={{ events, selectedEvent, onLeftClick }}
+            overscanCount={20}
+        />
 
+    );
 }
 
 

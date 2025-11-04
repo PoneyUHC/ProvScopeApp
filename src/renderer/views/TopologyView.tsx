@@ -103,11 +103,7 @@ const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelect
                         />
                     </Allotment.Pane>
                     <Allotment.Pane minSize={200} preferredSize={"15%"}>
-                        <EventPanel
-                            className={`h-full ${borderStyles}`}
-                            eventsStyle="w-full h-auto border border-black"
-                            onRightClick={() => {}}
-                        />
+                        <EventPanel />
                     </Allotment.Pane>
                 </Allotment>
             </TopologyGraphProvider>
