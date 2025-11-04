@@ -87,7 +87,7 @@ export default class ExecutionTraceImporter {
         }
 
         const sourceEntities: Set<Entity> = new Set()
-        for ( const sourceEntityIndex of json.info_sources ) {
+        for ( const sourceEntityIndex of json.source_entities ) {
             const entity = ExecutionTraceImporter.getEntity(executionTrace, sourceEntityIndex)
             if ( entity ) {
                 sourceEntities.add(entity)
@@ -95,7 +95,7 @@ export default class ExecutionTraceImporter {
         }
 
         const targetEntities: Set<Entity> = new Set()
-        for ( const targetEntityIndex of json.info_targets ) {
+        for ( const targetEntityIndex of json.target_entities ) {
             const entity = ExecutionTraceImporter.getEntity(executionTrace, targetEntityIndex)
             if ( entity ) {
                 targetEntities.add(entity)
