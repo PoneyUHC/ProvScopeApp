@@ -3,6 +3,7 @@ import { useState, useEffect, FC, useRef } from "react";
 
 import TopologyView from "@renderer/views/TopologyView";
 import ProvenanceGraphView from "@renderer/views/ProvenanceView";
+import CausalityView from "@renderer/views/CausalityView";
 import Header from "@renderer/components/Misc/Header";
 import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
@@ -17,17 +18,20 @@ const TraceBrowserTool: FC = () => {
     const topologyGraphRef = useRef<TopologyGraph | null>(null);
     const provenanceViewRef = useRef<HTMLDivElement>(null);
     const provenanceGraphRef = useRef<ProvenanceGraph | null>(null);
+    const causalityViewRef = useRef<HTMLDivElement>(null);
     
-    const [currentView, setCurrentView] = useState<"Topology" | "Provenance">("Topology");
+    const [currentView, setCurrentView] = useState<"Topology" | "Provenance" | "Causality">("Topology");
     const [trace, setTrace] = useState<ExecutionTrace | null>(null);
     const [init, setInit] = useState(false);
 
     //TODO: implement a customizable speed scrolling mechanism
-    const scrollToView = (view: "Topology" | "Provenance") => {
+    const scrollToView = (view: "Topology" | "Provenance" | "Causality") => {
         if (view === "Topology" && topologyViewRef.current) {
             topologyViewRef.current.scrollIntoView({ behavior: "smooth" });
         } else if (view === "Provenance" && provenanceViewRef.current) {
             provenanceViewRef.current.scrollIntoView({ behavior: "smooth" });
+        } else if (view === "Causality" && causalityViewRef.current) {
+            causalityViewRef.current.scrollIntoView({ behavior: "smooth" });
         }
     };
 
@@ -36,11 +40,29 @@ const TraceBrowserTool: FC = () => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (trace === null) return;
             if (event.key === "ArrowRight") {
-                setCurrentView("Provenance");
-                scrollToView("Provenance");
+                setCurrentView(prev => {
+                    if (prev === "Topology") {
+                        scrollToView("Provenance");
+                        return "Provenance";
+                    }
+                    if (prev === "Provenance") {
+                        scrollToView("Causality");
+                        return "Causality";
+                    }
+                    return prev;
+                });
             } else if (event.key === "ArrowLeft") {
-                setCurrentView("Topology");
-                scrollToView("Topology");
+                setCurrentView(prev => {
+                    if (prev === "Causality") {
+                        scrollToView("Provenance");
+                        return "Provenance";
+                    }
+                    if (prev === "Provenance") {
+                        scrollToView("Topology");
+                        return "Topology";
+                    }
+                    return prev;
+                });
             }
         };
 
@@ -106,6 +128,9 @@ const TraceBrowserTool: FC = () => {
                         <ProvenanceGraphView 
                             provenanceGraph={provenanceGraphRef.current!} 
                         />
+                    </div>
+                    <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
+                        <CausalityView />
                     </div>
                 </div>
             </ExecutionTraceProvider>
