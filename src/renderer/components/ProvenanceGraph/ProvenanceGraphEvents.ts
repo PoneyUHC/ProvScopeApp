@@ -56,18 +56,18 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     useEffect(() => {
 
         const graph = sigma.getGraph();
-        for (const objectName of hiddenEntities) {
-            if ( !previousHiddenEntities.current.includes(objectName) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+        for (const entity of hiddenEntities) {
+            if ( !previousHiddenEntities.current.includes(entity) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', true);
                 }
             }
         }
 
-        for (const objectName of previousHiddenEntities.current) {
-            if ( !hiddenEntities.includes(objectName) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'objectName') === objectName);
+        for (const entity of previousHiddenEntities.current) {
+            if ( !hiddenEntities.includes(entity) ) {
+                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
                 for (const node of nodes) {
                     graph.setNodeAttribute(node, 'hidden', false);
                 }
