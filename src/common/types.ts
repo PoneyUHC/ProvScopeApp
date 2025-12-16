@@ -70,12 +70,24 @@ export class Event {
     otherEntities: Set<Entity>
     sourceEntities: Set<Entity>
     targetEntities: Set<Entity>
+    inputValues: Record<string, any>
+    outputValues: Record<string, any>
 
     description: string
     id: number
     address: string | null
 
-    constructor(timestamp: number, process: Process, eventType: string, otherEntities: Set<Entity>, sourceEntities: Set<Entity>, targetEntities: Set<Entity>, description: string) {
+    constructor(
+        timestamp: number, 
+        process: Process, 
+        eventType: string, 
+        otherEntities: Set<Entity>, 
+        sourceEntities: Set<Entity>, 
+        targetEntities: Set<Entity>, 
+        inputValues: Record<string, any>, 
+        outputValues: Record<string, any>,
+        description: string
+    ) {
         this.timestamp = timestamp
         this.process = process
         this.eventType = eventType
@@ -83,6 +95,9 @@ export class Event {
         this.otherEntities = otherEntities
         this.sourceEntities = sourceEntities
         this.targetEntities = targetEntities
+        this.inputValues = inputValues
+        this.outputValues = outputValues
+
 
         this.description = description
 

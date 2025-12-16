@@ -102,6 +102,9 @@ export default class ExecutionTraceImporter {
             }
         }
 
+        const inputValues = json.input_values
+        const outputValues = json.output_values
+
         return new Event(
             json.timestamp,
             process as Process,
@@ -109,6 +112,8 @@ export default class ExecutionTraceImporter {
             otherEntities,
             sourceEntities,
             targetEntities,
+            inputValues,
+            outputValues,
             json.description
         )
     }
