@@ -9,6 +9,7 @@ import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/comp
 import { TopologyGraph } from '@common/TopologyGraph';
 import { clamp } from '@common/utils';
 
+import Title from '@renderer/components/Misc/Title';
 import ExplorerPanel from '@renderer/components/TopologyGraph/ExplorerPanel/ExplorerPanel';
 import TopologyGraphPanel from '@renderer/components/TopologyGraph/TopologyGraphPanel/TopologyGraphPanel';
 import EventPanel from '@renderer/components/TopologyGraph/EventsPanel/EventsPanel';
@@ -88,26 +89,29 @@ const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelect
     
 
     return (
-        <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
-            <TopologyGraphProvider topologyGraph={topologyGraph}>
-                <Allotment className={`${borderStyles}`} onDragEnd={onDragEnd}>
-                    <Allotment.Pane minSize={200} preferredSize={"15%"}>
-                        <ExplorerPanel
-                            className={`h-full ${borderStyles}`}
-                        />
-                    </Allotment.Pane>
-                    <Allotment.Pane minSize={200} preferredSize={"70%"} className="w-full">
-                        <TopologyGraphPanel
-                            className={`h-full ${borderStyles}`}
-                            setSigma={setSigma}
-                        />
-                    </Allotment.Pane>
-                    <Allotment.Pane minSize={200} preferredSize={"15%"}>
-                        <EventPanel />
-                    </Allotment.Pane>
-                </Allotment>
-            </TopologyGraphProvider>
+        <>
+            <Title content={"Topology"} />
+            <div className="w-full h-5/6 flex flex-col overflow-auto p-5">
+                <TopologyGraphProvider topologyGraph={topologyGraph}>
+                    <Allotment className={`${borderStyles}`} onDragEnd={onDragEnd}>
+                        <Allotment.Pane minSize={200} preferredSize={"15%"}>
+                            <ExplorerPanel
+                                className={`h-full ${borderStyles}`}
+                            />
+                        </Allotment.Pane>
+                        <Allotment.Pane minSize={200} preferredSize={"70%"} className="w-full">
+                            <TopologyGraphPanel
+                                className={`h-full ${borderStyles}`}
+                                setSigma={setSigma}
+                            />
+                        </Allotment.Pane>
+                        <Allotment.Pane minSize={200} preferredSize={"15%"}>
+                            <EventPanel />
+                        </Allotment.Pane>
+                    </Allotment>
+                </TopologyGraphProvider>
         </div>
+        </>
     )
 };
 

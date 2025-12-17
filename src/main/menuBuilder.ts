@@ -9,15 +9,16 @@ async function loadTrace(window: BrowserWindow) {
 
     dialog.showOpenDialog({
 
-        properties: ['openFile'],
-        message: 'Select a trace file',
+        properties: ['openFile', 'multiSelections'],
+        message: 'Select one or multiple trace file(s)',
 
     }).then((result) => {
 
         if ( ! result.canceled ) {
-            const filename = result.filePaths[0]
-            const content = readFileSync(filename, 'utf-8')
-            window.webContents.send('loadTrace', filename, content)
+            for (const filename of result.filePaths) {
+                const content = readFileSync(filename, 'utf-8')
+                window.webContents.send('loadTrace', filename, content)
+            }
         }
     }).catch((err) => {
 

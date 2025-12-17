@@ -5,7 +5,6 @@ import TopologyView from "@renderer/views/TopologyView";
 import ProvenanceGraphView from "@renderer/views/ProvenanceView";
 import CausalityView from "@renderer/views/CausalityView";
 import Header from "@renderer/components/Misc/Header";
-import Title from "@renderer/components/Misc/Title";
 import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
 import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 import { TopologyGraph } from "@common/TopologyGraph";
@@ -14,10 +13,13 @@ import ProvenanceGraph from "@common/ProvenanceGraph";
 
 interface TraceBrowserViewProps {
     trace: ExecutionTrace
+    isActive: boolean
+    currentView: "Topology" | "Provenance" | "Causality"
+    setCurrentView
 }
 
 
-const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace}) => {
+const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace, isActive, currentView, setCurrentView}) => {
     
     const topologyViewRef = useRef<HTMLDivElement>(null);
     const topologyGraphRef = useRef<TopologyGraph | null>(
@@ -29,21 +31,28 @@ const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace}) => {
     );
     const causalityViewRef = useRef<HTMLDivElement>(null);
     
-    const [currentView, setCurrentView] = useState<"Topology" | "Provenance" | "Causality">("Topology");
-    
+    const opts: ScrollIntoViewOptions = { behavior: "smooth"};
     
     //TODO: implement a customizable speed scrolling mechanism
     const scrollToView = (view: "Topology" | "Provenance" | "Causality") => {
         if (view === "Topology" && topologyViewRef.current) {
-            topologyViewRef.current.scrollIntoView({ behavior: "smooth" });
+            topologyViewRef.current.scrollIntoView(opts);
         } else if (view === "Provenance" && provenanceViewRef.current) {
-            provenanceViewRef.current.scrollIntoView({ behavior: "smooth" });
+            provenanceViewRef.current.scrollIntoView(opts);
         } else if (view === "Causality" && causalityViewRef.current) {
-            causalityViewRef.current.scrollIntoView({ behavior: "smooth" });
+            causalityViewRef.current.scrollIntoView(opts);
         }
     };
-    
+
     useEffect(() => {
+        if (!isActive) return;
+        scrollToView(currentView)
+    }, [isActive, currentView])
+
+    useEffect(() => {
+
+        if (!isActive) return;
+
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "ArrowRight") {
                 setCurrentView(prev => {
@@ -76,32 +85,30 @@ const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace}) => {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [trace]);
+    }, [trace, isActive]);
     
     
     
     return (
-        <div className="w-screen h-screen flex flex-col">
-        <Header />
-        <Title content={currentView} />
-        <ExecutionTraceProvider trace={trace}>
-        <div className="w-full h-full flex flex-row overflow-x-hidden">
-        <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
-        <TopologyView 
-        topologyGraph={topologyGraphRef.current!} 
-        isViewSelected={currentView === "Topology"} 
-        />
-        </div>
-        <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
-        <ProvenanceGraphView 
-        provenanceGraph={provenanceGraphRef.current!} 
-        />
-        </div>
-        <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
-        <CausalityView />
-        </div>
-        </div>
-        </ExecutionTraceProvider>
+        <div className="w-full h-full flex flex-col">
+            <ExecutionTraceProvider trace={trace}>
+                <div className="w-full h-full flex flex-row overflow-x-hidden">
+                    <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
+                        <TopologyView 
+                            topologyGraph={topologyGraphRef.current!} 
+                            isViewSelected={currentView === "Topology"} 
+                        />
+                    </div>
+                    <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
+                        <ProvenanceGraphView 
+                            provenanceGraph={provenanceGraphRef.current!} 
+                        />
+                    </div>
+                    <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
+                        <CausalityView />
+                    </div>
+                </div>
+            </ExecutionTraceProvider>
         </div>
     )
 }
@@ -111,10 +118,19 @@ const TraceBrowserTool: FC = () => {
     const [traces, setTraces] = useState<ExecutionTrace[]>([]);
     const [currentTraceIndex, setCurrentTraceIndex] = useState(0);
     
+    const traceListRef = useRef<HTMLDivElement>(null);
     const traceBrowserViewRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const [currentView, setCurrentView] = useState<"Topology" | "Provenance" | "Causality">("Topology");
+
+    const opts: ScrollIntoViewOptions = { behavior: "smooth"};
     
     const scrollToTrace = (index: number) => {
-        traceBrowserViewRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
+        const container = traceListRef.current;
+        const el = traceBrowserViewRefs.current[index];
+        if (!container || !el) return;
+
+        el.scrollIntoView(opts)
     };
     
     const loadTraceFromJSON = (filename: string, content: string) => {
@@ -136,8 +152,6 @@ const TraceBrowserTool: FC = () => {
         // if first trace just arrived, ensure we start at it
         if (traces.length === 1) {
             setCurrentTraceIndex(0);
-            // next tick to ensure DOM exists
-            setTimeout(() => scrollToTrace(0), 0);
         }
     }, [traces.length]);
     
@@ -167,7 +181,8 @@ const TraceBrowserTool: FC = () => {
         window.addEventListener("keydown", handleKeyDown, { passive: false });
         return () => window.removeEventListener("keydown", handleKeyDown as any);
     }, [traces.length]);
-    
+
+
     if (traces.length === 0) {
         return (
             <div className="w-screen h-screen flex flex-col">
@@ -180,21 +195,32 @@ const TraceBrowserTool: FC = () => {
     }
     
     return (
-        <div className="w-screen h-screen overflow-y-hidden">
-            <div className="flex flex-col">
-                {
-                    traces.map((trace, i) => (
-                        <div
-                        key={i}
-                        className="h-screen flex-shrink-0"
-                        ref={(el) => {
-                            traceBrowserViewRefs.current[i] = el;
-                        }}
-                        >
-                            <TraceBrowserView trace={trace} />
-                        </div>
-                    ))
-                }
+        <div className="w-screen h-screen flex flex-col overflow-y-hidden">
+            <Header />
+            <div
+                ref={traceListRef}
+                className="flex-1 overflow-y-auto"
+            >
+                <div className="flex flex-col">
+                    {
+                        traces.map((trace, i) => (
+                            <div
+                                key={i}
+                                className="h-screen flex-shrink-0"
+                                ref={(el) => {
+                                    traceBrowserViewRefs.current[i] = el;
+                                }}
+                            >
+                                <TraceBrowserView 
+                                    trace={trace} 
+                                    isActive={i === currentTraceIndex}
+                                    currentView={currentView} 
+                                    setCurrentView={setCurrentView}
+                                    />
+                            </div>
+                        ))
+                    }
+                </div>
             </div>
         </div>
     );

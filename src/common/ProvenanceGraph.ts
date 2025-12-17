@@ -181,9 +181,7 @@ class ProvenanceGraph {
                 console.error(`[FATAL] Could not find last node for target entity ${targetEntity} in event ${event}.`)
                 continue
             }
-
-            console.log('Adding new node for target entity', targetEntity, 'from last node', targetEntityLastNode, 'for event', event)
-
+            
             const newNode = this.addNewNodeForEntity(targetEntityLastNode, event)
 
             targetNodes.push(newNode)

@@ -4,6 +4,7 @@ import React, { useContext, useMemo, useState } from "react";
 import { ExecutionTraceContext } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 import { Entity, Event, Process } from "@common/types";
 import { EventPattern, PatternGroup, PatternValue } from "@common/causality";
+import Title from "@renderer/components/Misc/Title";
 
 
 interface PatternConfig {
@@ -380,87 +381,90 @@ const CausalityView: React.FC = () => {
     }
 
     return (
-        <div className="flex h-full w-full flex-col gap-4 overflow-hidden p-4">
-            <div className="flex flex-col gap-4 rounded-lg bg-white p-4 shadow">
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-2xl font-semibold">Create pattern group</h2>
-                    <p className="text-sm text-gray-600">
-                        Select a process, choose a reference event, and lock the fields that should be matched. The
-                        view displays how many events currently match each pattern.
-                    </p>
-                </div>
+        <>
+            <Title content={"Causality"} />
+            <div className="flex h-full w-full flex-col gap-4 overflow-hidden p-4">
+                <div className="flex flex-col gap-4 rounded-lg bg-white p-4 shadow">
+                    <div className="flex flex-col gap-2">
+                        <h2 className="text-2xl font-semibold">Create pattern group</h2>
+                        <p className="text-sm text-gray-600">
+                            Select a process, choose a reference event, and lock the fields that should be matched. The
+                            view displays how many events currently match each pattern.
+                        </p>
+                    </div>
 
-                <label className="flex flex-col gap-1 text-sm font-medium">
-                    Pattern group name
-                    <input
-                        type="text"
-                        className="rounded border border-gray-300 px-3 py-2 text-sm"
-                        value={patternName}
-                        onChange={(event) => setPatternName(event.target.value)}
-                        placeholder="Short description"
-                    />
-                </label>
-
-                <div className="flex flex-col gap-4">
-                    {patternConfigs.map((config, index) => (
-                        <PatternConfigurator
-                            key={config.id}
-                            index={index}
-                            config={config}
-                            processes={processes}
-                            availableEvents={availableEventsForProcess(config.processUUID)}
-                            selectedEvent={getEventByIndex(config.eventIndex)}
-                            onProcessChange={handleProcessChange}
-                            onEventChange={handleEventChange}
-                            onToggleField={handleToggleField}
-                            onRemove={removePatternConfig}
-                            lockedFields={config.lockedFields}
-                            matchesCount={computeMatches(config)}
-                            disableRemove={patternConfigs.length === 1}
+                    <label className="flex flex-col gap-1 text-sm font-medium">
+                        Pattern group name
+                        <input
+                            type="text"
+                            className="rounded border border-gray-300 px-3 py-2 text-sm"
+                            value={patternName}
+                            onChange={(event) => setPatternName(event.target.value)}
+                            placeholder="Short description"
                         />
-                    ))}
-                </div>
+                    </label>
 
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={addPatternConfig}
-                        className="rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
-                    >
-                        Add event pattern
-                    </button>
-                    <button
-                        type="button"
-                        onClick={createPatternGroup}
-                        disabled={!canCreateGroup}
-                        className={`rounded px-4 py-2 text-sm font-medium ${
-                            canCreateGroup
-                                ? "bg-green-500 text-white hover:bg-green-600"
-                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        }`}
-                    >
-                        Create pattern group
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto rounded-lg bg-white p-4 shadow">
-                <h2 className="mb-3 text-xl font-semibold">Created pattern groups</h2>
-                {createdGroups.length === 0 && (
-                    <p className="text-sm text-gray-600">No pattern groups created yet.</p>
-                )}
-                {createdGroups.length > 0 && (
-                    <ul className="space-y-3">
-                        {createdGroups.map((group, index) => (
-                            <li key={`${group.name}-${index}`} className="rounded border border-gray-200 p-3">
-                                <p className="font-semibold">{group.name}</p>
-                                <p className="text-sm text-gray-600">{group.patterns.length} event pattern(s)</p>
-                            </li>
+                    <div className="flex flex-col gap-4">
+                        {patternConfigs.map((config, index) => (
+                            <PatternConfigurator
+                                key={config.id}
+                                index={index}
+                                config={config}
+                                processes={processes}
+                                availableEvents={availableEventsForProcess(config.processUUID)}
+                                selectedEvent={getEventByIndex(config.eventIndex)}
+                                onProcessChange={handleProcessChange}
+                                onEventChange={handleEventChange}
+                                onToggleField={handleToggleField}
+                                onRemove={removePatternConfig}
+                                lockedFields={config.lockedFields}
+                                matchesCount={computeMatches(config)}
+                                disableRemove={patternConfigs.length === 1}
+                            />
                         ))}
-                    </ul>
-                )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={addPatternConfig}
+                            className="rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+                        >
+                            Add event pattern
+                        </button>
+                        <button
+                            type="button"
+                            onClick={createPatternGroup}
+                            disabled={!canCreateGroup}
+                            className={`rounded px-4 py-2 text-sm font-medium ${
+                                canCreateGroup
+                                    ? "bg-green-500 text-white hover:bg-green-600"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            }`}
+                        >
+                            Create pattern group
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto rounded-lg bg-white p-4 shadow">
+                    <h2 className="mb-3 text-xl font-semibold">Created pattern groups</h2>
+                    {createdGroups.length === 0 && (
+                        <p className="text-sm text-gray-600">No pattern groups created yet.</p>
+                    )}
+                    {createdGroups.length > 0 && (
+                        <ul className="space-y-3">
+                            {createdGroups.map((group, index) => (
+                                <li key={`${group.name}-${index}`} className="rounded border border-gray-200 p-3">
+                                    <p className="font-semibold">{group.name}</p>
+                                    <p className="text-sm text-gray-600">{group.patterns.length} event pattern(s)</p>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

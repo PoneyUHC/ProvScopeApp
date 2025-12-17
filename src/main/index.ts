@@ -10,7 +10,7 @@ import goldoIcon from '@common/assets/goldo_icon.png?asset'
 
 export let ghidraCommunication: GhidraCommunication | null = null 
 
-const request_quit = () => {
+const requestQuit = () => {
     if (ghidraCommunication) {
         ghidraCommunication.stopPythonBridge();
         ghidraCommunication.close(); 
@@ -86,6 +86,6 @@ app.whenReady().then(() => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-        request_quit();
+        requestQuit();
     }
 })
