@@ -28,6 +28,12 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     }
 
 
+    getEventTypes(): Set<string> {
+        const eventTypes = this.events.map((e) => e.eventType)
+        return new Set<string>(eventTypes)
+    }
+
+
     static toJSON(trace: ExecutionTrace): string {
         return ExecutionTraceExporter.toJSON(trace)
     }

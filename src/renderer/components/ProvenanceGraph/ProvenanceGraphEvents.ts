@@ -23,6 +23,7 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
 
     const {
         hiddenEntities: [hiddenEntities, _hideEntity, _showEntity],
+        hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
@@ -77,6 +78,18 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
         previousHiddenEntities.current = hiddenEntities;
 
     }, [hiddenEntities])
+
+
+    useEffect(() => {
+
+        const graph = sigma.getGraph()
+        graph.forEachNode((node) => {
+            const event = graph.getNodeAttribute(node, "event")
+            if (event) {
+                graph.setNodeAttribute(node, 'hidden', hiddenEvents.includes(event))
+            }   
+        })
+    }, [hiddenEvents])
 
 
     useEffect(() => {

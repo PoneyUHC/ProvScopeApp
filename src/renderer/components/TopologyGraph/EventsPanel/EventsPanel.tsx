@@ -19,6 +19,7 @@ const EventPanel: React.FC<EventPanelProps> = ({}) => {
         executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent],
         hiddenEntities: [hiddenEntities, _hideObject, _showObject],
+        hiddenEvents: [hiddenEvents, _hideEvent, _showEvent]
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     if( !executionTrace ) return null;
@@ -35,12 +36,16 @@ const EventPanel: React.FC<EventPanelProps> = ({}) => {
     const [displayedEvents, setDisplayedEvents] = useState<Event[]>(executionTrace.events);
 
     useEffect(() => {
-        const filteredEvents = executionTrace.events.filter((event) => {
+        const filteredEvents = executionTrace.events
+        .filter((event) => {
             const entities = [event.process, ...event.otherEntities];
             return entities.every(entity => !hiddenEntities.includes(entity));
-        });
+        })
+        .filter((event) => {
+            return !hiddenEvents.includes(event)
+        })
         setDisplayedEvents(filteredEvents);
-    }, [hiddenEntities]);
+    }, [hiddenEntities, hiddenEvents]);
 
     const onLeftClick = (event: Event) => {
         console.log("Event clicked:", event);
