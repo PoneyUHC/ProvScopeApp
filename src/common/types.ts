@@ -47,7 +47,8 @@ export class Resource implements Entity {
     path: string
 
     constructor(path: string, resourceType: ResourceType) {
-        this.path = path
+        const filename = path.split('/').pop() ?? path
+        this.path = filename
         this.resourceType = resourceType
     }
 
