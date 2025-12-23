@@ -3,7 +3,7 @@ import DirectedGraph from 'graphology'
 import FA2Layout from "graphology-layout-forceatlas2"
 
 import { ExecutionTrace } from "./ExecutionTrace/ExecutionTrace"
-import { Entity, Event } from "./types"
+import { EdgeDirectionStrategy, Entity, Event } from "./types"
 import { toUniform, IClonable } from "./utils"
 
 
@@ -106,10 +106,9 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
     }
 
 
-    applyEventToGraph(event: Event) {
+    addSourcesToTargetsEdges(event: Event): string[] {
 
         const newEdges: string[] = []
-
         const sourceEntities = Array.from(event.sourceEntities)
         const targetEntities = Array.from(event.targetEntities)
 
@@ -143,9 +142,117 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
                 } else {
                     this.graph.setEdgeAttribute(sourceNode, targetNode, 'label', edgeLabel)
                     this.graph.setEdgeAttribute(sourceNode, targetNode, 'color', edgeColor)
+                    const newEdge = this.graph.filterEdges((_e, _a, source, target) => source == sourceNode && target == targetNode)[0]!
+                    newEdges.push(newEdge)
                 }
             }
         }
+
+        return newEdges
+    }
+
+
+    addProcessToOthersEdges(event: Event) {
+
+        const newEdges: string[] = []
+        const process = event.process
+        const otherEntities = Array.from(event.otherEntities)
+
+        
+        const sourceNode = this.entityNodeCache.get(process)
+        if ( !sourceNode ) {
+            console.error(`[FATAL] Source entity node not found for entity ${process} in event ${event}.`)
+            console.error('It should have been created during graph initialization.')
+            return []
+        }
+
+        for ( const otherEntity of otherEntities ) {
+            const targetNode = this.entityNodeCache.get(otherEntity)
+            if ( !targetNode ) {
+                console.error(`[FATAL] Target entity node not found for entity ${otherEntity} in event ${event}.`)
+                console.error('It should have been created during graph initialization.')
+                continue
+            }
+
+            const edgeLabel = event.id
+            const edgeColor = event.color
+            if ( !this.graph.hasEdge(sourceNode, targetNode) ) {
+                const newEdge = this.graph.addEdge(sourceNode, targetNode, {
+                    label: edgeLabel,
+                    labelColor: 'black',
+                    color: edgeColor,
+                    event: event,
+                    size: 5
+                });
+                newEdges.push(newEdge)
+            } else {
+                this.graph.setEdgeAttribute(sourceNode, targetNode, 'label', edgeLabel)
+                this.graph.setEdgeAttribute(sourceNode, targetNode, 'color', edgeColor)
+                const newEdge = this.graph.filterEdges((_e, _a, source, target) => source == sourceNode && target == targetNode)[0]!
+                newEdges.push(newEdge)
+            }
+        }
+
+        return newEdges
+    }
+
+
+    addOthersToProcessEdges(event: Event) {
+
+        const newEdges: string[] = []
+        const process = event.process
+        const otherEntities = Array.from(event.otherEntities)
+        
+        const targetNode = this.entityNodeCache.get(process)
+        if ( !targetNode ) {
+            console.error(`[FATAL] Source entity node not found for entity ${process} in event ${event}.`)
+            console.error('It should have been created during graph initialization.')
+            return []
+        }
+
+        for ( const otherEntity of otherEntities ) {
+            const sourceNode = this.entityNodeCache.get(otherEntity)
+            if ( !sourceNode ) {
+                console.error(`[FATAL] Target entity node not found for entity ${otherEntity} in event ${event}.`)
+                console.error('It should have been created during graph initialization.')
+                continue
+            }
+
+            const edgeLabel = event.id
+            const edgeColor = event.color
+            if ( !this.graph.hasEdge(sourceNode, targetNode) ) {
+                const newEdge = this.graph.addEdge(sourceNode, targetNode, {
+                    label: edgeLabel,
+                    labelColor: 'black',
+                    color: edgeColor,
+                    event: event,
+                    size: 5
+                });
+                newEdges.push(newEdge)
+            } else {
+                this.graph.setEdgeAttribute(sourceNode, targetNode, 'label', edgeLabel)
+                this.graph.setEdgeAttribute(sourceNode, targetNode, 'color', edgeColor)
+                const newEdge = this.graph.filterEdges((_e, _a, source, target) => source == sourceNode && target == targetNode)[0]!
+                newEdges.push(newEdge)
+            }
+        }
+
+        return newEdges
+    }
+
+
+    applyEventToGraph(event: Event) {
+
+        let newEdges: string[] = []
+
+        // TODO: clean redundancy (by giving iterables as parameters)
+        if (event.edgeDirection === EdgeDirectionStrategy.SOURCES_TO_TARGETS) {
+            newEdges = this.addSourcesToTargetsEdges(event)
+        } else if (event.edgeDirection === EdgeDirectionStrategy.PROCESS_TO_OTHERS) {
+            newEdges = this.addProcessToOthersEdges(event)
+        } else if (event.edgeDirection === EdgeDirectionStrategy.OTHERS_TO_PROCESS) {
+            newEdges = this.addOthersToProcessEdges(event)
+        } 
 
         return newEdges
     }

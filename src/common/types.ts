@@ -62,6 +62,13 @@ export class Resource implements Entity {
 }
 
 
+export enum EdgeDirectionStrategy {
+    SOURCES_TO_TARGETS,
+    PROCESS_TO_OTHERS,
+    OTHERS_TO_PROCESS,
+}
+
+
 export class Event {
 
     timestamp: number
@@ -78,6 +85,7 @@ export class Event {
     id: number
     address: string
     color: string
+    edgeDirection: EdgeDirectionStrategy
 
     constructor(
         timestamp: number, 
@@ -110,5 +118,7 @@ export class Event {
 
         // EXT_EVENT_COLOR placeholder
         this.color = "black"
+
+        this.edgeDirection = EdgeDirectionStrategy.SOURCES_TO_TARGETS
     }
 }

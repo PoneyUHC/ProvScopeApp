@@ -1,5 +1,6 @@
 
 import EventColorsImporterExtension from "./EventColorsImporterExtension";
+import EdgeDirectionStrategyOverwriteExtension from "./EdgeDirectionStrategyOverwriteExtension";
 import EventMergerImporterExtension from "./EventMergerImporterExtension";
 import ExecutionTraceImporterExtension from "./ExecutionTraceImporterExtension";
 
@@ -10,6 +11,7 @@ export const tagToImporterMapping = new Map<string, ExecutionTraceImporterExtens
 
 
 export const staticExtensions: ExecutionTraceImporterExtension[] = [
-    new EventMergerImporterExtension()
+    new EventMergerImporterExtension(),
+    new EdgeDirectionStrategyOverwriteExtension()
 ]
 
