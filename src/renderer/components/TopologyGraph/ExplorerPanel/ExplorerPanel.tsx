@@ -19,7 +19,7 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
     const {
         executionTrace,
         hiddenEntities: [hiddenEntities, hideEntity, showEntity],
-        hiddenEvents: [hiddenEvents, hideEvent, showEvent],
+        hiddenEvents: [_hiddenEvents, hideEvent, showEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     if (!executionTrace) { 

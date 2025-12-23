@@ -3,5 +3,6 @@ import { ExecutionTrace } from "../ExecutionTrace";
 
 export default abstract class ExecutionTraceImporterExtension {
 
-    abstract importData(executionTrace: ExecutionTrace, json: JSON): void
+    static getTag(): string | null { return "Not Implemented" }
+    abstract importData(executionTrace: ExecutionTrace, json: JSON, extensionData: JSON | null): boolean
 }

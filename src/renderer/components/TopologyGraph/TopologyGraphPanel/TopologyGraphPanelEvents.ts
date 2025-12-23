@@ -1,18 +1,18 @@
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { MouseCoords, SigmaNodeEventPayload } from "sigma/types";
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
 import { TopologyGraphContext, TopologyGraphContextType } from "../TopologyGraphProvider";
-import { Entity } from "@common/types";
 
 
 const TopologyGraphEvents: React.FC = () => {
 
     const {
         hiddenEntities: [hiddenEntities, _hideObject, _showObject],
+        hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
         selectedEvent: [selectedEvent, _setSelectedEvent],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
@@ -29,10 +29,6 @@ const TopologyGraphEvents: React.FC = () => {
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
 
-    // optimization not to reset attributes on every nodes
-    const previousSelectedNodes = useRef<string[]>(selectedNodes);
-    const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
-
 
     useEffect(() => {
 
@@ -48,47 +44,38 @@ const TopologyGraphEvents: React.FC = () => {
     useEffect(() => {
 
         const graph = topologyGraph.graph;
-        for (const node of selectedNodes) {
-            if ( !previousSelectedNodes.current.includes(node) ) {
-                graph.setNodeAttribute(node, 'highlighted', true);
-            }
-        }
-
-        for (const node of previousSelectedNodes.current) {
-            if ( !selectedNodes.includes(node) ) {
-                graph.setNodeAttribute(node, 'highlighted', false);
-            }
-        }
-
-        previousSelectedNodes.current = selectedNodes;
+        graph.forEachNode((node) => {
+            const selected = selectedNodes.includes(node)
+            graph.setNodeAttribute(node, 'highlighted', selected)
+        })
 
     }, [selectedNodes])
 
 
     useEffect(() => {
+        
+        const graph = topologyGraph.graph;
+        graph.forEachNode((node) => {
+            const entity = graph.getNodeAttribute(node, 'entity')
+            const hidden = hiddenEntities.includes(entity)
+            graph.setNodeAttribute(node, 'hidden', hidden)
+        })
+        
+    }, [hiddenEntities])
+    
+    
+    // TODO: when showing a new event via EventsPanel, hidden edges become visible
+    // maybe add a 'graphChanged' callback to topologyGraph, and connect a sigma.refresh() on it.
+    useEffect(() => {
 
         const graph = topologyGraph.graph;
-        for (const entity of hiddenEntities) {
-            if ( !previousHiddenEntities.current.includes(entity) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
-                for (const node of nodes) {
-                    graph.setNodeAttribute(node, 'hidden', true);
-                }
-            }
-        }
+        graph.forEachEdge((edge) => {
+            const event = graph.getEdgeAttribute(edge, 'event')
+            const hidden = hiddenEvents.includes(event)
+            graph.setEdgeAttribute(edge, 'hidden', hidden)
+        })
 
-        for (const entity of previousHiddenEntities.current) {
-            if ( !hiddenEntities.includes(entity) ) {
-                const nodes = graph.filterNodes ((n) => graph.getNodeAttribute(n, 'entity') === entity);
-                for (const node of nodes) {
-                    graph.setNodeAttribute(node, 'hidden', false);
-                }
-            }
-        }
-
-        previousHiddenEntities.current = hiddenEntities;
-
-    }, [hiddenEntities])
+    }, [hiddenEvents])
 
 
     const onDownNode = (e: SigmaNodeEventPayload) => {

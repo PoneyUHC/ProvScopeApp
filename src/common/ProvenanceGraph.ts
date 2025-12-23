@@ -187,18 +187,18 @@ class ProvenanceGraph {
             targetNodes.push(newNode)
         }
 
+        const color = event.color
         for ( const sourceNode of sourceNodes ) {
             for ( const targetNode of targetNodes ) {
 
                 const edgeLabel = event.id
                 this.graph.addEdge(sourceNode, targetNode, {
                     label: edgeLabel,
-                    color: 'black',
+                    color: color,
                     event: event
                 })
             }
         }
-        
     }
 
 

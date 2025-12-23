@@ -26,6 +26,8 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
         if ( shouldInit ) {
             this.graph = this.initGraph()
 
+            this.applyUntilEvent(trace.events[trace.events.length-1])
+            FA2Layout.assign(this.graph, {iterations: 50});
             this.applyUntilEvent(trace.events[0])
         }
     }
@@ -76,8 +78,6 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
             this.entityNodeCache.set(process, processLabel);
         }
 
-        FA2Layout.assign(graph, {iterations: 50});
-
         return graph
     }
 
@@ -110,10 +110,10 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
 
         const newEdges: string[] = []
 
-        const source_entities = Array.from(event.sourceEntities)
-        const target_entities = Array.from(event.targetEntities)
+        const sourceEntities = Array.from(event.sourceEntities)
+        const targetEntities = Array.from(event.targetEntities)
 
-        for ( const sourceEntity of source_entities ) {
+        for ( const sourceEntity of sourceEntities ) {
             const sourceNode = this.entityNodeCache.get(sourceEntity)
             if ( !sourceNode ) {
                 console.error(`[FATAL] Source entity node not found for entity ${sourceEntity} in event ${event}.`)
@@ -121,7 +121,7 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
                 continue
             }
 
-            for ( const targetEntity of target_entities ) {
+            for ( const targetEntity of targetEntities ) {
                 const targetNode = this.entityNodeCache.get(targetEntity)
                 if ( !targetNode ) {
                     console.error(`[FATAL] Target entity node not found for entity ${targetEntity} in event ${event}.`)
@@ -130,16 +130,19 @@ export class TopologyGraph implements IClonable<TopologyGraph> {
                 }
 
                 const edgeLabel = event.id
+                const edgeColor = event.color
                 if ( !this.graph.hasEdge(sourceNode, targetNode) ) {
                     const newEdge = this.graph.addEdge(sourceNode, targetNode, {
                         label: edgeLabel,
-                        color: 'black',
-                        eventCount: 1
+                        labelColor: 'black',
+                        color: edgeColor,
+                        event: event,
+                        size: 5
                     });
                     newEdges.push(newEdge)
                 } else {
-                    const currentEventCount = this.graph.getEdgeAttribute(sourceNode, targetNode, 'eventCount') as number
-                    this.graph.setEdgeAttribute(sourceNode, targetNode, 'eventCount', currentEventCount + 1)
+                    this.graph.setEdgeAttribute(sourceNode, targetNode, 'label', edgeLabel)
+                    this.graph.setEdgeAttribute(sourceNode, targetNode, 'color', edgeColor)
                 }
             }
         }

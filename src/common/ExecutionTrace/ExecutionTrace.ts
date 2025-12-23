@@ -16,11 +16,15 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
     // redundant but useful for quick lookup
     entities: Entity[]
 
+    extensions: string[]
+
+
     constructor(filename: string, jsonString: string) {
         this.filename = filename
         this.processes = []
         this.resources = []
         this.events = []
+        this.extensions = []
 
         ExecutionTraceImporter.loadTraceFromJSON(this, jsonString)
 
@@ -44,7 +48,9 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
         clone.filename = this.filename
         clone.processes = this.processes.map((process) => process.clone())
         clone.resources = this.resources.map((file) => file.clone())
+        clone.entities = this.entities.map((entity) => entity.clone())
         clone.events = [...this.events]
+        clone.extensions = [...this.extensions]
         return clone
     }
 

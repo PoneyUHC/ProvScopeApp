@@ -76,7 +76,8 @@ export class Event {
 
     description: string
     id: number
-    address: string | null
+    address: string
+    color: string
 
     constructor(
         timestamp: number, 
@@ -106,5 +107,8 @@ export class Event {
 
         // EXT_ADDR placeholder
         this.address = "deadbeef"
+
+        // EXT_EVENT_COLOR placeholder
+        this.color = "black"
     }
 }

@@ -38,7 +38,9 @@ const TopologyGraphPanel: React.FC<TopologyGraphPanelProps> = ({ className, setS
                 ref={setSigma} 
                 graph={topologyGraph.graph} 
                 settings={{
-                    renderEdgeLabels: true, 
+                    renderEdgeLabels: true,
+                    edgeLabelColor: {attribute: "labelColor", color: 'black'},
+                    defaultEdgeType: 'arrow',
                     allowInvalidContainer: true
                 }}
             >

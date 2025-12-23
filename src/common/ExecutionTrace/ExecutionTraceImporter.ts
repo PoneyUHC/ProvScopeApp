@@ -1,7 +1,7 @@
 
 import { ExecutionTrace } from "./ExecutionTrace"
 import { Process, Event, Resource, Entity } from "../types"
-import { importerExtensionsMapping } from "./ExecutionTraceImporterExtensions.ts/ImporterExtensionsMapping"
+import { staticExtensions, tagToImporterMapping } from "./ExecutionTraceImporterExtensions.ts/ImporterExtensionsGlobals"
 
 
 export default class ExecutionTraceImporter {
@@ -9,7 +9,7 @@ export default class ExecutionTraceImporter {
     static loadTraceFromJSON(executionTrace: ExecutionTrace, jsonString: string) {
 
         const json = JSON.parse(jsonString)
-        const extensions: string[] = json._extensions || []
+        const extensionsData = json._extensions || []
 
         for (const process of json.processes) {
             executionTrace.processes.push(new Process(process.name, process.pid))
@@ -26,16 +26,26 @@ export default class ExecutionTraceImporter {
             }
         }
 
-        ExecutionTraceImporter.addEventIDs(executionTrace)
-
-        for(const extension in extensions) {
-            const extensionImporter = importerExtensionsMapping.get(extension)
+        for (const extensionData of extensionsData) {
+            const extensionTag = extensionData.tag
+            const extensionImporter = tagToImporterMapping.get(extensionTag)
             if ( !extensionImporter ) {
-                console.error(`Could not find appropriate importer for extension ${extension}`)
+                console.error(`Could not find appropriate importer for extension ${extensionTag}`)
                 continue
             }
-            extensionImporter.importData(executionTrace, json)
+            const importSuccess = extensionImporter.importData(executionTrace, json, extensionData.data)
+            if (importSuccess) {
+                executionTrace.extensions.push(extensionTag)
+            }
         }
+        
+        for (const extension of staticExtensions) {
+            extension.importData(executionTrace, json, null)
+        }
+
+        ExecutionTraceImporter.addEventIDs(executionTrace)
+
+        console.error(executionTrace.events.length)
     }
 
 
