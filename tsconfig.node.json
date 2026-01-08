@@ -5,7 +5,7 @@
         "src/main/**/*", 
         "src/preload/**/*",
         "src/common/**/*",
-        "src/common/**/*.tsx"
+        "tests/common/**/*"
     ],
     "compilerOptions": {
         "composite": true,

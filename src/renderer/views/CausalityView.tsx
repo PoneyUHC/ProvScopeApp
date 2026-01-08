@@ -3,7 +3,7 @@ import React, { useContext, useMemo, useState } from "react";
 
 import { ExecutionTraceContext } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 import { Entity, Event, Process } from "@common/types";
-import { EventPattern, PatternGroup, PatternValue } from "@common/causality";
+import { EventPattern, PatternGroup, PatternValue } from "@common/Provenance/ProvenanceEngine";
 import Title from "@renderer/components/Misc/Title";
 
 

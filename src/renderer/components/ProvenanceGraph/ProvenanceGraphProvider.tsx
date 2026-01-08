@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-import ProvenanceGraph from "@common/ProvenanceGraph";
+import ProvenanceGraph from "@common/Provenance/ProvenanceGraph";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
 
 

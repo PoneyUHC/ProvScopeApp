@@ -1,6 +1,6 @@
 
 import DataChunk from "./DataChunk";
-import StorageStrategy from "./StrageStrategy/StorageStrategy";
+import StorageStrategy from "./StorageStrategy/StorageStrategy";
 
 
 export default class ResourceContent {

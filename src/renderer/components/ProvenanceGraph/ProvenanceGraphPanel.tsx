@@ -15,7 +15,7 @@ import { Allotment } from 'allotment';
 
 import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
-import { PatternGroup } from '@common/causality';
+import { PatternGroup } from '@common/Provenance/ProvenanceEngine';
 import { Entity } from '@common/types';
 
 import ProvenanceGraphEvents from './ProvenanceGraphEvents';

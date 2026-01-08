@@ -53,31 +53,31 @@ export function clamp(value: number, lower: number, upper: number) {
 
 export function getNodesByType(graph: Graph): Map<string, string[]> {
 
-        const typeToNodes = new Map<string, string[]>()
+    const typeToNodes = new Map<string, string[]>()
 
-        for (const node of graph.nodes()) {
-            const entity = graph.getNodeAttribute(node, 'entity')
+    for (const node of graph.nodes()) {
+        const entity = graph.getNodeAttribute(node, 'entity')
 
-            let type = 'Others'
-            if (entity instanceof Process) {
-                type = 'Process'
-            } else if (entity instanceof Resource) {
-                if (entity.getUUID().endsWith('STDOUT') || entity.getUUID().endsWith('STDERR') || entity.getUUID().endsWith('STDIN')) {
-                    type = 'STDIO'
+        let type = 'Others'
+        if (entity instanceof Process) {
+            type = 'Process'
+        } else if (entity instanceof Resource) {
+            if (entity.getUUID().endsWith('STDOUT') || entity.getUUID().endsWith('STDERR') || entity.getUUID().endsWith('STDIN')) {
+                type = 'STDIO'
+            } else {
+                if (entity.resourceType === 4) {
+                    type = 'File'
                 } else {
-                    if (entity.resourceType === 4) {
-                        type = 'File'
-                    } else {
-                        type = 'FIFO'
-                    }
+                    type = 'FIFO'
                 }
             }
-
-            if ( ! typeToNodes.get(type) ){
-                typeToNodes.set(type, [])
-            }
-            typeToNodes.get(type)!.push(node)
         }
 
-        return typeToNodes
+        if ( ! typeToNodes.get(type) ){
+            typeToNodes.set(type, [])
+        }
+        typeToNodes.get(type)!.push(node)
     }
+
+    return typeToNodes
+}

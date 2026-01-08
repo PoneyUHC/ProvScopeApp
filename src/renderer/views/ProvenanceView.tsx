@@ -1,7 +1,7 @@
 
 import Title from '@renderer/components/Misc/Title';
 import ProvenanceGraphPanel from '@renderer/components/ProvenanceGraph/ProvenanceGraphPanel';
-import ProvenanceGraph from '@common/ProvenanceGraph';
+import ProvenanceGraph from '@common/Provenance/ProvenanceGraph';
 import { ProvenanceGraphProvider } from '@renderer/components/ProvenanceGraph/ProvenanceGraphProvider';
 
 

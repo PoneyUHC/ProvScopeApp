@@ -6,7 +6,7 @@ import 'react-tabs/style/react-tabs.css';
 
 import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/ResizableControlsContainer';
 import Error from '@renderer/components/Misc/Error';
-import { PatternValue, EventPattern, PatternGroup } from '@common/causality';
+import { PatternValue, EventPattern, PatternGroup } from '@common/Provenance/ProvenanceEngine';
 import { Event } from '@common/types';
 import { areConnected } from '@common/utils';
 import { ProvenanceGraphContext, ProvenanceGraphContextType } from './ProvenanceGraphProvider';

@@ -1,80 +1,4 @@
 
-import ProvenanceGraph from '@common/ProvenanceGraph';
-import { Process, Event } from "@common/types";
-
-
-export class PatternValue {
-
-    value: unknown;
-    isWildcard: boolean;
-
-    constructor(value: unknown, isWildcard: boolean = false) {
-        this.value = value;
-        this.isWildcard = isWildcard;
-    }
-
-    matches(other: unknown): boolean {
-        if (this.isWildcard) {
-            return true;
-        }
-        return this.value == other;
-    }
-}
-
-export class EventPattern {
-
-    pattern: Map<string, PatternValue>
-
-    constructor(pattern: Map<string, PatternValue>) {
-        this.pattern = pattern;
-    }
-
-    matches(event: Event): boolean {
-        console.debug("EventPattern.matches", event, this.pattern);
-        for (const [key, value] of this.pattern.entries()) {
-            if (!value.matches(event[key as keyof (typeof Event)])) {
-                console.debug(`EventPattern.matches: mismatch for key ${key}: expected ${JSON.stringify(value)}, got ${JSON.stringify(event[key as keyof (typeof Event)])}`);
-                return false;
-            }
-        }
-        console.debug("EventPattern.matches: match found");
-        return true;
-    }
-}
-
-
-export class PatternGroup {
-
-    patterns: EventPattern[];
-    name: string;
-
-    constructor(patterns: EventPattern[], name: string) {
-        this.patterns = patterns;
-        this.name = name;
-    }
-}
-
-
-export class ProcessVariable {
-
-    name: string
-    process: Process
-
-    constructor(name: string, process: Process) {
-        this.name = name
-        this.process = process
-    }
-
-    toString() {
-        return this.name
-    }
-}
-
-export type AlterationType =
-    | { type: 'PRESERVE' }
-    | { type: 'ALTER', variable: string };
-
-
 
 export interface CausalLink {
     appliesTo: (event: Event) => boolean;
@@ -85,7 +9,7 @@ export interface CausalLink {
 const getProcessPriorEvents = (dfGraph: ProvenanceGraph, baseEvent: Event): Event[] => {
     const graph = dfGraph.graph;
     const baseEventID = baseEvent.id;
-    const nodes = graph.filterNodes((node) => {
+    const nodes = graph.filterNodes((node) => { 
         const eventID = graph.getNodeAttribute(node, 'id')
         const event = graph.getNodeAttribute(node, 'event')
         return event && event.process == baseEvent.process && eventID < baseEventID
@@ -159,12 +83,12 @@ export class SourceTargetCL implements CausalLink {
         if (!this.target.matches(event)) {
             return new Set();
         }
-
+        
         const priorEvents = getProcessPriorEvents(dfGraph, event);
         if (priorEvents.length === 0) {
             return new Set();
         }
-
+        
         const sources: Set<Event> = new Set();
         for (const priorEvent of priorEvents) {
             if (this.source.matches(priorEvent)) {

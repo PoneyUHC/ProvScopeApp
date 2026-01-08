@@ -8,7 +8,7 @@ import Header from "@renderer/components/Misc/Header";
 import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
 import { ExecutionTraceProvider } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 import { TopologyGraph } from "@common/TopologyGraph";
-import ProvenanceGraph from "@common/ProvenanceGraph";
+import ProvenanceGraph from "@common/Provenance/ProvenanceGraph";
 
 
 interface TraceBrowserViewProps {

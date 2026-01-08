@@ -1,9 +1,9 @@
 
 import DirectedGraph from 'graphology'
 
-import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './causality'
-import { ExecutionTrace } from './ExecutionTrace/ExecutionTrace'
-import { Entity, Event } from './types'
+import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './ProvenanceEngine'
+import { ExecutionTrace } from '../ExecutionTrace/ExecutionTrace'
+import { Entity, Event } from '../types'
 
 
 
