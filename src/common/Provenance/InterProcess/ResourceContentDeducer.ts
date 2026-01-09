@@ -5,6 +5,7 @@ import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
 import StorageStrategy from "./StorageStrategy/StorageStrategy";
 import FIFOStorageStrategy from "./StorageStrategy/FIFOStorageStrategy";
 import FileStorageStrategy from "./StorageStrategy/FileStorageStrategy";
+import ProvenanceGraph from "../ProvenanceGraph";
 
 
 export default class ResourceContentDeducer {
@@ -21,6 +22,10 @@ export default class ResourceContentDeducer {
 
 
     init(): void {
+
+        this.resourceContentMap.clear();
+        this.ignoredResources.clear();
+
         for (const resource of this.trace.resources) {
             let strategy: StorageStrategy
             switch (resource.resourceType) {
@@ -42,19 +47,44 @@ export default class ResourceContentDeducer {
     }
 
 
-    deduce(): void {
+    deduce(pGraph: ProvenanceGraph): void {
         this.init()
-        this.applyEvents()
+        this.fillResourceContent(pGraph)
     }
 
 
-    getDataSources(event: Event, resourceContent: ResourceContent): Event[] {
+    fillResourceContent(pGraph: ProvenanceGraph): void {
 
-        // TODO: do not depend on explicit event types
-        if (event.eventType !== "ExitReadEvent") {
+        const graph = pGraph.graph
+
+        for ( const event of this.trace.events ) {
+            for ( const [resource, resourceContent] of this.resourceContentMap ) {
+
+                const node = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource);
+                if ( !node ){
+                    console.error("ResourceContentDeducer.fillResourceContent: Event node not found in provenance graph", event);
+                }                    
+
+                if ( this.ignoredResources.has(resource) ) {
+                    graph.setNodeAttribute(node, 'resourceContent', null);
+                    continue;
+                }
+
+                resourceContent.applyEvent(event);
+                graph.setNodeAttribute(node, 'resourceContent', resourceContent.clone());
+            }
+        }
+    }
+
+
+    getSourceEvents(resourceContent: ResourceContent, targetEvent: Event): Event[] {
+
+        if ( targetEvent.eventType !== "ExitReadEvent") {
+            console.error(`ResourceContentDeducer.getSourceEvents: Unsupported event type ${targetEvent.eventType} for target event.`);
             return [];
         }
 
+        resourceContent.getContent(targetEvent)
         
 
         return [];

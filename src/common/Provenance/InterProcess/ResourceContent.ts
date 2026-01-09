@@ -1,9 +1,12 @@
 
+import { Event } from "@common/types";
+
 import DataChunk from "./DataChunk";
 import StorageStrategy from "./StorageStrategy/StorageStrategy";
+import { IClonable } from "@common/utils";
 
 
-export default class ResourceContent {
+export default class ResourceContent implements IClonable<ResourceContent> {
 
     storageStrategy: StorageStrategy;
     content: DataChunk[];
@@ -14,13 +17,21 @@ export default class ResourceContent {
         this.storageStrategy = storageStrategy;
     }
 
-    addContent(newContent: DataChunk): void {
-        this.storageStrategy.addContent(this.content, newContent);
+    clone(): ResourceContent {
+        const clonedContent = this.content.map(chunk => chunk.clone());
+        return new ResourceContent(clonedContent, this.storageStrategy.clone());
     }
 
-    getContent(size: number): DataChunk[] {
-        return this.storageStrategy.getContent(this.content, size);
+
+    applyEvent(event: Event): void {
+        this.content = this.storageStrategy.applyEvent(event, this.content);
     }
+
+
+    getContent(event: Event): DataChunk[] {
+        return this.storageStrategy.getContent(event, this.content);
+    }
+
 
     toString(): string {
         return this.content.map(chunk => chunk.data).join('');

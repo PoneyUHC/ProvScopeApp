@@ -4,7 +4,7 @@ import DataChunk from "@common/Provenance/InterProcess/DataChunk"; // <- adjust 
 
 // Helper: keep tests readable
 function mk(data: string, originEvent: any = { id: "e" }): DataChunk {
-  return new DataChunk(data.length, data, originEvent);
+  return new DataChunk(data, originEvent);
 }
 
 function content(chunks: DataChunk[]): string {

@@ -5,20 +5,18 @@ import { Event } from "@common/types";
 
 export default class DataChunk implements IClonable<DataChunk> {
 
-    size: number;
     data: string;
     originEvent: Event;
 
 
-    constructor(size: number, data: string, originEvent: Event) {
-        this.size = size;
+    constructor(data: string, originEvent: Event) {
         this.data = data;
         this.originEvent = originEvent;
     }
 
 
     clone(): DataChunk {
-        return new DataChunk(this.size, this.data.slice(), this.originEvent);
+        return new DataChunk(this.data.slice(), this.originEvent);
     }
 
 
@@ -32,21 +30,28 @@ export default class DataChunk implements IClonable<DataChunk> {
     }
 
 
-    getContent(size: number): [DataChunk | null, DataChunk | null] {
+    get size(): number {
+        return this.data.length;
+    }
 
-        if (size <= 0) {
+
+    getContent(requestedSize: number): [DataChunk | null, DataChunk | null] {
+
+        const currentSize = this.data.length;
+        if (requestedSize <= 0) {
             return [null, this];
         }
 
-        if (size >= this.size) {
+        if (requestedSize >= currentSize) {
             return [this, null]
         }
 
-        const gatheredData = this.data.slice(0, size);
-        const remainingSize = this.size - size;
-        const remainingData = this.data.slice(size);
-        const gatheredChunk = new DataChunk(size, gatheredData, this.originEvent);
-        const remainingChunk = new DataChunk(remainingSize, remainingData, this.originEvent);
+        const gatheredData = this.data.slice(0, requestedSize);
+        const gatheredChunk = new DataChunk(gatheredData, this.originEvent);
+
+        const remainingData = this.data.slice(requestedSize);
+        const remainingChunk = new DataChunk(remainingData, this.originEvent);
+
         return [gatheredChunk, remainingChunk];
     }
 
@@ -66,7 +71,7 @@ export default class DataChunk implements IClonable<DataChunk> {
         if (startChunkIndex === chunks.length) {
             const priorSpace = position - startAccumulatedSize;
             if (priorSpace > 0) {
-                const paddingChunk = new DataChunk(priorSpace, '\0'.repeat(priorSpace), newChunk.originEvent);
+                const paddingChunk = new DataChunk('\0'.repeat(priorSpace), newChunk.originEvent);
                 return [...chunks, paddingChunk, newChunk];
             } else {
                 return [...chunks, newChunk];
