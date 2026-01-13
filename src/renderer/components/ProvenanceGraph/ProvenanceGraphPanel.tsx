@@ -15,7 +15,6 @@ import { Allotment } from 'allotment';
 
 import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
-import { PatternGroup } from '@common/Provenance/ProvenanceEngine';
 import { Entity } from '@common/types';
 
 import ProvenanceGraphEvents from './ProvenanceGraphEvents';
@@ -140,7 +139,7 @@ const provenanceGraphPanel: React.FC = () => {
     };
 
 
-    const onRemove = (name: string, index: number) => {
+    const onRemove = (name: string, _index: number) => {
         const entity = provenanceGraph.trace.entities.find(e => e.getUUID() === name);
         hideEntity(entity!);
     }
@@ -153,16 +152,6 @@ const provenanceGraphPanel: React.FC = () => {
 
     const onDrag = () => {
         setIsDirty(true);
-    }
-
-
-    const addPatternGroup = (patternGroup: PatternGroup) => {
-        setPatternGroups(prev => new Set([...prev, patternGroup]));
-    }
-
-
-    const removePatternGroup = (patternGroup: PatternGroup) => {
-        setPatternGroups(prev => new Set([...prev].filter(pg => pg !== patternGroup)));
     }
 
 
@@ -193,12 +182,6 @@ const provenanceGraphPanel: React.FC = () => {
                         />
 
                         <EventInfosPanel />
-
-                        <PatternPanel
-                            patternGroups={patternGroups}
-                            addPatternGroup={addPatternGroup}
-                            removePatternGroup={removePatternGroup}
-                        />
 
                     </SigmaContainer>
                 
