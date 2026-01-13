@@ -3,18 +3,16 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import { CameraState, MouseCoords, SigmaNodeEventPayload, SigmaStageEventPayload } from "sigma/types";
 
-import { Entity } from "@common/types";
+import { Entity, Event } from "@common/types";
+import { ProvenanceEngine } from "@common/Provenance/ProvenanceEngine";
 
 import { ProvenanceGraphContext, ProvenanceGraphContextType } from "./ProvenanceGraphProvider";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "../TraceBrowserTool/ExecutionTraceProvider";
 
 
-interface ProvenanceGraphEventsProps {
-    showProvenanceFrom: (node: string | null) => void;
-}
 
+const ProvenanceGraphEvents: React.FC = () => {
 
-const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProvenanceFrom: showProvenanceFrom }) => {
     const registerEvents = useRegisterEvents();
     const sigma = useSigma();
     const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -27,8 +25,17 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
+        provenanceGraph: provenanceGraph,
         selectedNodes: [selectedNodes, setSelectedNodes],
     } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
+
+    if (!provenanceGraph) {
+        return null;
+    }
+
+    const provenanceEngine = useRef<ProvenanceEngine>(
+        new ProvenanceEngine()
+    );
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
     const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
@@ -185,6 +192,42 @@ const ProvenanceGraphEvents: React.FC<ProvenanceGraphEventsProps> = ({ showProve
         }
 
         setDraggedNode(currentNode);
+    }
+
+
+    const resetColoring = () =>{
+
+        const graph = provenanceGraph.graph;
+        for (const node of graph.nodes()) {
+            graph.setNodeAttribute(node, 'color', '#000000')
+        }
+
+        for (const edge of graph.edges()) {
+            const event = graph.getEdgeAttribute(edge, 'event') as Event
+            graph.setEdgeAttribute(edge, 'color', event.color)
+        }
+    }
+
+
+    const showProvenanceFrom = (target: string | null) => {
+        
+        resetColoring();
+
+        if ( !target ) {
+            return;
+        }
+
+        const subgraph = provenanceEngine.current.getProvenanceFromNode(provenanceGraph.graph, target)
+
+        console.log(subgraph)
+        for (const node of provenanceGraph.graph.nodes()) {
+            console.log(node)
+            if ( subgraph.hasNode(node) ) {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'red')
+            } else {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
+            }
+        }
     }
 
 

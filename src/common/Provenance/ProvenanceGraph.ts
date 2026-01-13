@@ -1,52 +1,19 @@
 
 import DirectedGraph from 'graphology'
 
-import { CausalLink, EventPattern, PatternValue, SourceTargetCL } from './ProvenanceEngine'
 import { ExecutionTrace } from '../ExecutionTrace/ExecutionTrace'
 import { Entity, Event } from '../types'
 
 
-
-class ProvenanceGraph {
+export default class ProvenanceGraph {
 
     trace: ExecutionTrace
     graph: DirectedGraph
-    nodes: Map<Entity, string[]>
-    excludedNodes: Set<string>
 
-    eventCausalLinks: Map<Event, CausalLink[]>
-    testCausalLink: CausalLink[]
-    testSource: EventPattern[]
 
     constructor(trace: ExecutionTrace) {
         this.trace = trace
         this.graph = new DirectedGraph()
-        this.nodes = new Map<Entity, string[]>()
-        this.excludedNodes = new Set<string>()
-        this.eventCausalLinks = new Map<Event, CausalLink[]>()
-
-        const routerProcess = trace.processes.find(p => p.name === 'router.bin' && p.pid === 26607);
-        this.testCausalLink = [
-            new SourceTargetCL(
-                new EventPattern(new Map<string, PatternValue>([
-                    ['eventType', new PatternValue('ExitReadEvent')],
-                    ['process', new PatternValue(routerProcess)],
-                    ['filepath', new PatternValue('run/client1_r')],
-                ])),
-                new EventPattern(new Map<string, PatternValue>([
-                    ['eventType', new PatternValue('WriteEvent')],
-                    ['process', new PatternValue(routerProcess)],
-                    ['filepath', new PatternValue('run/logs_1')],
-                ]))
-            ),
-        ]
-
-        const clientProcess = this.trace.processes.find(p => p.name === 'client.bin' && p.pid === 26609);
-        this.testSource = [
-            new EventPattern(new Map<string, PatternValue>([
-                ['process', new PatternValue(clientProcess)],
-            ]))
-        ]
 
         this.loadTrace()
     }
@@ -69,12 +36,17 @@ class ProvenanceGraph {
 
 
     loadTrace() {
-        this.createInitialNodes()
-        this.loadEvents()
+        const nodesByEntity = new Map<Entity, string[]>()
+        this.createInitialNodes(nodesByEntity)
+        this.loadEvents(nodesByEntity)
+        
+        for (const node of this.graph.nodes()) {
+            this.graph.setNodeAttribute(node, 'color', '#000000')
+        }
     }
 
 
-    createInitialNodes() {
+    createInitialNodes(nodesByEntity: Map<Entity, string[]>) {
 
         for (const resource of this.trace.resources) {
 
@@ -88,7 +60,7 @@ class ProvenanceGraph {
                 event: null,
                 type: 'square'
             })
-            this.nodes.set(resource, [node])
+            nodesByEntity.set(resource, [node])
         }
 
         for (const process of this.trace.processes) {
@@ -104,13 +76,13 @@ class ProvenanceGraph {
                 event: null, 
                 type: 'circle'
             })
-            this.nodes.set(process, [node])
+            nodesByEntity.set(process, [node])
         }
     }
 
 
-    getLastNodeForEntity(entity: Entity): string | null {
-        const nodes = this.nodes.get(entity)
+    getLastNodeForEntity(entity: Entity, nodesByEntity: Map<Entity, string[]>): string | null {
+        const nodes = nodesByEntity.get(entity)
         if (!nodes) {
             console.error(`[FATAL] No nodes found for entity ${entity}`)
             console.error('This should never happen as all entities are initialized at the start of the provenance graph construction.')
@@ -121,14 +93,14 @@ class ProvenanceGraph {
     }
 
 
-    loadEvents() {
+    loadEvents(nodesByEntity: Map<Entity, string[]>) {
         for (const event of this.trace.events) {
-            this.addEventToGraph(event)
+            this.addEventToGraph(event, nodesByEntity)
         }
     }
 
 
-    addNewNodeForEntity(entityLastNode: string, event: Event): string {
+    addNewNodeForEntity(entityLastNode: string, event: Event, nodesByEntity: Map<Entity, string[]>): string {
 
         const entity = this.graph.getNodeAttribute(entityLastNode, 'entity') as Entity
         const lastVersion = this.graph.getNodeAttribute(entityLastNode, 'version') as number
@@ -147,7 +119,7 @@ class ProvenanceGraph {
             type: this.graph.getNodeAttribute(entityLastNode, 'type')
         })
 
-        const entityNodes = this.nodes.get(entity)
+        const entityNodes = nodesByEntity.get(entity)
         if (!entityNodes) {
             console.error(`[FATAL] No nodes found for entity ${entity}`)
             console.error('This should never happen as all entities are initialized at the start of the provenance graph construction.')
@@ -159,14 +131,14 @@ class ProvenanceGraph {
     }
 
 
-    addEventToGraph(event: Event) {
+    addEventToGraph(event: Event, nodesByEntity: Map<Entity, string[]>) {
         
         const sourceEntities = Array.from(event.sourceEntities)
         const targetEntities = Array.from(event.targetEntities)
 
         let sourceNodes: string[] = [];
         for (const sourceEntity of sourceEntities) {
-            const sourceEntityLastNode = this.getLastNodeForEntity(sourceEntity)
+            const sourceEntityLastNode = this.getLastNodeForEntity(sourceEntity, nodesByEntity)
             if (!sourceEntityLastNode) {
                 console.error(`[FATAL] Could not find last node for source entity ${sourceEntity} in event ${event}.`)
                 continue
@@ -176,13 +148,13 @@ class ProvenanceGraph {
 
         let targetNodes: string[] = [];
         for (const targetEntity of targetEntities) {
-            const targetEntityLastNode = this.getLastNodeForEntity(targetEntity)
+            const targetEntityLastNode = this.getLastNodeForEntity(targetEntity, nodesByEntity)
             if (!targetEntityLastNode) {
                 console.error(`[FATAL] Could not find last node for target entity ${targetEntity} in event ${event}.`)
                 continue
             }
-            
-            const newNode = this.addNewNodeForEntity(targetEntityLastNode, event)
+
+            const newNode = this.addNewNodeForEntity(targetEntityLastNode, event, nodesByEntity)
 
             targetNodes.push(newNode)
         }
@@ -190,7 +162,6 @@ class ProvenanceGraph {
         const color = event.color
         for ( const sourceNode of sourceNodes ) {
             for ( const targetNode of targetNodes ) {
-
                 const edgeLabel = event.id
                 this.graph.addEdge(sourceNode, targetNode, {
                     label: edgeLabel,
@@ -200,90 +171,4 @@ class ProvenanceGraph {
             }
         }
     }
-
-
-    computeProvenanceFrom(node: string): Set<string> {
-
-        const event = this.graph.getNodeAttribute(node, 'event') as Event
-        if (!event) {
-            console.error(`Node ${node} does not have an event attribute`)
-            return new Set<string>()
-        }
-
-        const provenance = new Set<Event>()
-        const queue: Event[] = [event]
-        while (queue.length > 0) {
-            const current = queue.shift()
-            if (!current) continue
-
-            provenance.add(current)
-
-            const causes = this.getCausesOfEvent(current)
-            for (const cause of causes) {
-                if (!provenance.has(cause)) {
-                    queue.push(cause)
-                }
-            }
-        }
-
-        const nodesInProvenance: Set<string> = new Set<string>();
-        for (const event of provenance) {
-            const node = this.graph.findNode((n) => this.graph.getNodeAttribute(n, 'event') == event);
-            if (node) {
-                nodesInProvenance.add(node);
-            }
-        }
-        return nodesInProvenance;
-    }
-
-
-    getCausesOfEvent(event: Event): Set<Event> {
-
-        for( const sourcePattern of this.testSource ) {
-            if (sourcePattern.matches(event)) {
-                console.debug("Source pattern matched for event", event);
-                return new Set<Event>();
-            }
-        }
-
-        const causes: Set<Event> = new Set<Event>();
-        const causalLinks = this.testCausalLink
-    
-        for (const causalLink of causalLinks) {
-            const partialCauses = causalLink.getCauses(event, this)
-            partialCauses.forEach(cause => causes.add(cause))
-        }
-
-        const node = this.graph.findNode((n) => this.graph.getNodeAttribute(n, 'event') == event);
-        const parents = this.graph.inNeighbors(node);
-
-        parents.forEach((parent) => {
-            if (this.graph.getNodeAttribute(parent, 'objectType') === 'resource') {
-                const parentEvent = this.graph.getNodeAttribute(parent, 'event');
-                if (parentEvent) {
-                    causes.add(parentEvent);
-                    this.graph.inNeighbors(parent).forEach((gp) => {
-                        if (this.graph.getNodeAttribute(gp, 'objectType') === 'process') {
-                            const grandparentEvent = this.graph.getNodeAttribute(gp, 'event');
-                            if (grandparentEvent) {
-                                causes.add(grandparentEvent);
-                            }
-                        }
-                    });
-                }
-            }
-        });
-
-        return causes
-    }
-    
-
-    resetColoring() {
-        this.graph.forEachNode((node, _attr) => {
-            this.graph.removeNodeAttribute(node, 'color')
-        });
-    }
 }
-
-
-export default ProvenanceGraph;

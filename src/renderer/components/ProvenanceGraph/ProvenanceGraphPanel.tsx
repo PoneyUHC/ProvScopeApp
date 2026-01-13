@@ -1,15 +1,6 @@
 
 import { useContext, useEffect, useRef, useState } from 'react';
 import Sigma from 'sigma';
-import '@react-sigma/core/lib/style.css';
-import {
-    SigmaContainer,
-    ControlsContainer,
-    FullScreenControl,
-    ZoomControl,
-} from '@react-sigma/core'
-import { NodeSquareProgram } from "@sigma/node-square";
-import { NodeCircleProgram } from "sigma/rendering"
 
 import { Allotment } from 'allotment';
 
@@ -17,11 +8,9 @@ import DragDropListPanel from '@renderer/components/Misc/DragDropListPanel';
 import Error from '@renderer/components/Misc/Error';
 import { Entity } from '@common/types';
 
-import ProvenanceGraphEvents from './ProvenanceGraphEvents';
-import PatternPanel from './PatternPanel';
-import EventInfosPanel from './EventInfosPanel';
 import { ProvenanceGraphContextType, ProvenanceGraphContext } from './ProvenanceGraphProvider';
 import { ExecutionTraceContext, ExecutionTraceContextType } from '../TraceBrowserTool/ExecutionTraceProvider';
+import ProvenanceGraphSigma from './ProvenanceGraphSigma';
 
 
 const provenanceGraphPanel: React.FC = () => {
@@ -35,7 +24,6 @@ const provenanceGraphPanel: React.FC = () => {
     const [orderedEntities, setOrderedEntities] = useState<Entity[]>([]);
 
     const hiddenEntitiesIndexLookup = useRef<Map<Entity, number>>(new Map());
-    const [patternGroups, setPatternGroups] = useState<Set<PatternGroup>>(new Set());
 
     const { 
         provenanceGraph: provenanceGraph 
@@ -54,10 +42,12 @@ const provenanceGraphPanel: React.FC = () => {
         provenanceGraph.computeCoords(newItems);
     }, []);
 
+
     useEffect(() => {
         if (!sigma) return;
         if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
     }, [sigma]);
+
 
     useEffect(() => {
         if (!sigma) return;
@@ -68,6 +58,7 @@ const provenanceGraphPanel: React.FC = () => {
         }
     }, [isDirty])
 
+    
     useEffect(() => {
 
         for (const entity of hiddenEntities) {
@@ -96,43 +87,6 @@ const provenanceGraphPanel: React.FC = () => {
     }, [hiddenEntities]);
     
 
-    const showProvenanceFrom = (target: string | null) => {
-
-        if ( !target ) {
-            provenanceGraph.resetColoring()
-            return;
-        }
-
-        const provenance = provenanceGraph.computeProvenanceFrom(target)
-
-        const graph = provenanceGraph.graph
-
-        graph.forEachNode((node) => {
-            graph.removeNodeAttribute(node, 'color')
-            if( provenance.has(node) ) {
-                graph.setNodeAttribute(node, 'color', 'red')
-            }
-        })
-        
-        graph.forEachEdge((edge) => {
-
-            const source = graph.source(edge)
-            const target = graph.target(edge)
-
-            if (provenance.has(source) && provenance.has(target)) {
-                const eventType = graph.getEdgeAttribute(edge, 'event').eventType
-                if (eventType === 'ExitReadEvent') {
-                    graph.setEdgeAttribute(edge, 'color', 'green')
-                } else if (eventType === 'WriteEvent') {
-                    graph.setEdgeAttribute(edge, 'color', 'blue')
-                }
-            } else {
-                graph.removeEdgeAttribute(edge, 'color')
-            }
-        })
-    }
-
-
     const onListChanged = (newOrder: Entity[]) => {
         provenanceGraph.computeCoords(newOrder);
         setOrderedEntities(newOrder);
@@ -160,30 +114,10 @@ const provenanceGraphPanel: React.FC = () => {
              <Allotment onDragEnd={onDrag}>
                 <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full w-full">
 
-                    <SigmaContainer 
-                        ref={setSigma} 
-                        graph={provenanceGraph.graph} 
-                        settings={
-                            {
-                                renderLabels: false,
-                                allowInvalidContainer: true, 
-                                nodeProgramClasses: {
-                                    square: NodeSquareProgram,
-                                    circle: NodeCircleProgram,
-                                }
-                            }
-                        }>
-                        <ControlsContainer position={'bottom-right'}>
-                            <ZoomControl />
-                            <FullScreenControl />
-                        </ControlsContainer>
-                        <ProvenanceGraphEvents 
-                            showProvenanceFrom={showProvenanceFrom}
-                        />
-
-                        <EventInfosPanel />
-
-                    </SigmaContainer>
+                    <ProvenanceGraphSigma 
+                        setSigma={setSigma}
+                        graph={provenanceGraph.graph}
+                    />
                 
                 </Allotment.Pane>
 
