@@ -33,6 +33,17 @@ export default class ResourceContent implements IClonable<ResourceContent> {
     }
 
 
+    getSourceEvents(targetEvent: Event): Event[] {
+        const gatheredContent = this.getContent(targetEvent);
+        if (gatheredContent.length === 0) {        
+            return [];
+        }
+
+        const sourceEvents = gatheredContent.map(chunk => chunk.sourceEvent);
+        return sourceEvents;
+    }
+
+
     toString(): string {
         return this.content.map(chunk => chunk.data).join('');
     }

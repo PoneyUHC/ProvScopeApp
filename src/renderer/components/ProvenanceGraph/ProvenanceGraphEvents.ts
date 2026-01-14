@@ -36,6 +36,7 @@ const ProvenanceGraphEvents: React.FC = () => {
     const provenanceEngine = useRef<ProvenanceEngine>(
         new ProvenanceEngine()
     );
+    provenanceEngine.current.init(provenanceGraph);
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
     const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
@@ -221,7 +222,6 @@ const ProvenanceGraphEvents: React.FC = () => {
 
         console.log(subgraph)
         for (const node of provenanceGraph.graph.nodes()) {
-            console.log(node)
             if ( subgraph.hasNode(node) ) {
                 provenanceGraph.graph.setNodeAttribute(node, 'color', 'red')
             } else {

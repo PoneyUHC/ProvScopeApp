@@ -43,7 +43,7 @@ describe("DataChunk.insertAt", () => {
 
     // padding chunk should use newChunk.originEvent (as your code does)
     expect(res[1].data).toBe("\0\0");
-    expect(res[1].originEvent).toBe(eNew);
+    expect(res[1].sourceEvent).toBe(eNew);
   });
 
   it("inserts inside a single chunk and preserves both prefix and suffix", () => {

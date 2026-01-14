@@ -1,11 +1,13 @@
 
 import { Event, Resource, ResourceType } from "@common/types";
-import ResourceContent from "./ResourceContent";
 import { ExecutionTrace } from "@common/ExecutionTrace/ExecutionTrace";
+
+import ProvenanceGraph from "../ProvenanceGraph";
+
+import ResourceContent from "./ResourceContent";
 import StorageStrategy from "./StorageStrategy/StorageStrategy";
 import FIFOStorageStrategy from "./StorageStrategy/FIFOStorageStrategy";
 import FileStorageStrategy from "./StorageStrategy/FileStorageStrategy";
-import ProvenanceGraph from "../ProvenanceGraph";
 
 
 export default class ResourceContentDeducer {
@@ -53,25 +55,48 @@ export default class ResourceContentDeducer {
     }
 
 
-    fillResourceContent(pGraph: ProvenanceGraph): void {
+    fillResourceContent(provGraph: ProvenanceGraph): void {
 
-        const graph = pGraph.graph
+        const graph = provGraph.graph
 
         for ( const event of this.trace.events ) {
+
             for ( const [resource, resourceContent] of this.resourceContentMap ) {
+                
+                let contentHostNode : string | undefined;
+                // TODO: OpenEvent is a known pitfall, because it does not have the resource as a target
+                // but sets the cursor position, which is considered in this implementation as a content change
+                // therefore, we should apply OpenEvent anyway
 
-                const node = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource);
-                if ( !node ){
-                    console.error("ResourceContentDeducer.fillResourceContent: Event node not found in provenance graph", event);
-                }                    
+                //handle closevent not having a resource
+                // maybe handle each event specifically ?
+                if (event.eventType === "OpenEvent") {
+                    const resource = event.sourceEntities[0] instanceof Resource ? event.sourceEntities[0] : event.sourceEntities[1]
+                    const processNode = graph.findNode((node) => graph.getNodeAttribute(node, 'event') === event && graph.getNodeAttribute(node, 'entity') === event.process)
+                    if (! processNode){
+                        console.error("Shoud never happen by provenance graph construction")
+                        continue;
+                    }
+                    
+                    contentHostNode = graph.findOutNeighbor(processNode, (node) => graph.getNodeAttribute(node, 'entity') === resource)
+                } else {
+                    contentHostNode = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource);
+                }
 
+                console.log(contentHostNode, event)
+
+                if (!contentHostNode) {
+                    console.error("Should never happen")
+                    continue;
+                }
+                
                 if ( this.ignoredResources.has(resource) ) {
-                    graph.setNodeAttribute(node, 'resourceContent', null);
+                    graph.setNodeAttribute(contentHostNode, 'resourceContent', null);
                     continue;
                 }
 
                 resourceContent.applyEvent(event);
-                graph.setNodeAttribute(node, 'resourceContent', resourceContent.clone());
+                graph.setNodeAttribute(contentHostNode, 'resourceContent', resourceContent.clone());
             }
         }
     }

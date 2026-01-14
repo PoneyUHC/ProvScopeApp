@@ -1,6 +1,6 @@
 
-import Graph from 'graphology'
-import { Process, Resource } from './types';
+import Graph, { DirectedGraph } from 'graphology'
+import { Entity, Process, Resource } from './types';
 
 
 export function toUniform(str: string): number {
@@ -80,4 +80,20 @@ export function getNodesByType(graph: Graph): Map<string, string[]> {
     }
 
     return typeToNodes
+}
+
+
+export function getPreviousNodeForEntity(provenanceGraph: DirectedGraph, currentNode: string): string | null {
+
+    const inNeighbors = provenanceGraph.inNeighbors(currentNode)
+    const entity = provenanceGraph.getNodeAttribute(currentNode, "entity") as Entity
+
+    for ( const inNeighbor of inNeighbors ) {
+        const inNeighborEntity = provenanceGraph.getNodeAttribute(inNeighbor, "entity") as Entity
+        if ( inNeighborEntity === entity ) {
+            return inNeighbor
+        }
+    }
+
+    return null
 }

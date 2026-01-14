@@ -6,17 +6,17 @@ import { Event } from "@common/types";
 export default class DataChunk implements IClonable<DataChunk> {
 
     data: string;
-    originEvent: Event;
+    sourceEvent: Event;
 
 
-    constructor(data: string, originEvent: Event) {
+    constructor(data: string, sourceEvent: Event) {
         this.data = data;
-        this.originEvent = originEvent;
+        this.sourceEvent = sourceEvent;
     }
 
 
     clone(): DataChunk {
-        return new DataChunk(this.data.slice(), this.originEvent);
+        return new DataChunk(this.data.slice(), this.sourceEvent);
     }
 
 
@@ -47,10 +47,10 @@ export default class DataChunk implements IClonable<DataChunk> {
         }
 
         const gatheredData = this.data.slice(0, requestedSize);
-        const gatheredChunk = new DataChunk(gatheredData, this.originEvent);
+        const gatheredChunk = new DataChunk(gatheredData, this.sourceEvent);
 
         const remainingData = this.data.slice(requestedSize);
-        const remainingChunk = new DataChunk(remainingData, this.originEvent);
+        const remainingChunk = new DataChunk(remainingData, this.sourceEvent);
 
         return [gatheredChunk, remainingChunk];
     }
@@ -71,7 +71,7 @@ export default class DataChunk implements IClonable<DataChunk> {
         if (startChunkIndex === chunks.length) {
             const priorSpace = position - startAccumulatedSize;
             if (priorSpace > 0) {
-                const paddingChunk = new DataChunk('\0'.repeat(priorSpace), newChunk.originEvent);
+                const paddingChunk = new DataChunk('\0'.repeat(priorSpace), newChunk.sourceEvent);
                 return [...chunks, paddingChunk, newChunk];
             } else {
                 return [...chunks, newChunk];

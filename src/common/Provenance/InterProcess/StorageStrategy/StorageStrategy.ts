@@ -9,4 +9,5 @@ export default abstract class StorageStrategy implements IClonable<StorageStrate
 
     abstract applyEvent(event: Event, currentContent: DataChunk[]): DataChunk[];
     abstract getContent(event: Event, currentContent: DataChunk[]): DataChunk[];
+    abstract clone(): StorageStrategy;
 }
