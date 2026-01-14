@@ -44,12 +44,23 @@ function areEventsSimilar(event1: Event, event2: Event): boolean {
 }
 
 
+function isErrorFreeEvent(event: Event): boolean {
+    const ret = event.outputValues["ret"]
+    const size = event.inputValues["size"]
+    return ret >= 0 && ret === size
+}
+
+
 function mergeEvents(event1: Event, event2: Event): Event | null {
 
     if (!areEventsSimilar(event1, event2)) {
         return null;
     }
 
+    if ( !isErrorFreeEvent(event1) || !isErrorFreeEvent(event2) ) {
+        return null;
+    }
+    
     let mergedEvent: Event | null = null
 
     if (event1.eventType === "ExitReadEvent") {
