@@ -1,7 +1,7 @@
 
 import { ExecutionTrace } from "./ExecutionTrace"
 import { Process, Event, Resource, Entity } from "../types"
-import { staticExtensions, tagToImporterMapping } from "./ExecutionTraceImporterExtensions.ts/ImporterExtensionsGlobals"
+import { staticExtensions, tagToImporterMapping } from "./ExecutionTraceImporterExtensions/ImporterExtensionsGlobals"
 
 
 export default class ExecutionTraceImporter {
@@ -44,8 +44,6 @@ export default class ExecutionTraceImporter {
         }
 
         ExecutionTraceImporter.addEventIDs(executionTrace)
-
-        console.error(executionTrace.events.length)
     }
 
 

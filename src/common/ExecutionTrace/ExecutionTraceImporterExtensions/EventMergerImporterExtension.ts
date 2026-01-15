@@ -13,7 +13,7 @@ export default class EventMergerImporterExtension implements ExecutionTraceImpor
     }
 
     importData(executionTrace: ExecutionTrace, _json: JSON, _extensionData: JSON): boolean {
-        console.log(`Executing ${typeof EventMergerImporterExtension}`)
+        console.log(`Executing ${EventMergerImporterExtension.name}`)
 
         const events = executionTrace.events
         const newEvents: Event[] = [events[0]]
@@ -76,6 +76,7 @@ function mergeEvents(event1: Event, event2: Event): Event | null {
 // TODO: no handling of faulty operations where size != ret
 function mergeReadEvents(event1: Event, event2: Event): Event {
 
+    const size = event1.inputValues["size"] + event2.inputValues["size"]
     const ret = event1.outputValues["ret"] + event2.outputValues["ret"]
     const content = event1.outputValues["content"] + event2.outputValues["content"]
 
@@ -91,8 +92,8 @@ function mergeReadEvents(event1: Event, event2: Event): Event {
         event1.otherEntities,
         event1.sourceEntities,
         event1.targetEntities,
-        { fd: event1.inputValues["fd"], size: ret }, 
-        { size: ret, content: content},
+        { fd: event1.inputValues["fd"], size: size },
+        { ret: ret, content: content},
         description
     )
 
@@ -105,6 +106,7 @@ function mergeReadEvents(event1: Event, event2: Event): Event {
 // TODO: no handling of faulty operations where size != ret
 function mergeWriteEvents(event1: Event, event2: Event): Event {
 
+    const size = event1.inputValues["size"] + event2.inputValues["size"]
     const ret = event1.outputValues["ret"] + event2.outputValues["ret"]
     const content = event1.outputValues["content"] + event2.outputValues["content"]
 
@@ -120,8 +122,8 @@ function mergeWriteEvents(event1: Event, event2: Event): Event {
         event1.otherEntities,
         event1.sourceEntities,
         event1.targetEntities,
-        { fd: event1.inputValues["fd"], size: ret },
-        { size: ret, content: content},
+        { fd: event1.inputValues["fd"], size: size },
+        { ret: ret, content: content},
         description
     )
 

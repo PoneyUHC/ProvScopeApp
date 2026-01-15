@@ -10,7 +10,7 @@ export default class EventColorsImporterExtension implements ExecutionTraceImpor
     }
 
     importData(executionTrace: ExecutionTrace, _json: JSON, extensionData: JSON): boolean {
-        console.log(`Executing ${typeof EventColorsImporterExtension}`)
+        console.log(`Executing ${EventColorsImporterExtension.name}`)
 
         const colorData = extensionData
         if (!colorData) {
