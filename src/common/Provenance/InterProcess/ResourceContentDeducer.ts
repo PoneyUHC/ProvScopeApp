@@ -60,42 +60,28 @@ export default class ResourceContentDeducer {
         const graph = provGraph.graph
 
         for ( const event of this.trace.events ) {
+            
+            let contentHostNode : string | null = null
+            let resource = Array.from(event.otherEntities)[0] as Resource
+            if (this.ignoredResources.has(resource)) {
+                continue;
+            }
 
-            for ( const [resource, resourceContent] of this.resourceContentMap ) {
-                
-                let contentHostNode : string | undefined;
-                // TODO: OpenEvent is a known pitfall, because it does not have the resource as a target
-                // but sets the cursor position, which is considered in this implementation as a content change
-                // therefore, we should apply OpenEvent anyway
+            if (!event.targetEntities.has(resource)) {
+                contentHostNode = null
+            } else {
+                contentHostNode = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource)!;
+            }
 
-                //handle closevent not having a resource
-                // maybe handle each event specifically ?
-                if (event.eventType === "OpenEvent") {
-                    const resource = event.sourceEntities[0] instanceof Resource ? event.sourceEntities[0] : event.sourceEntities[1]
-                    const processNode = graph.findNode((node) => graph.getNodeAttribute(node, 'event') === event && graph.getNodeAttribute(node, 'entity') === event.process)
-                    if (! processNode){
-                        console.error("Shoud never happen by provenance graph construction")
-                        continue;
-                    }
-                    
-                    contentHostNode = graph.findOutNeighbor(processNode, (node) => graph.getNodeAttribute(node, 'entity') === resource)
-                } else {
-                    contentHostNode = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource);
-                }
+          
+            const resourceContent = this.resourceContentMap.get(resource)
+            if (! resourceContent) {
+                console.error("Should never happen as long as init() was called")
+                continue;
+            }
+            resourceContent.applyEvent(event);
 
-                console.log(contentHostNode, event)
-
-                if (!contentHostNode) {
-                    console.error("Should never happen")
-                    continue;
-                }
-                
-                if ( this.ignoredResources.has(resource) ) {
-                    graph.setNodeAttribute(contentHostNode, 'resourceContent', null);
-                    continue;
-                }
-
-                resourceContent.applyEvent(event);
+            if (contentHostNode) {
                 graph.setNodeAttribute(contentHostNode, 'resourceContent', resourceContent.clone());
             }
         }
@@ -110,7 +96,6 @@ export default class ResourceContentDeducer {
         }
 
         resourceContent.getContent(targetEvent)
-        
 
         return [];
     }

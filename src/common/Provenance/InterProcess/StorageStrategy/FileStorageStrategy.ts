@@ -120,7 +120,7 @@ export default class FileStorageStrategy extends StorageStrategy {
             return currentContent;
         }
 
-        const requestedWriteContent = event.inputValues['content'] as string;
+        const requestedWriteContent = event.outputValues['content'] as string;
         const writtenSize = event.outputValues['ret'] as number;
         const writtenContent = requestedWriteContent.slice(0, writtenSize);
 

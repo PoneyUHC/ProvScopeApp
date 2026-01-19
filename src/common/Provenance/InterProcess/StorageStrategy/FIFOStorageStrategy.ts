@@ -43,7 +43,7 @@ export default class FIFOStorageStrategy extends StorageStrategy {
 
     applyWriteEvent(event: Event, currentContent: DataChunk[]): DataChunk[] {
 
-        const data = event.inputValues['content'] as string;
+        const data = event.outputValues['content'] as string;
         const writtenSize = event.outputValues['ret'] as number;
         
         const dataToWrite = data.slice(0, writtenSize);
@@ -61,6 +61,8 @@ export default class FIFOStorageStrategy extends StorageStrategy {
 
         if (size > DataChunk.getSize(currentContent)) {
             console.error("Not enough content to retrieve");
+            console.error(event)
+            console.error(currentContent)
             return [];
         }
 

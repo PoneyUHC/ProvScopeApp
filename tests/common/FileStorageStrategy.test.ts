@@ -40,8 +40,8 @@ function writeEvent(p: TestProcess, fd: number, content: string, ret: number): T
   return {
     eventType: "WriteEvent",
     process: p,
-    inputValues: { fd, content },
-    outputValues: { ret },
+    inputValues: { fd },
+    outputValues: { content, ret },
   };
 }
 

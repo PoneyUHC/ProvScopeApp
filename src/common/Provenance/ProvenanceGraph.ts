@@ -50,11 +50,12 @@ export default class ProvenanceGraph {
 
         for (const resource of this.trace.resources) {
 
-            const node = this.graph.addNode(resource.path, {
+            const nodeLabel = `${resource.path}-0`
+            const node = this.graph.addNode(nodeLabel, {
                 x: 0, 
                 y: 0, 
                 size: 4,
-                label: `${resource.path}-0`, 
+                label: nodeLabel, 
                 version: 0, 
                 entity: resource, 
                 event: null,
@@ -66,11 +67,12 @@ export default class ProvenanceGraph {
         for (const process of this.trace.processes) {
 
             const processUUID = process.getUUID()
-            const node = this.graph.addNode(processUUID, {
+            const nodeLabel = `${processUUID}-0`
+            const node = this.graph.addNode(nodeLabel, {
                 x: 0, 
                 y: 0, 
                 size: 4,
-                label: `${processUUID}-0`, 
+                label: nodeLabel, 
                 version: 0, 
                 entity: process, 
                 event: null, 

@@ -6,16 +6,14 @@ import DataChunk from "@common/Provenance/InterProcess/DataChunk";
 
 type TestEvent = {
   eventType: string;
-  inputValues: Record<string, unknown>;
   outputValues: Record<string, unknown>;
 };
 
 function ev(
   eventType: string,
-  inputValues: Record<string, unknown> = {},
   outputValues: Record<string, unknown> = {}
 ): TestEvent {
-  return { eventType, inputValues, outputValues };
+  return { eventType, outputValues };
 }
 
 function mkChunk(data: string, origin: TestEvent = ev("WriteEvent")): DataChunk {
@@ -63,8 +61,7 @@ describe("FIFOStorageStrategy", () => {
 
     const e = ev(
       "WriteEvent",
-      { content: "WORLD!!" },
-      { ret: 5 } // only "WORLD"
+      { content: "WORLD!!", ret: 5 } // only "WORLD"
     );
 
     const res = strat.applyWriteEvent(e as any, initial);
@@ -82,7 +79,7 @@ describe("FIFOStorageStrategy", () => {
     const strat = new FIFOStorageStrategy();
     const initial = [mkChunk("a")];
 
-    const e = ev("WriteEvent", { content: "bbb" }, { ret: 2 }); // "bb"
+    const e = ev("WriteEvent", { content: "bbb", ret: 2 }); // "bb"
     const res = strat.applyEvent(e as any, initial);
 
     expect(content(res)).toBe("abb");
@@ -90,7 +87,7 @@ describe("FIFOStorageStrategy", () => {
 
   it("internalGetContent(shouldModify=true) consumes from the head (FIFO) and returns the extracted chunks", () => {
     const strat = new FIFOStorageStrategy();
-    const eRead = ev("ExitReadEvent", {}, { ret: 5 });
+    const eRead = ev("ExitReadEvent", { ret: 5 });
 
     const current = [mkChunk("abc"), mkChunk("defg")]; // total 7
     const extracted = strat.internalGetContent(eRead as any, current, true);
@@ -108,7 +105,7 @@ describe("FIFOStorageStrategy", () => {
     const strat = new FIFOStorageStrategy();
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const eRead = ev("ExitReadEvent", {}, { ret: 100 });
+    const eRead = ev("ExitReadEvent", { ret: 100 });
     const current = [mkChunk("abc"), mkChunk("def")];
     const snapshot = cloneChunks(current);
 
@@ -124,7 +121,7 @@ describe("FIFOStorageStrategy", () => {
 
   it("getContent should NOT modify currentContent (peek semantics)", () => {
     const strat = new FIFOStorageStrategy();
-    const eRead = ev("ExitReadEvent", {}, { ret: 4 });
+    const eRead = ev("ExitReadEvent", { ret: 4 });
 
     const current = [mkChunk("abc"), mkChunk("defg")];
     const before = content(current);
@@ -140,7 +137,7 @@ describe("FIFOStorageStrategy", () => {
     const current = [mkChunk("abc"), mkChunk("defg")];
 
     // consume 5 bytes => remaining "fg"
-    const eRead = ev("ExitReadEvent", {}, { ret: 5 });
+    const eRead = ev("ExitReadEvent", { ret: 5 });
 
     const res = strat.applyEvent(eRead as any, current);
 
@@ -152,7 +149,7 @@ describe("FIFOStorageStrategy", () => {
     const strat = new FIFOStorageStrategy();
     const current = [mkChunk("hello"), mkChunk("world")];
 
-    const eRead = ev("ExitReadEvent", {}, { ret: 7 }); // consume "hellowo"
+    const eRead = ev("ExitReadEvent", { ret: 7 }); // consume "hellowo"
     const res = strat.applyExitReadEvent(eRead as any, current);
 
     // remaining should be "rld"

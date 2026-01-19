@@ -32,6 +32,13 @@ export class ProvenanceEngine {
 
         let interProcessAssertedPaths: DirectedGraph[]
         interProcessAssertedPaths = this.getInterProcessAssertedPaths(reachableSubgraph)
+        console.log(interProcessAssertedPaths)
+
+        provenanceGraph.forEachNode((node) => {
+            const label = provenanceGraph.getNodeAttribute(node, 'label')!
+            const verified = interProcessAssertedPaths.some((g) => g.findNode((_n, att) => att['label'] === label))
+            if (verified) provenanceGraph.setNodeAttribute(node, 'color', 'blue')
+        })
 
         return reachableSubgraph
     }
@@ -72,7 +79,8 @@ export class ProvenanceEngine {
     getDataPaths(provenanceGraph: DirectedGraph, startNode: string, event: Event): DirectedGraph {
 
         const dataPaths: DirectedGraph[] = []
-        const resource = event.otherEntities[0]
+        const resource = Array.from(event.otherEntities)[0]
+        
         const resourceNode = provenanceGraph.outNeighbors(startNode).find(n => {
             const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
             return nEntity === resource
@@ -98,7 +106,7 @@ export class ProvenanceEngine {
                 continue;
             }
             dataPath.addNode(currentNode, provenanceGraph.getNodeAttributes(currentNode))
-            dataPath.addEdge(previousNode, currentNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(resourceNode, currentNode)))
+            dataPath.addEdge(previousNode, currentNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(previousNode, currentNode)))
 
             let currentEvent = provenanceGraph.getNodeAttribute(currentNode, "event")
 

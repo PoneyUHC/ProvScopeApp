@@ -17,6 +17,7 @@ import { NodeCircleProgram } from "sigma/rendering";
 
 import ProvenanceGraphEvents from "@renderer/components/ProvenanceGraph/ProvenanceGraphEvents";
 import EventInfosPanel from "@renderer/components/ProvenanceGraph/EventInfosPanel";
+import NodeInfosPanel from "./NodeInfosPanel";
 
 
 export type ProvenanceGraphSigmaProps = {
@@ -46,6 +47,7 @@ const ProvenanceGraphSigma: React.FC<ProvenanceGraphSigmaProps> = ({graph, setSi
 			
 			<ProvenanceGraphEvents />
 			<EventInfosPanel />
+            <NodeInfosPanel />
 		</SigmaContainer>
 	);
 };
