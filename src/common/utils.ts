@@ -83,15 +83,20 @@ export function getNodesByType(graph: Graph): Map<string, string[]> {
 }
 
 
-export function getPreviousNodeForEntity(provenanceGraph: DirectedGraph, currentNode: string): string | null {
+export function getPreviousNodeForEntity(provenanceGraph: DirectedGraph, currentNode: string, reversed=false): string | null {
 
-    const inNeighbors = provenanceGraph.inNeighbors(currentNode)
+    let neighbors
+    if (reversed) {
+        neighbors = provenanceGraph.outNeighbors(currentNode)
+    } else {
+        neighbors = provenanceGraph.inNeighbors(currentNode)
+    }
     const entity = provenanceGraph.getNodeAttribute(currentNode, "entity") as Entity
 
-    for ( const inNeighbor of inNeighbors ) {
-        const inNeighborEntity = provenanceGraph.getNodeAttribute(inNeighbor, "entity") as Entity
+    for ( const neighbor of neighbors ) {
+        const inNeighborEntity = provenanceGraph.getNodeAttribute(neighbor, "entity") as Entity
         if ( inNeighborEntity === entity ) {
-            return inNeighbor
+            return neighbor
         }
     }
 

@@ -100,8 +100,10 @@ export class ProvenanceEngine {
             dataPath.addNode(resourceNode, provenanceGraph.getNodeAttributes(resourceNode))
 
             let previousNode = resourceNode
-            let currentNode = getPreviousNodeForEntity(provenanceGraph, resourceNode)
+            let currentNode = getPreviousNodeForEntity(provenanceGraph, resourceNode, true)
             if (!currentNode) {
+                console.log(previousNode)
+                console.log(currentNode)
                 console.error(`[FATAL] Could not find previous node for resource ${resource} in provenance graph.`)
                 continue;
             }
@@ -112,7 +114,7 @@ export class ProvenanceEngine {
 
             while ( currentEvent && currentEvent !== sourceEvent ) {
                 previousNode = currentNode!
-                currentNode = getPreviousNodeForEntity(provenanceGraph, resourceNode)
+                currentNode = getPreviousNodeForEntity(provenanceGraph, resourceNode, true)
                 if (!currentNode) {
                     console.error(`[FATAL] Could not find previous node for resource ${resource} in provenance graph.`)
                     continue;
@@ -128,13 +130,16 @@ export class ProvenanceEngine {
                 continue;
             }
 
-            const sourceProcessNode = provenanceGraph.inNeighbors(currentNode).find(n => {
+            const sourceProcessNode = provenanceGraph.outNeighbors(currentNode).find(n => {
                 const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
                 const nEvent = provenanceGraph.getNodeAttribute(n, "event") as Event
                 return nEntity instanceof Process && nEvent === sourceEvent
             })
 
             if (!sourceProcessNode) {
+                console.log(event)
+                console.log(currentNode)
+                console.log(sourceProcessNode)
                 console.error(`[FATAL] Could not find source process node for event ${sourceEvent}.`)
                 continue;
             }
