@@ -104,9 +104,9 @@ const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace, isActive, currentVi
                             provenanceGraph={provenanceGraphRef.current!} 
                         />
                     </div>
-                    {/* <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
+                    <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
                         <CausalityView />
-                    </div> */}
+                    </div>
                 </div>
             </ExecutionTraceProvider>
         </div>

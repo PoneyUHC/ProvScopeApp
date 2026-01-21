@@ -1,6 +1,6 @@
 
 import Graph, { DirectedGraph } from 'graphology'
-import { Entity, Process, Resource } from './types';
+import { Entity, Process, Resource, Event } from './types';
 
 
 export function toUniform(str: string): number {
@@ -102,3 +102,35 @@ export function getPreviousNodeForEntity(provenanceGraph: DirectedGraph, current
 
     return null
 }
+
+
+export function getProcessPriorEvents(provenanceGraph: DirectedGraph, startEvent: Event): Event[] {
+    const baseEventID = startEvent.id;
+    const nodes = provenanceGraph.filterNodes((node) => { 
+        const eventID = provenanceGraph.getNodeAttribute(node, 'id')
+        const event = provenanceGraph.getNodeAttribute(node, 'event')
+        return event && event.process == startEvent.process && eventID < baseEventID
+    });
+    return nodes.map((node) => provenanceGraph.getNodeAttribute(node, 'event'));
+}
+
+
+function isIndexable(value: unknown): value is Record<string, unknown> {
+  return value !== null && (typeof value === "object");
+}
+
+export function getPath(obj: object, path: string): object | null {
+  if (!path) return obj;
+
+  let current: unknown = obj;
+
+  for (const key of path.split(".")) {
+    if (!isIndexable(current)) return null;
+    current = current[key];
+  }
+
+  return current ? current : null;
+}
+
+
+        
