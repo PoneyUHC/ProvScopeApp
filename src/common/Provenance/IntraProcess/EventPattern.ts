@@ -1,27 +1,42 @@
 
-import { Event } from '@common/types';
-import { getPath } from '@common/utils';
-
 
 export class EventPattern {
+  readonly name: string;
+  readonly pattern: Record<string, unknown>;
 
-    pattern: Record<string, unknown>
+  constructor(name: string, pattern: Record<string, unknown>) {
+    this.name = name;
+    this.pattern = pattern;
+  }
 
-    constructor(pattern: Record<string, unknown>) {
-        this.pattern = pattern;
+  matches(event: Event): boolean | null {
+    for (const [key, requestedValue] of Object.entries(this.pattern)) {
+      const fieldValue = getPath(event, key);
+      if (!fieldValue) {
+        return null;
+      }
+
+      if (requestedValue != fieldValue) {
+        return false;
+      }
     }
+    return true;
+  }
+}
 
-    matches(event: Event): boolean | null {
-        for (const [key, requestedValue] of Object.entries(this.pattern)) {
-            const fieldValue = getPath(event, key)
-            if (!fieldValue) {
-                return null
-            }
+function isIndexable(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
 
-            if (requestedValue != fieldValue) {
-                return false
-            }
-        }
-        return true;
-    }
+export function getPath(obj: object, path: string): object | null {
+  if (!path) return obj;
+
+  let current: unknown = obj;
+
+  for (const key of path.split(".")) {
+    if (!isIndexable(current)) return null;
+    current = current[key];
+  }
+
+  return current ? (current as object) : null;
 }

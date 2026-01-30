@@ -1,64 +1,24 @@
-// CausalPropertyPanel.tsx
+
+
 import React, { useEffect, useMemo, useState } from "react";
-import type { NamedEventPattern } from "@renderer/components/Causality/EventPatternPanel";
+import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
+import { CausalProperty, DependencyMode } from "@common/Provenance/IntraProcess/CausalProperty";
 
-export type DependencyMode = "dependent" | "independent";
 
-export type NamedCausalProperty = {
-  id: string;
-  name: string;
-
-  dependencyMode: DependencyMode;
-
-  sourcePatternId: string;
-  targetPatternId: string;
-
-  predicateCode: string;
-  predicate: (sourceEvent: unknown, targetEvent: unknown) => boolean;
-};
-
-export type CausalPropertyPanelProps = {
+export interface CausalPropertyPanelProps {
   initialCode?: string;
   initialName?: string;
 
-  eventPatterns: NamedEventPattern[];
+  eventPatterns: EventPattern[];
 
-  properties: NamedCausalProperty[];
-  onChange: (properties: NamedCausalProperty[]) => void;
-};
+  properties: CausalProperty[];
+  onChange: (properties: CausalProperty[]) => void;
+}
 
-const createId = (): string => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-const compilePredicate = (predicateCode: string): NamedCausalProperty["predicate"] => {
-  // ⚠️ Only safe for trusted/dev tooling
-  let compiledFunction: (sourceEvent: unknown, targetEvent: unknown) => unknown;
-
-  try {
-    compiledFunction = new Function(
-      "sourceEvent",
-      "targetEvent",
-      `"use strict"; return (${predicateCode});`
-    ) as any;
-  } catch {
-    compiledFunction = new Function(
-      "sourceEvent",
-      "targetEvent",
-      `"use strict"; ${predicateCode}`
-    ) as any;
-  }
-
-  return (sourceEvent, targetEvent) => {
-    const result = compiledFunction(sourceEvent, targetEvent);
-    if (typeof result !== "boolean") {
-      throw new Error("Alignement property code must evaluate to a boolean.");
-    }
-    return result;
-  };
-};
 
 const insertTwoSpacesOnTab = (
   event: React.KeyboardEvent<HTMLTextAreaElement>,
-  setValue: (updater: (previous: string) => string) => void
+  setValue: React.Dispatch<React.SetStateAction<string>>
 ) => {
   if (event.key !== "Tab") return;
 
@@ -82,13 +42,13 @@ const insertTwoSpacesOnTab = (
   });
 };
 
-export const CausalPropertyPanel = ({
+export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
   initialCode,
   initialName,
   eventPatterns,
   properties,
   onChange,
-}: CausalPropertyPanelProps) => {
+}) => {
   const [nameInput, setNameInput] = useState(initialName ?? "MyProperty");
   const [dependencyMode, setDependencyMode] = useState<DependencyMode>("dependent");
 
@@ -96,71 +56,61 @@ export const CausalPropertyPanel = ({
     initialCode ?? `sourceEvent.pid === targetEvent.pid`
   );
 
-  const [selectedSourcePatternId, setSelectedSourcePatternId] = useState<string>(
-    eventPatterns[0]?.id ?? ""
-  );
-  const [selectedTargetPatternId, setSelectedTargetPatternId] = useState<string>(
-    eventPatterns[0]?.id ?? ""
-  );
+  const patternNames = useMemo(() => eventPatterns.map((pattern) => pattern.name), [eventPatterns]);
+
+  const [selectedSourcePatternName, setSelectedSourcePatternName] = useState<string>(patternNames[0] ?? "");
+  const [selectedTargetPatternName, setSelectedTargetPatternName] = useState<string>(patternNames[0] ?? "");
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedSourcePatternId && eventPatterns[0]?.id) setSelectedSourcePatternId(eventPatterns[0].id);
-    if (!selectedTargetPatternId && eventPatterns[0]?.id) setSelectedTargetPatternId(eventPatterns[0].id);
-  }, [eventPatterns, selectedSourcePatternId, selectedTargetPatternId]);
+    const firstName = patternNames[0] ?? "";
 
-  const eventPatternNameById = useMemo(() => {
-    const mapping = new Map<string, string>();
-    for (const eventPattern of eventPatterns) mapping.set(eventPattern.id, eventPattern.name);
-    return mapping;
-  }, [eventPatterns]);
+    if (!selectedSourcePatternName || !patternNames.includes(selectedSourcePatternName)) {
+      setSelectedSourcePatternName(firstName);
+    }
+    if (!selectedTargetPatternName || !patternNames.includes(selectedTargetPatternName)) {
+      setSelectedTargetPatternName(firstName);
+    }
+  }, [patternNames, selectedSourcePatternName, selectedTargetPatternName]);
 
   const addProperty = () => {
     try {
       const trimmedName = nameInput.trim();
       if (!trimmedName) throw new Error("Name cannot be empty.");
 
-      const nameAlreadyExists = properties.some(
-        (existingProperty) => existingProperty.name === trimmedName
-      );
+      const nameAlreadyExists = properties.some((existingProperty) => existingProperty.name === trimmedName);
       if (nameAlreadyExists) {
         throw new Error(`A CausalProperty named "${trimmedName}" already exists.`);
       }
 
-      // Even for "independent", keep the selected patterns so the UI can display them.
-      if (eventPatterns.length > 0) {
-        if (!selectedSourcePatternId) throw new Error("Select a source EventPattern.");
-        if (!selectedTargetPatternId) throw new Error("Select a target EventPattern.");
-        if (!eventPatternNameById.has(selectedSourcePatternId)) {
-          throw new Error("Selected source EventPattern does not exist anymore.");
-        }
-        if (!eventPatternNameById.has(selectedTargetPatternId)) {
-          throw new Error("Selected target EventPattern does not exist anymore.");
-        }
-      }
+      if (eventPatterns.length === 0) throw new Error("Create at least one EventPattern first.");
+      if (!selectedSourcePatternName) throw new Error("Select a source EventPattern.");
+      if (!selectedTargetPatternName) throw new Error("Select a target EventPattern.");
 
-      const compiledPredicate = compilePredicate(predicateCodeInput);
+      const sourcePattern = eventPatterns.find((pattern) => pattern.name === selectedSourcePatternName) ?? null;
+      const targetPattern = eventPatterns.find((pattern) => pattern.name === selectedTargetPatternName) ?? null;
 
-      const newEntry: NamedCausalProperty = {
-        id: createId(),
-        name: trimmedName,
+      if (!sourcePattern) throw new Error("Selected source EventPattern does not exist anymore.");
+      if (!targetPattern) throw new Error("Selected target EventPattern does not exist anymore.");
+
+      const createdProperty = new CausalProperty(
+        trimmedName,
         dependencyMode,
-        sourcePatternId: selectedSourcePatternId,
-        targetPatternId: selectedTargetPatternId,
-        predicateCode: predicateCodeInput,
-        predicate: compiledPredicate,
-      };
+        sourcePattern,
+        targetPattern,
+        predicateCodeInput
+      );
 
-      onChange([newEntry, ...properties]);
+      onChange([createdProperty, ...properties]);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
-  const removeProperty = (propertyId: string) => {
-    onChange(properties.filter((entry) => entry.id !== propertyId));
+  const removeProperty = (propertyName: string) => {
+    onChange(properties.filter((property) => property.name !== propertyName));
   };
 
   return (
@@ -185,16 +135,16 @@ export const CausalPropertyPanel = ({
 
       <div className="grid grid-cols-2 gap-2">
         <select
-          value={selectedSourcePatternId}
-          onChange={(event) => setSelectedSourcePatternId(event.target.value)}
+          value={selectedSourcePatternName}
+          onChange={(event) => setSelectedSourcePatternName(event.target.value)}
           className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50"
-          disabled={eventPatterns.length === 0 || dependencyMode === "independent"}
+          disabled={eventPatterns.length === 0}
         >
           {eventPatterns.length === 0 ? (
             <option value="">No EventPatterns</option>
           ) : (
             eventPatterns.map((eventPattern) => (
-              <option key={eventPattern.id} value={eventPattern.id}>
+              <option key={eventPattern.name} value={eventPattern.name}>
                 Source: {eventPattern.name}
               </option>
             ))
@@ -202,16 +152,16 @@ export const CausalPropertyPanel = ({
         </select>
 
         <select
-          value={selectedTargetPatternId}
-          onChange={(event) => setSelectedTargetPatternId(event.target.value)}
+          value={selectedTargetPatternName}
+          onChange={(event) => setSelectedTargetPatternName(event.target.value)}
           className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50"
-          disabled={eventPatterns.length === 0 || dependencyMode === "independent"}
+          disabled={eventPatterns.length === 0}
         >
           {eventPatterns.length === 0 ? (
             <option value="">No EventPatterns</option>
           ) : (
             eventPatterns.map((eventPattern) => (
-              <option key={eventPattern.id} value={eventPattern.id}>
+              <option key={eventPattern.name} value={eventPattern.name}>
                 Target: {eventPattern.name}
               </option>
             ))
@@ -257,7 +207,6 @@ export const CausalPropertyPanel = ({
         onChange={(event) => setPredicateCodeInput(event.target.value)}
         onKeyDown={(event) => insertTwoSpacesOnTab(event, setPredicateCodeInput)}
         spellCheck={false}
-        placeholder={`Example:\nsourceEvent.pid === targetEvent.pid`}
         className="h-40 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-sm outline-none focus:border-slate-400"
       />
 
@@ -271,43 +220,36 @@ export const CausalPropertyPanel = ({
         {properties.length === 0 ? (
           <div className="text-sm text-slate-600">No properties yet.</div>
         ) : (
-          properties.map((entry) => {
-            const sourceName = eventPatternNameById.get(entry.sourcePatternId) ?? "—";
-            const targetName = eventPatternNameById.get(entry.targetPatternId) ?? "—";
-
-            const modeLabel = entry.dependencyMode === "dependent" ? "Dependent" : "Independent";
+          properties.map((property) => {
+            const modeLabel = property.dependencyMode === "dependent" ? "Dependent" : "Independent";
             const modeBadgeClass =
-              entry.dependencyMode === "dependent"
-                ? "bg-emerald-600 text-white"
-                : "bg-red-600 text-white";
+              property.dependencyMode === "dependent" ? "bg-emerald-600 text-white" : "bg-red-600 text-white";
 
             return (
-              <div key={entry.id} className="relative rounded-md border border-slate-200 bg-white p-3">
+              <div key={property.name} className="relative rounded-md border border-slate-200 bg-white p-3">
                 <button
-                  onClick={() => removeProperty(entry.id)}
+                  onClick={() => removeProperty(property.name)}
                   className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  aria-label={`Remove property ${entry.name}`}
+                  aria-label={`Remove property ${property.name}`}
                   title="Remove"
                 >
                   ✕
                 </button>
 
                 <div className="pr-8">
-                  <div className="truncate text-sm font-semibold">{entry.name}</div>
+                  <div className="truncate text-sm font-semibold">{property.name}</div>
 
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <span className={`rounded px-2 py-0.5 font-semibold ${modeBadgeClass}`}>
                       {modeLabel}
                     </span>
 
-                    <span>
-                      {`source : ${sourceName} | destination : ${targetName}`}
-                    </span>
+                    <span>{`source : ${property.sourcePattern.name} | destination : ${property.targetPattern.name}`}</span>
                   </div>
                 </div>
 
                 <pre className="mt-2 max-h-40 overflow-auto rounded-md bg-slate-50 p-2 text-xs">
-                  {entry.predicateCode}
+                  {property.predicateCode}
                 </pre>
               </div>
             );

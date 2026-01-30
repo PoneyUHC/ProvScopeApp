@@ -1,19 +1,22 @@
-// CausalityView.tsx
+
 import React, { useContext, useState } from "react";
 import {
   ExecutionTraceContext,
   ExecutionTraceContextType,
 } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
-import EventPatternPanel, { NamedEventPattern } from "@renderer/components/Causality/EventPatternPanel";
-import CausalPropertyPanel, { NamedCausalProperty } from "@renderer/components/Causality/CausalPropertyPanel";
+import EventPatternPanel from "@renderer/components/Causality/EventPatternPanel";
+import CausalPropertyPanel from "@renderer/components/Causality/CausalPropertyPanel";
 
-type CausalityViewProps = {
+import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
+import { CausalProperty } from "@common/Provenance/IntraProcess/CausalProperty";
+
+export interface CausalityViewProps {
   initialPatternCode?: string;
   initialPatternName?: string;
   initialPropertyCode?: string;
   initialPropertyName?: string;
-};
+}
 
 export const CausalityView: React.FC<CausalityViewProps> = ({
   initialPatternCode,
@@ -24,8 +27,8 @@ export const CausalityView: React.FC<CausalityViewProps> = ({
   const { executionTrace } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
   if (!executionTrace) return null;
 
-  const [eventPatterns, setEventPatterns] = useState<NamedEventPattern[]>([]);
-  const [causalProperties, setCausalProperties] = useState<NamedCausalProperty[]>([]);
+  const [eventPatterns, setEventPatterns] = useState<EventPattern[]>([]);
+  const [causalProperties, setCausalProperties] = useState<CausalProperty[]>([]);
 
   return (
     <div className="flex h-full w-full gap-3 p-4 overflow-hidden">

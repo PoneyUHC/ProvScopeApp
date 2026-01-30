@@ -1,4 +1,5 @@
-// EventPatternPanel.tsx
+
+
 import React, { useContext, useMemo, useState } from "react";
 import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
 import {
@@ -6,39 +7,34 @@ import {
   ExecutionTraceContextType,
 } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
-export type NamedEventPattern = {
-  id: string;
-  name: string;
-  pattern: EventPattern;
-};
 
-export type EventPatternPanelProps = {
+export interface EventPatternPanelProps {
   initialCode?: string;
   initialName?: string;
-  patterns: NamedEventPattern[];
-  onChange: (patterns: NamedEventPattern[]) => void;
-};
+  patterns: EventPattern[];
+  onChange: (patterns: EventPattern[]) => void;
+}
 
-const createId = (): string => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const evaluateToObject = (code: string): unknown => {
   // ⚠️ Only safe for trusted/dev tooling
   return new Function(`"use strict"; return (${code});`)();
 };
 
-export const EventPatternPanel = ({
+
+export const EventPatternPanel: React.FC<EventPatternPanelProps> = ({
   initialCode,
   initialName,
   patterns,
   onChange,
-}: EventPatternPanelProps) => {
+}) => {
   const { executionTrace } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
   const [nameInput, setNameInput] = useState(initialName ?? "MyPattern");
   const [codeInput, setCodeInput] = useState(
     initialCode ??
       `({
-  eventType: "OpenEvent"
+  eventType: "OpenEvent",
 })`
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -53,7 +49,7 @@ export const EventPatternPanel = ({
     const selectionEndIndex = textAreaElement.selectionEnd ?? 0;
 
     const insertedText = "  ";
-    let nextCursorIndex = selectionStartIndex + insertedText.length;
+    const nextCursorIndex = selectionStartIndex + insertedText.length;
 
     setCodeInput((previousText) => {
       const beforeSelection = previousText.slice(0, selectionStartIndex);
@@ -83,36 +79,30 @@ export const EventPatternPanel = ({
         throw new Error("Code must evaluate to an object (Record<string, unknown>).");
       }
 
-      const createdPattern = new EventPattern(evaluatedValue as Record<string, unknown>);
-      const newEntry: NamedEventPattern = {
-        id: createId(),
-        name: trimmedName,
-        pattern: createdPattern,
-      };
-
-      onChange([newEntry, ...patterns]);
+      const createdPattern = new EventPattern(trimmedName, evaluatedValue as Record<string, unknown>);
+      onChange([createdPattern, ...patterns]);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
-  const removePattern = (patternId: string) => {
-    onChange(patterns.filter((entry) => entry.id !== patternId));
+  const removePattern = (patternName: string) => {
+    onChange(patterns.filter((eventPattern) => eventPattern.name !== patternName));
   };
 
-  const matchCountsById = useMemo(() => {
+  const matchCountsByName = useMemo(() => {
     const counts = new Map<string, number>();
     const events = executionTrace?.events ?? [];
     if (events.length === 0) return counts;
 
-    for (const entry of patterns) {
+    for (const eventPattern of patterns) {
       let matchingEventsCount = 0;
       for (const candidateEvent of events) {
-        const matchResult = entry.pattern.matches(candidateEvent as any);
+        const matchResult = eventPattern.matches(candidateEvent as any);
         if (matchResult === true) matchingEventsCount += 1;
       }
-      counts.set(entry.id, matchingEventsCount);
+      counts.set(eventPattern.name, matchingEventsCount);
     }
     return counts;
   }, [patterns, executionTrace]);
@@ -155,28 +145,28 @@ export const EventPatternPanel = ({
         {patterns.length === 0 ? (
           <div className="text-sm text-slate-600">No patterns yet.</div>
         ) : (
-          patterns.map((entry) => {
-            const matchingEventsCount = matchCountsById.get(entry.id) ?? 0;
+          patterns.map((eventPattern) => {
+            const matchingEventsCount = matchCountsByName.get(eventPattern.name) ?? 0;
             return (
-              <div key={entry.id} className="relative rounded-md border border-slate-200 bg-white p-3">
+              <div key={eventPattern.name} className="relative rounded-md border border-slate-200 bg-white p-3">
                 <button
-                  onClick={() => removePattern(entry.id)}
+                  onClick={() => removePattern(eventPattern.name)}
                   className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  aria-label={`Remove pattern ${entry.name}`}
+                  aria-label={`Remove pattern ${eventPattern.name}`}
                   title="Remove"
                 >
                   ✕
                 </button>
 
                 <div className="pr-8">
-                  <div className="truncate text-sm font-semibold">{entry.name}</div>
+                  <div className="truncate text-sm font-semibold">{eventPattern.name}</div>
                   <div className="text-xs text-slate-600">
                     Matches: <span className="font-semibold text-slate-900">{matchingEventsCount}</span>
                   </div>
                 </div>
 
                 <pre className="mt-2 max-h-40 overflow-auto rounded-md bg-slate-50 p-2 text-xs">
-                  {JSON.stringify(entry.pattern.pattern, null, 2)}
+                  {JSON.stringify(eventPattern.pattern, null, 2)}
                 </pre>
               </div>
             );
