@@ -199,14 +199,14 @@ const TraceBrowserTool: FC = () => {
             <Header />
             <div
                 ref={traceListRef}
-                className="flex-1 overflow-y-auto"
+                className="flex-1 overflow-y-auto min-h-0 scrollbar-hide"
             >
-                <div className="flex flex-col">
+                <div className="h-full flex flex-col">
                     {
                         traces.map((trace, i) => (
                             <div
                                 key={i}
-                                className="h-screen flex-shrink-0"
+                                className="h-full flex-shrink-0"
                                 ref={(el) => {
                                     traceBrowserViewRefs.current[i] = el;
                                 }}
