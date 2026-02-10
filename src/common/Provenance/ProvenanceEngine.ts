@@ -107,8 +107,12 @@ export class ProvenanceEngine {
                 console.error(`[FATAL] Could not find previous node for resource ${resource} in provenance graph.`)
                 continue;
             }
-            dataPath.addNode(currentNode, provenanceGraph.getNodeAttributes(currentNode))
-            dataPath.addEdge(previousNode, currentNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(previousNode, currentNode)))
+            try {
+                dataPath.addNode(currentNode, provenanceGraph.getNodeAttributes(currentNode))
+                dataPath.addEdge(previousNode, currentNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(previousNode, currentNode)))
+            } catch (e) {
+                console.warn("")
+            }
 
             let currentEvent = provenanceGraph.getNodeAttribute(currentNode, "event")
 
@@ -133,7 +137,11 @@ export class ProvenanceEngine {
             const sourceProcessNode = provenanceGraph.outNeighbors(currentNode).find(n => {
                 const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
                 const nEvent = provenanceGraph.getNodeAttribute(n, "event") as Event
-                return nEntity instanceof Process && nEvent === sourceEvent
+                console.log(nEntity)
+                console.log(nEvent)
+                console.log(nEntity instanceof Process)
+                console.log(nEvent === sourceEvent)
+                return (nEntity instanceof Process) && (nEvent === sourceEvent)
             })
 
             if (!sourceProcessNode) {
