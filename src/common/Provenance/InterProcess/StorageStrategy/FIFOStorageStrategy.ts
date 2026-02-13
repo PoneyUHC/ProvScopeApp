@@ -57,15 +57,6 @@ export default class FIFOStorageStrategy extends StorageStrategy {
 
     applyExitReadEvent(event: Event, currentContent: DataChunk[]): DataChunk[] {
 
-        let size = event.outputValues['ret'] as number;
-
-        if (size > DataChunk.getSize(currentContent)) {
-            console.error("Not enough content to retrieve");
-            console.error(event)
-            console.error(currentContent)
-            return [];
-        }
-
         this.internalGetContent(event, currentContent, true);
 
         return currentContent;
@@ -78,7 +69,7 @@ export default class FIFOStorageStrategy extends StorageStrategy {
         let size = event.outputValues['ret'] as number;
 
         if (size > DataChunk.getSize(currentContent)) {
-            console.error("Not enough content to retrieve");
+            console.error("[FATAL] Not enough content to retrieve");
             return [];
         }
 
