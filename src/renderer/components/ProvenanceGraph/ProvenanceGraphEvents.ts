@@ -22,6 +22,7 @@ const ProvenanceGraphEvents: React.FC = () => {
     const {
         hiddenEntities: [hiddenEntities, _hideEntity, _showEntity],
         hiddenEvents: [hiddenEvents, _hideEvent, _showEvent],
+        causalProperties: [causalProperties, _addProperty, _removeProperty],
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
     const {
@@ -218,16 +219,15 @@ const ProvenanceGraphEvents: React.FC = () => {
             return;
         }
 
-        const subgraph = provenanceEngine.current.getProvenanceFromNode(provenanceGraph.graph, target)
+        const subgraph = provenanceEngine.current.test(provenanceGraph.graph, target, causalProperties)
 
-        console.log(subgraph)
-        for (const node of provenanceGraph.graph.nodes()) {
-            if ( subgraph.hasNode(node) ) {
-                provenanceGraph.graph.setNodeAttribute(node, 'color', 'red')
-            } else {
-                provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
-            }
-        }
+        // for (const node of provenanceGraph.graph.nodes()) {
+        //     if ( subgraph.hasNode(node) ) {
+        //         provenanceGraph.graph.setNodeAttribute(node, 'color', 'red')
+        //     } else {
+        //         provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
+        //     }
+        // }
     }
 
 

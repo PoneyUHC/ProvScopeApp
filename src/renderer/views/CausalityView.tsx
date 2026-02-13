@@ -9,7 +9,6 @@ import EventPatternPanel from "@renderer/components/Causality/EventPatternPanel"
 import CausalPropertyPanel from "@renderer/components/Causality/CausalPropertyPanel";
 
 import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
-import { CausalProperty } from "@common/Provenance/IntraProcess/CausalProperty";
 
 export interface CausalityViewProps {
   initialPatternCode?: string;
@@ -28,7 +27,6 @@ export const CausalityView: React.FC<CausalityViewProps> = ({
   if (!executionTrace) return null;
 
   const [eventPatterns, setEventPatterns] = useState<EventPattern[]>([]);
-  const [causalProperties, setCausalProperties] = useState<CausalProperty[]>([]);
 
   return (
     <div className="flex h-full w-full gap-3 p-4 overflow-hidden">
@@ -49,8 +47,6 @@ export const CausalityView: React.FC<CausalityViewProps> = ({
             initialCode={initialPropertyCode}
             initialName={initialPropertyName}
             eventPatterns={eventPatterns}
-            properties={causalProperties}
-            onChange={setCausalProperties}
           />
         </div>
       </div>

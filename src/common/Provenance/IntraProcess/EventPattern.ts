@@ -1,4 +1,6 @@
 
+import { Event } from "@common/types";
+
 
 export class EventPattern {
   readonly name: string;

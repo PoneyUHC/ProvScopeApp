@@ -1,8 +1,9 @@
 
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
 import { CausalProperty, DependencyMode } from "@common/Provenance/IntraProcess/CausalProperty";
+import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
 
 
 export interface CausalPropertyPanelProps {
@@ -10,9 +11,6 @@ export interface CausalPropertyPanelProps {
   initialName?: string;
 
   eventPatterns: EventPattern[];
-
-  properties: CausalProperty[];
-  onChange: (properties: CausalProperty[]) => void;
 }
 
 
@@ -46,11 +44,18 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
   initialCode,
   initialName,
   eventPatterns,
-  properties,
-  onChange,
 }) => {
+
+  const { 
+    executionTrace,
+    causalProperties: [causalProperties, addProperty, removeProperty] 
+  } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
+
+  if (!executionTrace) return null;
+
   const [nameInput, setNameInput] = useState(initialName ?? "MyProperty");
   const [dependencyMode, setDependencyMode] = useState<DependencyMode>("dependent");
+  const [selectedProcess, setSelectedProcess] = useState<string>(executionTrace.processes[0]?.getUUID() ?? "");
 
   const [predicateCodeInput, setPredicateCodeInput] = useState(
     initialCode ?? `sourceEvent.pid === targetEvent.pid`
@@ -63,8 +68,17 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+
   useEffect(() => {
-    const firstName = patternNames[0] ?? "";
+    if (executionTrace.processes.length > 0) {
+      const firstProcessUuid = executionTrace.processes[0].getUUID();
+      if (!selectedProcess) {
+        setSelectedProcess(firstProcessUuid);
+      }
+    }
+  }, [executionTrace]);
+
+  useEffect(() => {    const firstName = patternNames[0] ?? "";
 
     if (!selectedSourcePatternName || !patternNames.includes(selectedSourcePatternName)) {
       setSelectedSourcePatternName(firstName);
@@ -72,14 +86,15 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
     if (!selectedTargetPatternName || !patternNames.includes(selectedTargetPatternName)) {
       setSelectedTargetPatternName(firstName);
     }
-  }, [patternNames, selectedSourcePatternName, selectedTargetPatternName]);
+  }, [patternNames, selectedSourcePatternName, selectedTargetPatternName, causalProperties]);
 
-  const addProperty = () => {
+
+  const handleAddProperty = () => {
     try {
       const trimmedName = nameInput.trim();
       if (!trimmedName) throw new Error("Name cannot be empty.");
 
-      const nameAlreadyExists = properties.some((existingProperty) => existingProperty.name === trimmedName);
+      const nameAlreadyExists = causalProperties.some((existingProperty) => existingProperty.name === trimmedName);
       if (nameAlreadyExists) {
         throw new Error(`A CausalProperty named "${trimmedName}" already exists.`);
       }
@@ -87,30 +102,37 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
       if (eventPatterns.length === 0) throw new Error("Create at least one EventPattern first.");
       if (!selectedSourcePatternName) throw new Error("Select a source EventPattern.");
       if (!selectedTargetPatternName) throw new Error("Select a target EventPattern.");
+      if (!selectedProcess) throw new Error("Select a process.");
 
       const sourcePattern = eventPatterns.find((pattern) => pattern.name === selectedSourcePatternName) ?? null;
       const targetPattern = eventPatterns.find((pattern) => pattern.name === selectedTargetPatternName) ?? null;
+      const process = executionTrace.processes.find((p) => p.getUUID() === selectedProcess) ?? null;
 
       if (!sourcePattern) throw new Error("Selected source EventPattern does not exist anymore.");
       if (!targetPattern) throw new Error("Selected target EventPattern does not exist anymore.");
+      if (!process) throw new Error("Selected process does not exist anymore.");
 
       const createdProperty = new CausalProperty(
         trimmedName,
+        process,
         dependencyMode,
         sourcePattern,
         targetPattern,
         predicateCodeInput
       );
 
-      onChange([createdProperty, ...properties]);
+      addProperty(createdProperty);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
-  const removeProperty = (propertyName: string) => {
-    onChange(properties.filter((property) => property.name !== propertyName));
+  const handleRemoveProperty = (propertyName: string) => {
+    const propertyToRemove = causalProperties.find((property) => property.name === propertyName);
+    if (propertyToRemove) {
+      removeProperty(propertyToRemove);
+    }
   };
 
   return (
@@ -119,7 +141,7 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
         <div className="text-sm font-semibold">CausalPropertyPanel</div>
 
         <button
-          onClick={addProperty}
+          onClick={handleAddProperty}
           className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800"
         >
           Add
@@ -132,6 +154,23 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
         placeholder="Property name"
         className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
       />
+
+      <select
+        value={selectedProcess}
+        onChange={(event) => setSelectedProcess(event.target.value)}
+        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50"
+        disabled={executionTrace.processes.length === 0}
+      >
+        {executionTrace.processes.length === 0 ? (
+          <option value="">No Processes</option>
+        ) : (
+          executionTrace.processes.map((process) => (
+            <option key={process.getUUID()} value={process.getUUID()}>
+              {process.name} (PID: {process.pid})
+            </option>
+          ))
+        )}
+      </select>
 
       <div className="grid grid-cols-2 gap-2">
         <select
@@ -217,10 +256,10 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
       )}
 
       <div className="space-y-3">
-        {properties.length === 0 ? (
+        {causalProperties.length === 0 ? (
           <div className="text-sm text-slate-600">No properties yet.</div>
         ) : (
-          properties.map((property) => {
+          causalProperties.map((property) => {
             const modeLabel = property.dependencyMode === "dependent" ? "Dependent" : "Independent";
             const modeBadgeClass =
               property.dependencyMode === "dependent" ? "bg-emerald-600 text-white" : "bg-red-600 text-white";
@@ -228,7 +267,7 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
             return (
               <div key={property.name} className="relative rounded-md border border-slate-200 bg-white p-3">
                 <button
-                  onClick={() => removeProperty(property.name)}
+                  onClick={() => handleRemoveProperty(property.name)}
                   className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                   aria-label={`Remove property ${property.name}`}
                   title="Remove"

@@ -1,5 +1,5 @@
 
-import { Event } from "@common/types"
+import { Event, Process } from "@common/types"
 import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
 
 
@@ -8,6 +8,7 @@ export type DependencyMode = "dependent" | "independent";
 
 export class CausalProperty {
   readonly name: string;
+  readonly process: Process;
   readonly dependencyMode: DependencyMode;
 
   readonly sourcePattern: EventPattern;
@@ -19,12 +20,14 @@ export class CausalProperty {
 
   constructor(
     name: string,
+    process: Process,
     dependencyMode: DependencyMode,
     sourcePattern: EventPattern,
     targetPattern: EventPattern,
     predicateCode: string
   ) {
     this.name = name;
+    this.process = process;
     this.dependencyMode = dependencyMode;
 
     this.sourcePattern = sourcePattern;

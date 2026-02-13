@@ -107,10 +107,11 @@ export function getPreviousNodeForEntity(provenanceGraph: DirectedGraph, current
 export function getProcessPriorEvents(provenanceGraph: DirectedGraph, startEvent: Event): Event[] {
     const baseEventID = startEvent.id;
     const nodes = provenanceGraph.filterNodes((node) => { 
-        const eventID = provenanceGraph.getNodeAttribute(node, 'id')
         const event = provenanceGraph.getNodeAttribute(node, 'event')
-        return event && event.process == startEvent.process && eventID < baseEventID
+        const eventID = event ? event.id : null
+        return event && event.process === startEvent.process && eventID < baseEventID
     });
+    console.log("nodes", nodes)
     return nodes.map((node) => provenanceGraph.getNodeAttribute(node, 'event'));
 }
 
