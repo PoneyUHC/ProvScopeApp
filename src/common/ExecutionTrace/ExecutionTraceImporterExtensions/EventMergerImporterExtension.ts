@@ -73,7 +73,6 @@ function mergeEvents(event1: Event, event2: Event): Event | null {
 }
 
 
-// TODO: no handling of faulty operations where size != ret
 function mergeReadEvents(event1: Event, event2: Event): Event {
 
     const size = event1.inputValues["size"] + event2.inputValues["size"]
@@ -103,7 +102,6 @@ function mergeReadEvents(event1: Event, event2: Event): Event {
 }
 
 
-// TODO: no handling of faulty operations where size != ret
 function mergeWriteEvents(event1: Event, event2: Event): Event {
 
     const size = event1.inputValues["size"] + event2.inputValues["size"]
