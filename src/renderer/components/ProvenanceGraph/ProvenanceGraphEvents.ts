@@ -37,7 +37,7 @@ const ProvenanceGraphEvents: React.FC = () => {
     const provenanceEngine = useRef<ProvenanceEngine>(
         new ProvenanceEngine()
     );
-    provenanceEngine.current.init(provenanceGraph);
+    
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
     const previousHiddenEntities = useRef<Entity[]>(hiddenEntities);
@@ -102,6 +102,9 @@ const ProvenanceGraphEvents: React.FC = () => {
 
 
     useEffect(() => {
+        
+        provenanceEngine.current.init(provenanceGraph);
+        
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.code === "KeyG") {
                 gKeyPressedRef.current = true;

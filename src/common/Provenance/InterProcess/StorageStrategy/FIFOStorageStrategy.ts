@@ -70,6 +70,9 @@ export default class FIFOStorageStrategy extends StorageStrategy {
 
         if (size > DataChunk.getSize(currentContent)) {
             console.error("[FATAL] Not enough content to retrieve");
+            console.error(`Requested size: ${size}, available size: ${DataChunk.getSize(currentContent)}`);
+            console.error("Event :", event);
+            console.error(`Current content: ${currentContent}`);
             return [];
         }
 
