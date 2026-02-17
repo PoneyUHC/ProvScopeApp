@@ -222,7 +222,7 @@ const ProvenanceGraphEvents: React.FC = () => {
             return;
         }
 
-        const subgraph = provenanceEngine.current.test(provenanceGraph.graph, target, causalProperties)
+        const subgraph = provenanceEngine.current.test(provenanceGraph, target, causalProperties)
 
         // for (const node of provenanceGraph.graph.nodes()) {
         //     if ( subgraph.hasNode(node) ) {

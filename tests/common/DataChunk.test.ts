@@ -3,12 +3,17 @@ import { describe, it, expect } from "vitest";
 import DataChunk from "@common/Provenance/InterProcess/DataChunk"; // <- adjust path
 
 // Helper: keep tests readable
+function toHex(s: string): string {
+  return Array.from(s).map((ch) => ch.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+}
+
 function mk(data: string, originEvent: any = { id: "e" }): DataChunk {
-  return new DataChunk(data, originEvent);
+  // store hex-encoded content inside DataChunk (as the codebase expects)
+  return new DataChunk(toHex(data), originEvent);
 }
 
 function content(chunks: DataChunk[]): string {
-  return chunks.map(c => c.data).join("");
+  return chunks.map((c) => c.data).join("");
 }
 
 function totalSize(chunks: DataChunk[]): number {
@@ -23,11 +28,11 @@ describe("DataChunk.insertAt", () => {
 
     const res = DataChunk.insertAt(chunks, newChunk, 10);
 
-    expect(content(res)).toBe("ABCDEFGHIJXY");
+    expect(content(res)).toBe(toHex("ABCDEFGHIJXY"));
     expect(totalSize(res)).toBe(12);
 
     // does not mutate input
-    expect(content(chunks)).toBe("ABCDEFGHIJ");
+    expect(content(chunks)).toBe(toHex("ABCDEFGHIJ"));
   });
 
   it("pads with \\0 when inserting beyond the end", () => {
@@ -38,11 +43,10 @@ describe("DataChunk.insertAt", () => {
 
     const res = DataChunk.insertAt(chunks, newChunk, 12);
 
-    expect(content(res)).toBe("ABCDEFGHIJ" + "\0\0" + "XY");
-    expect(totalSize(res)).toBe(14);
-
+    expect(content(res)).toBe(toHex("ABCDEFGHIJ") + "00".repeat(2) + toHex("XY"));
     // padding chunk should use newChunk.originEvent (as your code does)
-    expect(res[1].data).toBe("\0\0");
+    expect(res[1].data).toBe("00".repeat(2));
+    expect(totalSize(res)).toBe(14);
     expect(res[1].sourceEvent).toBe(eNew);
   });
 
@@ -54,11 +58,11 @@ describe("DataChunk.insertAt", () => {
     // overwrite at pos=2 (0-based): HE + 123 + WORLD
     const res = DataChunk.insertAt(chunks, newChunk, 2);
 
-    expect(content(res)).toBe("HE123WORLD");
+    expect(content(res)).toBe(toHex("HE123WORLD"));
     expect(totalSize(res)).toBe(10);
 
-    // expected chunk structure: ["HE", "123", "WORLD"]
-    expect(res.map(c => c.data)).toEqual(["HE", "123", "WORLD"]);
+    // expected chunk structure (stored as hex): ["HE", "123", "WORLD"]
+    expect(res.map(c => c.data)).toEqual([toHex("HE"), toHex("123"), toHex("WORLD")]);
   });
 
   it("overwrites across chunk boundary and keeps remainder of the end chunk + following chunks", () => {
@@ -73,10 +77,10 @@ describe("DataChunk.insertAt", () => {
     // following: "CCCCC"
     const res = DataChunk.insertAt(chunks, newChunk, 3);
 
-    expect(content(res)).toBe("AAAXXXXXXBCCCCC");
+    expect(content(res)).toBe(toHex("AAAXXXXXXBCCCCC"));
     expect(totalSize(res)).toBe(15);
 
-    expect(res.map(c => c.data)).toEqual(["AAA", "XXXXXX", "B", "CCCCC"]);
+    expect(res.map(c => c.data)).toEqual([toHex("AAA"), toHex("XXXXXX"), toHex("B"), toHex("CCCCC")]);
   });
 
   it("inserts exactly at a chunk boundary (no empty prefix chunk) and overwrites into the next chunk", () => {
@@ -88,9 +92,9 @@ describe("DataChunk.insertAt", () => {
     // result: A + ZZ + "BBB" + C
     const res = DataChunk.insertAt(chunks, newChunk, 5);
 
-    expect(content(res)).toBe("AAAAAZZBBBCCCCC");
+    expect(content(res)).toBe(toHex("AAAAAZZBBBCCCCC"));
     expect(totalSize(res)).toBe(15);
 
-    expect(res.map(c => c.data)).toEqual(["AAAAA", "ZZ", "BBB", "CCCCC"]);
+    expect(res.map(c => c.data)).toEqual([toHex("AAAAA"), toHex("ZZ"), toHex("BBB"), toHex("CCCCC")]);
   });
 });

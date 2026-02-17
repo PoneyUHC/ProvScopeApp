@@ -54,9 +54,14 @@ function exitReadEvent(p: TestProcess, fd: number, ret: number): TestEvent {
   };
 }
 
+function toHex(s: string): string {
+  return Array.from(s).map((ch) => ch.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+}
+
 function mkChunk(data: string, origin: TestEvent = openEvent(proc(0), 0, 0)): DataChunk {
   // Your strategy uses: new DataChunk(writtenContent, event)
-  return new DataChunk(data as any, origin as any);
+  // store hex-encoded content inside DataChunk
+  return new DataChunk(toHex(data) as any, origin as any);
 }
 
 function content(chunks: DataChunk[]): string {
@@ -99,7 +104,7 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
     const res = s.applyEvent(openEvent(p, fd, 0) as any, cur);
 
     expect(res).toBe(cur);
-    expect(content(res)).toBe("ABCDE");
+    expect(content(res)).toBe(toHex("ABCDE"));
 
     const key = s.getKey(p as any, fd);
     expect(s.processCursorPositions.get(key)).toBe(0);       // Linux-like
@@ -129,9 +134,9 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
     cur = s.applyEvent(openEvent(p, fd, 0) as any, cur);
 
     // cursor=0, write 3 bytes => overwrite first 3 bytes
-    cur = s.applyEvent(writeEvent(p, fd, "12345", 3) as any, cur);
+    cur = s.applyEvent(writeEvent(p, fd, toHex("12345"), 3) as any, cur);
 
-    expect(content(cur)).toBe("123LOWORLD");
+    expect(content(cur)).toBe(toHex("123LOWORLD"));
 
     const key = s.getKey(p as any, fd);
     expect(s.processCursorPositions.get(key)).toBe(3);
@@ -150,7 +155,7 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
 
     cur = s.applyEvent(exitReadEvent(p, fd, 2) as any, cur);
 
-    expect(content(cur)).toBe("123LOWORLD");
+    expect(content(cur)).toBe(toHex("123LOWORLD"));
     expect(s.processCursorPositions.get(s.getKey(p as any, fd))).toBe(5);
   });
 
@@ -166,7 +171,7 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
     s.processCursorPositions.set(s.getKey(p as any, fd), 5);
 
     const got = s.getContent(exitReadEvent(p, fd, 4) as any, cur);
-    expect(content(got)).toBe("WORL");
+    expect(content(got)).toBe(toHex("WORL"));
   });
 
   it("WriteEvent with O_APPEND always appends (write position = EOF), then cursor ends at EOF", () => {
@@ -178,14 +183,14 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
     cur = s.applyEvent(openEvent(p, fd, O_APPEND) as any, cur);
 
     // even though cursor starts at 0, append forces write at EOF
-    cur = s.applyEvent(writeEvent(p, fd, "XX", 2) as any, cur);
-    expect(content(cur)).toBe("ABCDEXX");
+    cur = s.applyEvent(writeEvent(p, fd, toHex("XX"), 2) as any, cur);
+    expect(content(cur)).toBe(toHex("ABCDEXX"));
 
     const key = s.getKey(p as any, fd);
     expect(s.processCursorPositions.get(key)).toBe(7);
 
-    cur = s.applyEvent(writeEvent(p, fd, "YY", 2) as any, cur);
-    expect(content(cur)).toBe("ABCDEXXYY");
+    cur = s.applyEvent(writeEvent(p, fd, toHex("YY"), 2) as any, cur);
+    expect(content(cur)).toBe(toHex("ABCDEXXYY"));
     expect(s.processCursorPositions.get(key)).toBe(9);
   });
 
@@ -213,11 +218,11 @@ describe("FileStorageStrategy (Linux regular-file semantics)", () => {
 
     const cur: DataChunk[] = [mkChunk("abc")];
 
-    expect(s.applyWriteEvent(writeEvent(p, 1, "ZZ", 2) as any, cur)).toBe(cur);
+    expect(s.applyWriteEvent(writeEvent(p, 1, toHex("ZZ"), 2) as any, cur)).toBe(cur);
     expect(s.applyExitReadEvent(exitReadEvent(p, 1, 2) as any, cur)).toBe(cur);
     expect(s.applyCloseEvent(closeEvent(p, 1) as any, cur)).toBe(cur);
 
     expect(spy).toHaveBeenCalled();
-    expect(content(cur)).toBe("abc");
+    expect(content(cur)).toBe(toHex("abc"));
   });
 });

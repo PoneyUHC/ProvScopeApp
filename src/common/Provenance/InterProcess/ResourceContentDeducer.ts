@@ -88,15 +88,15 @@ export default class ResourceContentDeducer {
     }
 
 
-    getSourceEvents(resourceContent: ResourceContent, targetEvent: Event): Event[] {
+    static getSourceEvents(resourceContent: ResourceContent, targetEvent: Event): Event[] {
 
         if ( targetEvent.eventType !== "ExitReadEvent") {
             console.error(`ResourceContentDeducer.getSourceEvents: Unsupported event type ${targetEvent.eventType} for target event.`);
             return [];
         }
 
-        resourceContent.getContent(targetEvent)
+        const sourceChunks = resourceContent.getContent(targetEvent)
 
-        return [];
+        return sourceChunks.map(chunk => chunk.sourceEvent)
     }
 }

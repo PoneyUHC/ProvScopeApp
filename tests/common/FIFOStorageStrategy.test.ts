@@ -16,9 +16,24 @@ function ev(
   return { eventType, outputValues };
 }
 
+function toHex(s: string): string {
+  return Array.from(s).map((ch) => ch.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+}
+
+function maybeDecodeData(data: string): string {
+  if (/^[0-9a-fA-F]*$/.test(data) && data.length % 2 === 0) {
+    let out = "";
+    for (let i = 0; i < data.length; i += 2) {
+      out += String.fromCharCode(parseInt(data.slice(i, i + 2), 16));
+    }
+    return out;
+  }
+  return data;
+}
+
 function mkChunk(data: string, origin: TestEvent = ev("WriteEvent")): DataChunk {
-  // Matches your FIFOStorageStrategy usage: new DataChunk(data, event)
-  return new DataChunk(data, origin as any);
+  // store hex-encoded content inside DataChunk
+  return new DataChunk(toHex(data), origin as any);
 }
 
 function content(chunks: DataChunk[]): string {
@@ -52,7 +67,7 @@ describe("FIFOStorageStrategy", () => {
 
     expect(resOpen).toBe(initial);   // code returns c directly
     expect(resClose).toBe(initial);  // code returns c directly
-    expect(content(resOpen)).toBe("abcdef");
+    expect(content(resOpen)).toBe(toHex("abcdef"));
   });
 
   it("applyWriteEvent appends a chunk truncated to ret", () => {
@@ -61,17 +76,17 @@ describe("FIFOStorageStrategy", () => {
 
     const e = ev(
       "WriteEvent",
-      { content: "WORLD!!", ret: 5 } // only "WORLD"
+      { content: toHex("WORLD!!"), ret: 10 } // only "WORLD" (ret in hex-chars)
     );
 
     const res = strat.applyWriteEvent(e as any, initial);
 
     // original array should not be mutated (new array returned)
     expect(res).not.toBe(initial);
-    expect(content(initial)).toBe("hello");
+    expect(content(initial)).toBe(toHex("hello"));
 
-    expect(content(res)).toBe("helloWORLD");
-    expect(res[res.length - 1].data).toBe("WORLD");
+    expect(content(res)).toBe(toHex("helloWORLD"));
+    expect(res[res.length - 1].data).toBe(toHex("WORLD"));
     expect(res[res.length - 1].size).toBe(5);
   });
 
@@ -79,10 +94,10 @@ describe("FIFOStorageStrategy", () => {
     const strat = new FIFOStorageStrategy();
     const initial = [mkChunk("a")];
 
-    const e = ev("WriteEvent", { content: "bbb", ret: 2 }); // "bb"
+    const e = ev("WriteEvent", { content: toHex("bbb"), ret: 4 }); // "bb" (ret in hex-chars)
     const res = strat.applyEvent(e as any, initial);
 
-    expect(content(res)).toBe("abb");
+    expect(content(res)).toBe(toHex("abb"));
   });
 
   it("internalGetContent(shouldModify=true) consumes from the head (FIFO) and returns the extracted chunks", () => {
@@ -92,13 +107,13 @@ describe("FIFOStorageStrategy", () => {
     const current = [mkChunk("abc"), mkChunk("defg")]; // total 7
     const extracted = strat.internalGetContent(eRead as any, current, true);
 
-    expect(extracted.map((c) => c.data)).toEqual(["abc", "de"]);
-    expect(content(extracted)).toBe("abcde");
+    expect(extracted.map((c) => c.data)).toEqual([toHex("abc"), toHex("de")]);
+    expect(content(extracted)).toBe(toHex("abcde"));
 
     // should have consumed 5 bytes => remaining is "fg"
-    expect(content(current)).toBe("fg");
+    expect(content(current)).toBe(toHex("fg"));
     expect(current.length).toBe(1);
-    expect(current[0].data).toBe("fg");
+    expect(current[0].data).toBe(toHex("fg"));
   });
 
   it("internalGetContent returns [] and logs error if ret > available", () => {
@@ -128,7 +143,7 @@ describe("FIFOStorageStrategy", () => {
 
     const extracted = strat.getContent(eRead as any, current);
 
-    expect(content(extracted)).toBe("abcd");
+    expect(content(extracted)).toBe(toHex("abcd"));
     expect(content(current)).toBe(before); // should be unchanged
   });
 
@@ -142,7 +157,7 @@ describe("FIFOStorageStrategy", () => {
     const res = strat.applyEvent(eRead as any, current);
 
     // applyEvent should yield the new storage state (remaining content)
-    expect(content(res)).toBe("fg");
+    expect(content(res)).toBe(toHex("fg"));
   });
 
   it("applyExitReadEvent should remove bytes and return remaining storage state", () => {
@@ -153,7 +168,7 @@ describe("FIFOStorageStrategy", () => {
     const res = strat.applyExitReadEvent(eRead as any, current);
 
     // remaining should be "rld"
-    expect(content(res)).toBe("rld");
+    expect(content(res)).toBe(toHex("rld"));
   });
 
   it("unknown eventType logs error and leaves content unchanged", () => {
@@ -164,7 +179,7 @@ describe("FIFOStorageStrategy", () => {
     const res = strat.applyEvent(ev("Nope") as any, current);
 
     expect(res).toBe(current);
-    expect(content(res)).toBe("abc");
+    expect(content(res)).toBe(toHex("abc"));
     expect(spy).toHaveBeenCalled();
   });
 });

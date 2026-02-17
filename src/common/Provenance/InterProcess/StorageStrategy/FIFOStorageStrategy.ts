@@ -43,12 +43,14 @@ export default class FIFOStorageStrategy extends StorageStrategy {
 
     applyWriteEvent(event: Event, currentContent: DataChunk[]): DataChunk[] {
 
-        const data = event.outputValues['content'] as string;
+        const requestedWriteContent = event.outputValues['content'] as string;
         const writtenSize = event.outputValues['ret'] as number;
         
-        const dataToWrite = data.slice(0, writtenSize);
+        // Assume `requestedWriteContent` is already a hex string (2 hex chars per byte)
+        const hexSliceLength = writtenSize * 2;
+        const writtenContent = requestedWriteContent.slice(0, hexSliceLength);
 
-        const newChunk = new DataChunk(dataToWrite, event);
+        const newChunk = new DataChunk(writtenContent, event);
         const newContent = [...currentContent, newChunk];
         
         return newContent;

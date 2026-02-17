@@ -121,8 +121,11 @@ export default class FileStorageStrategy extends StorageStrategy {
         }
 
         const requestedWriteContent = event.outputValues['content'] as string;
-        const writtenSize = event.outputValues['ret'] as number;
-        const writtenContent = requestedWriteContent.slice(0, writtenSize);
+        const writtenSize = event.outputValues['ret'] as number; // bytes
+
+        // Assume `requestedWriteContent` is already a hex string (2 hex chars per byte)
+        const hexSliceLength = writtenSize * 2;
+        const writtenContent = requestedWriteContent.slice(0, hexSliceLength);
 
         const newChunk = new DataChunk(writtenContent, event);
         newContent = DataChunk.insertAt(currentContent, newChunk, cursorPosition);

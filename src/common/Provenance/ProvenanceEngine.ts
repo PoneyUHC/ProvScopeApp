@@ -55,52 +55,86 @@ export class ProvenanceEngine {
     }
 
 
-    test(provenanceGraph: DirectedGraph, targetNode: string, causalProperties: CausalProperty[]): void {
+    test(provenanceGraph: ProvenanceGraph, targetNode: string, causalProperties: CausalProperty[]): void {
 
-        const reversedGraph = reverse(provenanceGraph)
+        const graph = provenanceGraph.graph
+        const reversedGraph = reverse(graph)
         
         let reachableSubgraph: DirectedGraph
         reachableSubgraph = this.getReachableSubgraph(reversedGraph, targetNode)
 
-        const deducer = new IntraProcessDeducer(reachableSubgraph, causalProperties)
+        const eventResourceNode = reachableSubgraph.outNeighbors(targetNode).find(n => {
+            const nEntity = reachableSubgraph.getNodeAttribute(n, "entity") as Entity
+            return nEntity instanceof Resource
+        })
 
-        const event = reachableSubgraph.getNodeAttribute(targetNode, "event") as Event
-        const sourceEvents = deducer.getSourceEvents(event)
-
-        if (sourceEvents.dependent.length === 0){
-            console.log(`[LOG] No dependent source event for target event ${event} in intra-process deducer. No asserted path.`)
-        } else {
-            console.log(`[LOG] Found dependent source events ${sourceEvents.dependent} for target event ${event} in intra-process deducer. Building asserted path.`)
-            const assertedPath = this.buildIntraProcessPath(reachableSubgraph, event, sourceEvents.dependent)
-            if (!assertedPath) {
-                console.error(`[FATAL] Could not build asserted path for event ${event}.`)
-                return
-            }
-
-            console.log(assertedPath)
-
-            provenanceGraph.forEachNode((node) => {
-                const label = provenanceGraph.getNodeAttribute(node, 'label')!
-                const verified = assertedPath.findNode((_n, att) => att['label'] === label)
-                if (verified) provenanceGraph.setNodeAttribute(node, 'color', 'blue')
-            })
+        if (!eventResourceNode) {
+            console.error(`[FATAL] Could not find resource node for target event in provenance graph.`)
+            return;
         }
 
+        const resourceContent = graph.getNodeAttribute(eventResourceNode, "resourceContent") as ResourceContent
+        const targetEvent = graph.getNodeAttribute(targetNode, "event") as Event
+        const sourceEvents = ResourceContentDeducer.getSourceEvents(resourceContent, targetEvent)
+
+        console.log("Source events: ", sourceEvents)
+
+        if (sourceEvents.length === 0){
+            console.log("[ERROR] No source event for target event in resource content deducer. No asserted path.")
+            console.log("Event resource content: ", resourceContent)
+            console.log("Target event: ", targetEvent)
+            console.log("Source events: ", sourceEvents)
+            return;
+        }
+
+        const assertedDataPath = this.buildInterProcessPath(provenanceGraph.graph, targetEvent, sourceEvents)
+        if (!assertedDataPath) {
+            console.error("[FATAL] Could not build asserted path for event.", targetEvent)
+            return;
+        }
+
+        graph.forEachNode((node) => {
+            const label = graph.getNodeAttribute(node, 'label')!
+            const verified = assertedDataPath.findNode((_n, att) => att['label'] === label)
+            if (verified) graph.setNodeAttribute(node, 'color', 'red')
+        })
+
+
+        // const deducer = new IntraProcessDeducer(reachableSubgraph, causalProperties)
+
+        // const event = reachableSubgraph.getNodeAttribute(targetNode, "event") as Event
+        // const sourceEvents = deducer.getSourceEvents(event)
+
+        // if (sourceEvents.dependent.length === 0){
+        //     console.log(`[LOG] No dependent source event for target event ${event} in intra-process deducer. No asserted path.`)
+        // } else {
+        //     console.log(`[LOG] Found dependent source events ${sourceEvents.dependent} for target event ${event} in intra-process deducer. Building asserted path.`)
+        //     const assertedPath = this.buildIntraProcessPath(reachableSubgraph, event, sourceEvents.dependent)
+        //     if (!assertedPath) {
+        //         console.error(`[FATAL] Could not build asserted path for event ${event}.`)
+        //         return
+        //     }
+
+        //     console.log(assertedPath)
+
+        //     provenanceGraph.forEachNode((node) => {
+        //         const label = provenanceGraph.getNodeAttribute(node, 'label')!
+        //         const verified = assertedPath.findNode((_n, att) => att['label'] === label)
+        //         if (verified) provenanceGraph.setNodeAttribute(node, 'color', 'blue')
+        //     })
+        // }
+
         
-        if (sourceEvents.independent.length === 0){
-            console.log(`[LOG] No independent source event for target event ${event} in intra-process deducer. No discarded path.`)
-        } else {
-            console.log(`[LOG] Found independent source events ${sourceEvents.independent} for target event ${event} in intra-process deducer. Building discarded path.`)
-            const discardedPath = this.buildIntraProcessPath(reachableSubgraph, event, sourceEvents.independent)
-            if (!discardedPath) {
-                console.error(`[FATAL] Could not build discarded path for event ${event}.`)
-            }
+        // if (sourceEvents.independent.length === 0){
+        //     console.log(`[LOG] No independent source event for target event ${event} in intra-process deducer. No discarded path.`)
+        // } else {
+        //     console.log(`[LOG] Found independent source events ${sourceEvents.independent} for target event ${event} in intra-process deducer. Building discarded path.`)
+        //     const discardedPath = this.buildIntraProcessPath(reachableSubgraph, event, sourceEvents.independent)
+        //     if (!discardedPath) {
+        //         console.error(`[FATAL] Could not build discarded path for event ${event}.`)
+        //     }
             
-        }
-
-        
-
-        
+        // }
 
         // provenanceGraph.forEachNode((node) => {
         //     const label = provenanceGraph.getNodeAttribute(node, 'label')!
@@ -344,4 +378,54 @@ export class ProvenanceEngine {
         return path
     }
 
+    buildInterProcessPath(provenanceGraph: DirectedGraph, targetEvent: Event, sourceEvents: Event[]): DirectedGraph | null {
+
+        const path = new DirectedGraph()
+
+        const targetNode = provenanceGraph.findNode((n) => {
+            const nEvent = provenanceGraph.getNodeAttribute(n, "event") as Event
+            const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
+            return nEvent === targetEvent && nEntity instanceof Process
+        })
+
+        if (!targetNode) {
+            console.error(`[FATAL] Could not find target node for event ${targetEvent} in provenance graph.`)
+            return null;
+        }
+
+        path.addNode(targetNode, provenanceGraph.getNodeAttributes(targetNode))
+
+        const sourceEventPool = new Set(sourceEvents)
+        let currentResourceNode: string | undefined | null = provenanceGraph.outNeighbors(targetNode).find(n => {
+            const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
+            return nEntity instanceof Resource
+        })
+
+        if (!currentResourceNode) {
+            console.error(`[FATAL] Could not find process node for target event ${targetEvent} in provenance graph.`)
+            return null;
+        }
+
+        let previousNode = targetNode
+        while (currentResourceNode && sourceEventPool.size > 0) {
+
+            path.addNode(currentResourceNode, provenanceGraph.getNodeAttributes(currentResourceNode))
+            path.addEdge(previousNode, currentResourceNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(previousNode, currentResourceNode)))
+
+            const currentEvent = provenanceGraph.getNodeAttribute(currentResourceNode, "event") as Event
+
+            if (sourceEventPool.has(currentEvent)) {
+                const outNeighbors = provenanceGraph.outNeighbors(currentResourceNode)
+                for (const neighbor of outNeighbors) {
+                    path.addNode(neighbor, provenanceGraph.getNodeAttributes(neighbor))
+                    path.addEdge(currentResourceNode, neighbor, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(currentResourceNode, neighbor)))
+                }
+            }
+
+            previousNode = currentResourceNode
+            currentResourceNode = getPreviousNodeForEntity(provenanceGraph, currentResourceNode, true)
+        }
+
+        return path
+    }
 }

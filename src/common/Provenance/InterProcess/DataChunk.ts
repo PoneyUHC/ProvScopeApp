@@ -21,7 +21,7 @@ export default class DataChunk implements IClonable<DataChunk> {
 
 
     toString(): string {
-        return this.data.toString();
+        return this.data;
     }
 
 
@@ -30,14 +30,21 @@ export default class DataChunk implements IClonable<DataChunk> {
     }
 
 
+    //TODO: only supports ASCII data, where 1 byte is 2 hexa characters
     get size(): number {
+        return this.data.length / 2;
+    }
+
+    private get internalSize(): number {
         return this.data.length;
     }
 
 
     getContent(requestedSize: number): [DataChunk | null, DataChunk | null] {
 
-        const currentSize = this.data.length;
+        requestedSize = requestedSize * 2;
+
+        const currentSize = this.internalSize;
         if (requestedSize <= 0) {
             return [null, this];
         }
@@ -57,7 +64,7 @@ export default class DataChunk implements IClonable<DataChunk> {
 
 
     static insertAt(chunks: DataChunk[], newChunk: DataChunk, position: number): DataChunk[] {
-     
+
         let startChunkIndex = 0;
         let startAccumulatedSize = 0;
 
@@ -71,7 +78,7 @@ export default class DataChunk implements IClonable<DataChunk> {
         if (startChunkIndex === chunks.length) {
             const priorSpace = position - startAccumulatedSize;
             if (priorSpace > 0) {
-                const paddingChunk = new DataChunk('\0'.repeat(priorSpace), newChunk.sourceEvent);
+                const paddingChunk = new DataChunk('00'.repeat(priorSpace), newChunk.sourceEvent);
                 return [...chunks, paddingChunk, newChunk];
             } else {
                 return [...chunks, newChunk];
