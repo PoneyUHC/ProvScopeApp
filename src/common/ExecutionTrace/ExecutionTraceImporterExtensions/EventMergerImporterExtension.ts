@@ -53,6 +53,12 @@ function isErrorFreeEvent(event: Event): boolean {
 
 function mergeEvents(event1: Event, event2: Event): Event | null {
 
+    if (event1.process.name.includes("log_colle") || event2.process.name.includes("log_colle")) {
+        if (event1.outputValues["content"]?.endsWith("0a")) {
+            return null
+        }
+    }
+
     if (!areEventsSimilar(event1, event2)) {
         return null;
     }
