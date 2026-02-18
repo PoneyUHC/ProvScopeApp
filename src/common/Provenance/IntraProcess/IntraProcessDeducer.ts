@@ -38,24 +38,18 @@ class IntraProcessDeducer {
         dependentSourceEvents = this.getMatchingSourceEvents(targetEvent, dependentPropeties)
         independentSourceEvents = this.getMatchingSourceEvents(targetEvent, independentPropeties)
 
-        console.error(dependentSourceEvents)
-
         return { dependent: dependentSourceEvents, independent: independentSourceEvents }
     }
 
 
     getMatchingSourceEvents(targetEvent: Event, properties: CausalProperty[]): Event[] {
 
-        console.error(targetEvent)
-
         const sourceEvents: Event[] = []
         const candidateEvents = getProcessPriorEvents(this.provenanceGraph, targetEvent)
 
-        console.warn(candidateEvents)
-
         for (const event of candidateEvents) {
             for (const property of properties) {
-                if (property.sourcePattern.matches(event)) {
+                if (property.sourcePattern.matches(event) && property.evaluate(event, targetEvent)) {
                     sourceEvents.push(event)
                     break
                 }

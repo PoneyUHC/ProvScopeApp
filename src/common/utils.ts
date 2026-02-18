@@ -111,7 +111,6 @@ export function getProcessPriorEvents(provenanceGraph: DirectedGraph, startEvent
         const eventID = event ? event.id : null
         return event && event.process === startEvent.process && eventID < baseEventID
     });
-    console.log("nodes", nodes)
     return nodes.map((node) => provenanceGraph.getNodeAttribute(node, 'event'));
 }
 

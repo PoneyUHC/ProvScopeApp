@@ -34,9 +34,7 @@ const ProvenanceGraphEvents: React.FC = () => {
         return null;
     }
 
-    const provenanceEngine = useRef<ProvenanceEngine>(
-        new ProvenanceEngine()
-    );
+    const provenanceEngine = useRef<ProvenanceEngine | null>(null);
     
 
     const previousSelectedNodes = useRef<string[]>(selectedNodes);
@@ -49,12 +47,20 @@ const ProvenanceGraphEvents: React.FC = () => {
         for (const node of selectedNodes) {
             if (!previousSelectedNodes.current.includes(node)) {
                 graph.setNodeAttribute(node, 'highlighted', true);
+                const neighbors = graph.neighbors(node)
+                for (const neighbor of neighbors) {
+                    graph.setNodeAttribute(neighbor, 'highlighted', true);
+                }
             }
         }
 
         for (const node of previousSelectedNodes.current) {
             if (!selectedNodes.includes(node)) {
                 graph.setNodeAttribute(node, 'highlighted', false);
+                const neighbors = graph.neighbors(node)
+                for (const neighbor of neighbors) {
+                    graph.setNodeAttribute(neighbor, 'highlighted', false);
+                }
             }
         }
 
@@ -103,7 +109,7 @@ const ProvenanceGraphEvents: React.FC = () => {
 
     useEffect(() => {
         
-        provenanceEngine.current.init(provenanceGraph);
+        provenanceEngine.current = new ProvenanceEngine(provenanceGraph, causalProperties);
         
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.code === "KeyG") {
@@ -125,6 +131,11 @@ const ProvenanceGraphEvents: React.FC = () => {
             document.removeEventListener("keyup", handleKeyUp);
         };
     }, []);
+
+
+    useEffect(() => {
+        provenanceEngine.current?.updateCausalProperties(causalProperties)
+     }, [causalProperties, provenanceGraph])
 
 
     const addNodeToSelection = (node: string, prevSelectedNodes) => {
@@ -222,15 +233,17 @@ const ProvenanceGraphEvents: React.FC = () => {
             return;
         }
 
-        const subgraph = provenanceEngine.current.test(provenanceGraph, target, causalProperties)
+        const [assertedSubgraph, uncertainSubgraph] = provenanceEngine.current?.getProvenanceFromNode(target)!
 
-        // for (const node of provenanceGraph.graph.nodes()) {
-        //     if ( subgraph.hasNode(node) ) {
-        //         provenanceGraph.graph.setNodeAttribute(node, 'color', 'red')
-        //     } else {
-        //         provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
-        //     }
-        // }
+        for (const node of provenanceGraph.graph.nodes()) {
+            if ( assertedSubgraph.hasNode(node) ) {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'green')
+            } else if ( uncertainSubgraph.hasNode(node) ) {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'orange')
+            } else {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
+            }
+        }
     }
 
 
