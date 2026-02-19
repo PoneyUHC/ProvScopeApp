@@ -31,7 +31,7 @@ export class ProvenanceEngine {
         this.intraProcessDeducer = new IntraProcessDeducer(this.provenanceGraph.graph, causalProperties)
     }
 
-    getProvenanceFromNode(targetNode: string): [DirectedGraph, DirectedGraph] {
+    getProvenanceFromNode(targetNode: string): [DirectedGraph, DirectedGraph, DirectedGraph] {
 
         const reversedGraph = reverse(this.provenanceGraph.graph)
         
@@ -94,15 +94,15 @@ export class ProvenanceEngine {
         }
 
 
-        for (const node of terminalNodes) {
-            const neighboringNodes = reachableSubgraph.outNeighbors(node)
-            for (const neighbor of neighboringNodes) {
-                if (!assertedSubgraph.hasNode(neighbor)) {
-                    assertedSubgraph.addNode(neighbor, reachableSubgraph.getNodeAttributes(neighbor))
-                    assertedSubgraph.addEdge(node, neighbor, reachableSubgraph.getEdgeAttributes(reachableSubgraph.edge(node, neighbor)))
-                }
-            }
-        }
+        // for (const node of terminalNodes) {
+        //     const neighboringNodes = reachableSubgraph.outNeighbors(node)
+        //     for (const neighbor of neighboringNodes) {
+        //         if (!assertedSubgraph.hasNode(neighbor)) {
+        //             assertedSubgraph.addNode(neighbor, reachableSubgraph.getNodeAttributes(neighbor))
+        //             assertedSubgraph.addEdge(node, neighbor, reachableSubgraph.getEdgeAttributes(reachableSubgraph.edge(node, neighbor)))
+        //         }
+        //     }
+        // }
 
         console.warn("Terminal nodes in provenance graph analysis: ", terminalNodes)
         terminalNodes = new Set(Array.from(terminalNodes).filter(n => {
@@ -116,7 +116,7 @@ export class ProvenanceEngine {
             uncertainGraph = union(uncertainGraph, partialUncertainGraph)
         }
     
-        return [reverse(assertedSubgraph), reverse(uncertainGraph)]
+        return [reverse(assertedSubgraph), reverse(discardedSubgraph), reverse(uncertainGraph)]
     }
 
 
@@ -333,6 +333,22 @@ export class ProvenanceEngine {
             if (sourceEventPool.has(currentEvent)) {
                 path = union(path, partialPath)
                 sourceProcessNodes.push(currentResourceNode)
+                
+                const processNode = provenanceGraph.outNeighbors(currentResourceNode).find(n => {
+                    const nEntity = provenanceGraph.getNodeAttribute(n, "entity") as Entity
+                    return nEntity instanceof Process
+                })
+                if (processNode) {
+                    path.addNode(processNode, provenanceGraph.getNodeAttributes(processNode))
+                    path.addEdge(currentResourceNode, processNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(currentResourceNode, processNode)))
+                    sourceProcessNodes.push(processNode)
+                }
+
+                // const previousResourceNode = getPreviousNodeForEntity(provenanceGraph, currentResourceNode, true)
+                // if (previousResourceNode) {
+                //     path.addNode(previousResourceNode, provenanceGraph.getNodeAttributes(previousResourceNode))
+                //     path.addEdge(currentResourceNode, previousResourceNode, provenanceGraph.getEdgeAttributes(provenanceGraph.edge(currentResourceNode, previousResourceNode)))
+                // }
             }
 
             previousNode = currentResourceNode

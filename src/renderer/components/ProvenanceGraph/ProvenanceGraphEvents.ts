@@ -233,17 +233,33 @@ const ProvenanceGraphEvents: React.FC = () => {
             return;
         }
 
-        const [assertedSubgraph, uncertainSubgraph] = provenanceEngine.current?.getProvenanceFromNode(target)!
+        const [assertedSubgraph, discardedSubgraph, uncertainSubgraph] = provenanceEngine.current?.getProvenanceFromNode(target)!
+        
+        console.warn("Asserte subgraph: ", assertedSubgraph)
+        console.warn("Discarded subgraph: ", discardedSubgraph)
+        console.warn("Uncertain subgraph: ", uncertainSubgraph)
+        for (const node of provenanceGraph.graph.nodes()) {
+            if ( uncertainSubgraph.hasNode(node) ) {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'orange')
+            }
+        }
 
         for (const node of provenanceGraph.graph.nodes()) {
             if ( assertedSubgraph.hasNode(node) ) {
                 provenanceGraph.graph.setNodeAttribute(node, 'color', 'green')
-            } else if ( uncertainSubgraph.hasNode(node) ) {
-                provenanceGraph.graph.setNodeAttribute(node, 'color', 'orange')
-            } else {
-                provenanceGraph.graph.setNodeAttribute(node, 'color', 'black')
             }
         }
+
+         for (const node of provenanceGraph.graph.nodes()) {
+            if ( discardedSubgraph.hasNode(node) ) {
+                const inNeighbors = provenanceGraph.graph.inNeighbors(node)
+                for (const neighbor of inNeighbors) {
+                    provenanceGraph.graph.setNodeAttribute(neighbor, 'color', 'red')
+                }
+            }
+        }
+
+
     }
 
 
