@@ -1,5 +1,5 @@
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   ExecutionTraceContext,
   ExecutionTraceContextType,
@@ -15,6 +15,7 @@ export interface CausalityViewProps {
   initialPatternName?: string;
   initialPropertyCode?: string;
   initialPropertyName?: string;
+  onReady: () => void;
 }
 
 export const CausalityView: React.FC<CausalityViewProps> = ({
@@ -22,11 +23,20 @@ export const CausalityView: React.FC<CausalityViewProps> = ({
   initialPatternName,
   initialPropertyCode,
   initialPropertyName,
+  onReady,
 }) => {
   const { executionTrace } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
-  if (!executionTrace) return null;
-
+  // declare hooks unconditionally to avoid changing hook order when context is null
   const [eventPatterns, setEventPatterns] = useState<EventPattern[]>([]);
+  
+  if (!executionTrace) return null;
+  
+  
+  useEffect(() => {
+    console.log('[CausalityView] onReady');
+    onReady();
+  }, []);
+
 
   return (
     <div className="flex h-full w-full gap-3 p-4 overflow-hidden">

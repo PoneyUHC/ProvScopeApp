@@ -22,23 +22,33 @@ const borderStyles = "shadow-[0px_0px_8px] shadow-slate-400 border-black border 
 interface TopologyViewProps {
     topologyGraph: TopologyGraph,
     isViewSelected: boolean;
+    onReady: () => void;
 }
 
-const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelected }) => {
+const TopologyView: React.FC<TopologyViewProps> = ({ topologyGraph, isViewSelected, onReady }) => {
 
     const {
         executionTrace: executionTrace,
         selectedEvent: [selectedEvent, setSelectedEvent]
     } = useContext<ExecutionTraceContextType>(ExecutionTraceContext);
 
-    if( !executionTrace ) return;
-    
+    // hooks must be declared unconditionally to preserve hook order
     const [sigma, setSigma] = useState<Sigma | null>(null);
+    const onReadyCalledRef = React.useRef(false);
+
+    if( !executionTrace ) return null;
 
 
     useEffect(() => {
         if (!sigma) return;
         if (!sigma.getCustomBBox()) sigma.setCustomBBox(sigma.getBBox());
+
+        if (!onReadyCalledRef.current) {
+            onReadyCalledRef.current = true;
+            console.log('[TopologyView] onReady');
+            onReady();
+        }
+
     }, [sigma]);
 
 

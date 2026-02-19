@@ -21,6 +21,11 @@ interface TraceBrowserViewProps {
 
 const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace, isActive, currentView, setCurrentView}) => {
     
+    const [topologyReady, setTopologyReady] = useState(false);
+    const [provenanceReady, setProvenanceReady] = useState(false);
+    const [causalityReady, setCausalityReady] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+
     const topologyViewRef = useRef<HTMLDivElement>(null);
     const topologyGraphRef = useRef<TopologyGraph | null>(
         TopologyGraph.create(trace)
@@ -33,6 +38,15 @@ const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace, isActive, currentVi
     
     const opts: ScrollIntoViewOptions = { behavior: "smooth"};
     
+
+    useEffect(() => {
+        if (!topologyReady || !provenanceReady || !causalityReady) return;
+        console.log('[TraceBrowserView] all views ready');
+        setIsReady(true);
+
+    }, [topologyReady, provenanceReady, causalityReady]);
+        
+
     //TODO: implement a customizable speed scrolling mechanism
     const scrollToView = (view: "Topology" | "Provenance" | "Causality") => {
         if (view === "Topology" && topologyViewRef.current) {
@@ -90,25 +104,36 @@ const TraceBrowserView: FC<TraceBrowserViewProps> = ({trace, isActive, currentVi
     
     
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col relative">
             <ExecutionTraceProvider trace={trace}>
                 <div className="w-full h-full flex flex-row overflow-x-hidden">
                     <div className="w-full h-full flex-shrink-0" ref={topologyViewRef}>
                         <TopologyView 
                             topologyGraph={topologyGraphRef.current!} 
-                            isViewSelected={currentView === "Topology"} 
+                            isViewSelected={currentView === "Topology"}
+                            onReady={() => setTopologyReady(true)}
                         />
                     </div>
                     <div className="w-full h-full flex-shrink-0" ref={provenanceViewRef}>
                         <ProvenanceGraphView 
-                            provenanceGraph={provenanceGraphRef.current!} 
+                            provenanceGraph={provenanceGraphRef.current!}
+                            onReady={() => setProvenanceReady(true)}
                         />
                     </div>
                     <div className="w-full h-full flex-shrink-0" ref={causalityViewRef}>
-                        <CausalityView />
+                        <CausalityView onReady={() => setCausalityReady(true)} />
                     </div>
                 </div>
             </ExecutionTraceProvider>
+
+            {!isReady && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white bg-opacity-90">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400"></div>
+                        <p className="mt-4 text-slate-600">Loading trace views...</p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

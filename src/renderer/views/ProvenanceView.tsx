@@ -1,4 +1,5 @@
 
+import React from 'react';
 import Title from '@renderer/components/Misc/Title';
 import ProvenanceGraphPanel from '@renderer/components/ProvenanceGraph/ProvenanceGraphPanel';
 import ProvenanceGraph from '@common/Provenance/ProvenanceGraph';
@@ -7,10 +8,18 @@ import { ProvenanceGraphProvider } from '@renderer/components/ProvenanceGraph/Pr
 
 interface ProvenanceGraphViewProps {
     provenanceGraph: ProvenanceGraph
+    onReady?: () => void
 }
 
 
-const ProvenanceGraphView: React.FC<ProvenanceGraphViewProps> = ({ provenanceGraph }) => {
+const ProvenanceGraphView: React.FC<ProvenanceGraphViewProps> = ({ provenanceGraph, onReady }) => {
+
+    // notify parent that provenance view mounted
+    // keep hook order stable (no early returns here)
+    React.useEffect(() => {
+        console.log('[ProvenanceView] onReady');
+        onReady?.();
+    }, [onReady]);
 
     return (
         <>
