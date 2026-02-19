@@ -4,6 +4,8 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { EventPattern } from "@common/Provenance/IntraProcess/EventPattern";
 import { CausalProperty, DependencyMode } from "@common/Provenance/IntraProcess/CausalProperty";
 import { ExecutionTraceContext, ExecutionTraceContextType } from "@renderer/components/TraceBrowserTool/ExecutionTraceProvider";
+import visibleIcon from "@renderer/assets/visible.svg";
+import hiddenIcon from "@renderer/assets/hidden.svg";
 
 
 export interface CausalPropertyPanelProps {
@@ -53,9 +55,23 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
 
   if (!executionTrace) return null;
 
+  // Local state to store all properties (enabled and disabled)
+  const [localProperties, setLocalProperties] = useState<CausalProperty[]>([]);
+  // Track which properties are disabled by name
+  const [disabledPropertyNames, setDisabledPropertyNames] = useState<Set<string>>(new Set());
+  
+  // Initialize local properties from context only once
+  const initializeRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initializeRef.current && causalProperties.length > 0) {
+      setLocalProperties(causalProperties);
+      initializeRef.current = true;
+    }
+  }, []);
+
   const [nameInput, setNameInput] = useState(initialName ?? "MyProperty");
   const [dependencyMode, setDependencyMode] = useState<DependencyMode>("dependent");
-  const [selectedProcess, setSelectedProcess] = useState<string>(executionTrace.processes[0]?.getUUID() ?? "");
+  const [selectedProcess, setSelectedProcess] = useState<string>("");
 
   const [predicateCodeInput, setPredicateCodeInput] = useState(
     initialCode ?? `sourceEvent.pid === targetEvent.pid`
@@ -69,16 +85,9 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
-  useEffect(() => {
-    if (executionTrace.processes.length > 0) {
-      const firstProcessUuid = executionTrace.processes[0].getUUID();
-      if (!selectedProcess) {
-        setSelectedProcess(firstProcessUuid);
-      }
-    }
-  }, [executionTrace]);
-
-  useEffect(() => {    const firstName = patternNames[0] ?? "";
+  useEffect(() => {    
+    
+    const firstName = patternNames[0] ?? "";
 
     if (!selectedSourcePatternName || !patternNames.includes(selectedSourcePatternName)) {
       setSelectedSourcePatternName(firstName);
@@ -86,7 +95,7 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
     if (!selectedTargetPatternName || !patternNames.includes(selectedTargetPatternName)) {
       setSelectedTargetPatternName(firstName);
     }
-  }, [patternNames, selectedSourcePatternName, selectedTargetPatternName, causalProperties]);
+  }, [patternNames, selectedSourcePatternName, selectedTargetPatternName]);
 
 
   const handleAddProperty = () => {
@@ -94,7 +103,7 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
       const trimmedName = nameInput.trim();
       if (!trimmedName) throw new Error("Name cannot be empty.");
 
-      const nameAlreadyExists = causalProperties.some((existingProperty) => existingProperty.name === trimmedName);
+      const nameAlreadyExists = localProperties.some((existingProperty) => existingProperty.name === trimmedName);
       if (nameAlreadyExists) {
         throw new Error(`A CausalProperty named "${trimmedName}" already exists.`);
       }
@@ -121,6 +130,9 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
         predicateCodeInput
       );
 
+      // Add to local properties (enabled by default)
+      setLocalProperties([...localProperties, createdProperty]);
+      // Add to global context (enabled by default)
       addProperty(createdProperty);
       setErrorMessage(null);
     } catch (error) {
@@ -129,10 +141,38 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
   };
 
   const handleRemoveProperty = (propertyName: string) => {
-    const propertyToRemove = causalProperties.find((property) => property.name === propertyName);
+    const propertyToRemove = localProperties.find((property) => property.name === propertyName);
     if (propertyToRemove) {
+      setLocalProperties(localProperties.filter((p) => p.name !== propertyName));
+      setDisabledPropertyNames((prev) => {
+        const next = new Set(prev);
+        next.delete(propertyName);
+        return next;
+      });
       removeProperty(propertyToRemove);
     }
+  };
+
+  const handleToggleProperty = (propertyName: string) => {
+    const property = localProperties.find((p) => p.name === propertyName);
+    if (!property) return;
+
+    setDisabledPropertyNames((prev) => {
+      const next = new Set(prev);
+      const isCurrentlyDisabled = next.has(propertyName);
+
+      if (isCurrentlyDisabled) {
+        // Enable the property
+        next.delete(propertyName);
+        addProperty(property);
+      } else {
+        // Disable the property
+        next.add(propertyName);
+        removeProperty(property);
+      }
+
+      return next;
+    });
   };
 
   return (
@@ -161,8 +201,9 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
         className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50"
         disabled={executionTrace.processes.length === 0}
       >
+        <option value="">Select a process...</option>
         {executionTrace.processes.length === 0 ? (
-          <option value="">No Processes</option>
+          <option value="" disabled>No Processes</option>
         ) : (
           executionTrace.processes.map((process) => (
             <option key={process.getUUID()} value={process.getUUID()}>
@@ -256,26 +297,48 @@ export const CausalPropertyPanel: React.FC<CausalPropertyPanelProps> = ({
       )}
 
       <div className="space-y-3">
-        {causalProperties.length === 0 ? (
+        {localProperties.length === 0 ? (
           <div className="text-sm text-slate-600">No properties yet.</div>
         ) : (
-          causalProperties.map((property) => {
+          localProperties.map((property) => {
             const modeLabel = property.dependencyMode === "dependent" ? "Dependent" : "Independent";
             const modeBadgeClass =
               property.dependencyMode === "dependent" ? "bg-emerald-600 text-white" : "bg-red-600 text-white";
+            const isDisabled = disabledPropertyNames.has(property.name);
 
             return (
-              <div key={property.name} className="relative rounded-md border border-slate-200 bg-white p-3">
-                <button
-                  onClick={() => handleRemoveProperty(property.name)}
-                  className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  aria-label={`Remove property ${property.name}`}
-                  title="Remove"
-                >
-                  ✕
-                </button>
+              <div
+                key={property.name}
+                className={`relative rounded-md border ${
+                  isDisabled ? "border-red-500" : "border-green-500"
+                } bg-white p-3 transition-opacity ${
+                  isDisabled ? "opacity-50" : "opacity-100"
+                }`}
+              >
+                <div className="absolute right-2 top-2 flex gap-1">
+                  <button
+                    onClick={() => handleToggleProperty(property.name)}
+                    className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    aria-label={isDisabled ? `Enable property ${property.name}` : `Disable property ${property.name}`}
+                    title={isDisabled ? "Enable" : "Disable"}
+                  >
+                    <img
+                      src={isDisabled ? hiddenIcon : visibleIcon}
+                      alt={isDisabled ? "hidden" : "visible"}
+                      className="h-4 w-4"
+                    />
+                  </button>
+                  <button
+                    onClick={() => handleRemoveProperty(property.name)}
+                    className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    aria-label={`Remove property ${property.name}`}
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
 
-                <div className="pr-8">
+                <div className="pr-16">
                   <div className="truncate text-sm font-semibold">{property.name}</div>
 
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
