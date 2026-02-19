@@ -1,44 +1,34 @@
 
 import { Event } from "@common/types";
 
-
 export class EventPattern {
-  readonly name: string;
-  readonly pattern: Record<string, unknown>;
+    readonly name: string;
+    readonly predicateCode: string;
 
-  constructor(name: string, pattern: Record<string, unknown>) {
-    this.name = name;
-    this.pattern = pattern;
-  }
+    private readonly compiledPredicate: (event: Event) => unknown;
 
-  matches(event: Event): boolean | null {
-    for (const [key, requestedValue] of Object.entries(this.pattern)) {
-      const fieldValue = getPath(event, key);
-      if (!fieldValue) {
-        return null;
-      }
-
-      if (requestedValue != fieldValue) {
-        return false;
-      }
+    constructor(name: string, predicateCode: string) {
+        this.name = name;
+        this.predicateCode = predicateCode;
+        this.compiledPredicate = EventPattern.compilePredicate(predicateCode);
     }
-    return true;
-  }
-}
 
-function isIndexable(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object";
-}
+    matches(event: Event): boolean {
+        const result = this.compiledPredicate(event);
+        if (typeof result !== "boolean") {
+            throw new Error("EventPattern predicate code must evaluate to a boolean.");
+        }
+        return result;
+    }
 
-export function getPath(obj: object, path: string): object | null {
-  if (!path) return obj;
-
-  let current: unknown = obj;
-
-  for (const key of path.split(".")) {
-    if (!isIndexable(current)) return null;
-    current = current[key];
-  }
-
-  return current ? (current as object) : null;
+    private static compilePredicate(predicateCode: string): (event: Event) => unknown {
+        // ⚠️ Only safe for trusted/dev tooling
+        try {
+            // Expression form: `event.pid === 42`
+            return new Function("event", `"use strict"; return (${predicateCode});`) as any;
+        } catch {
+            // Statement-body form: `if (...) return true; return false;`
+            return new Function("event", `"use strict"; ${predicateCode}`) as any;
+        }
+    }
 }

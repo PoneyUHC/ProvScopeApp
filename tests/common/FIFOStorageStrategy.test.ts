@@ -1,185 +1,173 @@
+// tests/common/FIFOStorageStrategy.test.ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Adjust these imports to your actual paths/aliases
 import FIFOStorageStrategy from "@common/Provenance/InterProcess/StorageStrategy/FIFOStorageStrategy";
 import DataChunk from "@common/Provenance/InterProcess/DataChunk";
 
 type TestEvent = {
-  eventType: string;
-  outputValues: Record<string, unknown>;
+    eventType: string;
+    outputValues: Record<string, unknown>;
 };
 
-function ev(
-  eventType: string,
-  outputValues: Record<string, unknown> = {}
-): TestEvent {
-  return { eventType, outputValues };
+function ev(eventType: string, outputValues: Record<string, unknown> = {}): TestEvent {
+    return { eventType, outputValues };
 }
 
-function toHex(s: string): string {
-  return Array.from(s).map((ch) => ch.charCodeAt(0).toString(16).padStart(2, "0")).join("");
-}
-
-function maybeDecodeData(data: string): string {
-  if (/^[0-9a-fA-F]*$/.test(data) && data.length % 2 === 0) {
-    let out = "";
-    for (let i = 0; i < data.length; i += 2) {
-      out += String.fromCharCode(parseInt(data.slice(i, i + 2), 16));
-    }
-    return out;
-  }
-  return data;
+function toHex(text: string): string {
+    return Array.from(text)
+        .map((character) => character.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join("");
 }
 
 function mkChunk(data: string, origin: TestEvent = ev("WriteEvent")): DataChunk {
-  // store hex-encoded content inside DataChunk
-  return new DataChunk(toHex(data), origin as any);
+    // Store hex-encoded content inside DataChunk
+    return new DataChunk(toHex(data), origin as any);
 }
 
 function content(chunks: DataChunk[]): string {
-  return chunks.map((c) => c.data).join("");
+    return chunks.map((chunk) => chunk.data).join("");
 }
 
-function cloneChunks(chunks: DataChunk[]): DataChunk[] {
-  // deep-ish copy for mutation detection
-  return chunks.map((c) => c.clone());
+function snapshotData(chunks: DataChunk[]): string[] {
+    return chunks.map((chunk) => chunk.data);
 }
 
 describe("FIFOStorageStrategy", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
 
-  it("clone() returns a new independent strategy", () => {
-    const s1 = new FIFOStorageStrategy();
-    const s2 = s1.clone();
+    it("clone() returns a new independent strategy", () => {
+        const strategy1 = new FIFOStorageStrategy();
+        const strategy2 = strategy1.clone();
 
-    expect(s2).toBeInstanceOf(FIFOStorageStrategy);
-    expect(s2).not.toBe(s1);
-  });
+        expect(strategy2).toBeInstanceOf(FIFOStorageStrategy);
+        expect(strategy2).not.toBe(strategy1);
+    });
 
-  it("applyEvent(OpenEvent/CloseEvent) is a no-op on content", () => {
-    const strat = new FIFOStorageStrategy();
-    const initial = [mkChunk("abc"), mkChunk("def")];
+    it("applyEvent(OpenEvent/CloseEvent) is a no-op on content", () => {
+        const strategy = new FIFOStorageStrategy();
+        const initial = [mkChunk("abc"), mkChunk("def")];
 
-    const resOpen = strat.applyEvent(ev("OpenEvent") as any, initial);
-    const resClose = strat.applyEvent(ev("CloseEvent") as any, initial);
+        const openResult = strategy.applyEvent(ev("OpenEvent") as any, initial);
+        const closeResult = strategy.applyEvent(ev("CloseEvent") as any, initial);
 
-    expect(resOpen).toBe(initial);   // code returns c directly
-    expect(resClose).toBe(initial);  // code returns c directly
-    expect(content(resOpen)).toBe(toHex("abcdef"));
-  });
+        expect(openResult).toBe(initial); // implementation returns c directly
+        expect(closeResult).toBe(initial); // implementation returns c directly
+        expect(content(openResult)).toBe(toHex("abcdef"));
+    });
 
-  it("applyWriteEvent appends a chunk truncated to ret", () => {
-    const strat = new FIFOStorageStrategy();
-    const initial = [mkChunk("hello")];
+    it("applyWriteEvent appends a chunk truncated to ret (ret is bytes)", () => {
+        const strategy = new FIFOStorageStrategy();
+        const initial = [mkChunk("hello")];
 
-    const e = ev(
-      "WriteEvent",
-      { content: toHex("WORLD!!"), ret: 10 } // only "WORLD" (ret in hex-chars)
-    );
+        // requestedWriteContent is hex string; ret is number of BYTES written
+        const writeEvent = ev("WriteEvent", { content: toHex("WORLD!!"), ret: 5 }); // "WORLD" (5 bytes)
 
-    const res = strat.applyWriteEvent(e as any, initial);
+        const result = strategy.applyWriteEvent(writeEvent as any, initial);
 
-    // original array should not be mutated (new array returned)
-    expect(res).not.toBe(initial);
-    expect(content(initial)).toBe(toHex("hello"));
+        // original array should not be mutated (new array returned)
+        expect(result).not.toBe(initial);
+        expect(content(initial)).toBe(toHex("hello"));
 
-    expect(content(res)).toBe(toHex("helloWORLD"));
-    expect(res[res.length - 1].data).toBe(toHex("WORLD"));
-    expect(res[res.length - 1].size).toBe(5);
-  });
+        expect(content(result)).toBe(toHex("helloWORLD"));
+        expect(result[result.length - 1].data).toBe(toHex("WORLD"));
+        expect(result[result.length - 1].size).toBe(5);
+    });
 
-  it("applyEvent(WriteEvent) uses the write applier (appends)", () => {
-    const strat = new FIFOStorageStrategy();
-    const initial = [mkChunk("a")];
+    it("applyEvent(WriteEvent) uses the write applier (appends)", () => {
+        const strategy = new FIFOStorageStrategy();
+        const initial = [mkChunk("a")];
 
-    const e = ev("WriteEvent", { content: toHex("bbb"), ret: 4 }); // "bb" (ret in hex-chars)
-    const res = strat.applyEvent(e as any, initial);
+        // ret is BYTES => 2 bytes means "bb"
+        const writeEvent = ev("WriteEvent", { content: toHex("bbb"), ret: 2 });
 
-    expect(content(res)).toBe(toHex("abb"));
-  });
+        const result = strategy.applyEvent(writeEvent as any, initial);
 
-  it("internalGetContent(shouldModify=true) consumes from the head (FIFO) and returns the extracted chunks", () => {
-    const strat = new FIFOStorageStrategy();
-    const eRead = ev("ExitReadEvent", { ret: 5 });
+        expect(content(result)).toBe(toHex("abb"));
+    });
 
-    const current = [mkChunk("abc"), mkChunk("defg")]; // total 7
-    const extracted = strat.internalGetContent(eRead as any, current, true);
+    it("internalGetContent(shouldModify=true) consumes from the head (FIFO) and returns the extracted chunks", () => {
+        const strategy = new FIFOStorageStrategy();
+        const readEvent = ev("ExitReadEvent", { ret: 5 });
 
-    expect(extracted.map((c) => c.data)).toEqual([toHex("abc"), toHex("de")]);
-    expect(content(extracted)).toBe(toHex("abcde"));
+        const current = [mkChunk("abc"), mkChunk("defg")]; // total 7 bytes
+        const extracted = strategy.internalGetContent(readEvent as any, current, true);
 
-    // should have consumed 5 bytes => remaining is "fg"
-    expect(content(current)).toBe(toHex("fg"));
-    expect(current.length).toBe(1);
-    expect(current[0].data).toBe(toHex("fg"));
-  });
+        expect(extracted.map((chunk) => chunk.data)).toEqual([toHex("abc"), toHex("de")]);
+        expect(content(extracted)).toBe(toHex("abcde"));
 
-  it("internalGetContent returns [] and logs error if ret > available", () => {
-    const strat = new FIFOStorageStrategy();
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+        // should have consumed 5 bytes => remaining is "fg"
+        expect(content(current)).toBe(toHex("fg"));
+        expect(current.length).toBe(1);
+        expect(current[0].data).toBe(toHex("fg"));
+    });
 
-    const eRead = ev("ExitReadEvent", { ret: 100 });
-    const current = [mkChunk("abc"), mkChunk("def")];
-    const snapshot = cloneChunks(current);
+    it("internalGetContent returns [] and logs error if ret > available", () => {
+        const strategy = new FIFOStorageStrategy();
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const extracted = strat.internalGetContent(eRead as any, current, true);
+        const readEvent = ev("ExitReadEvent", { ret: 100 });
+        const current = [mkChunk("abc"), mkChunk("def")];
+        const snapshot = snapshotData(current);
 
-    expect(extracted).toEqual([]);
-    expect(spy).toHaveBeenCalled();
+        const extracted = strategy.internalGetContent(readEvent as any, current, true);
 
-    // should not modify content on error
-    expect(content(current)).toBe(content(snapshot));
-    expect(current.length).toBe(snapshot.length);
-  });
+        expect(extracted).toEqual([]);
+        expect(spy).toHaveBeenCalled();
 
-  it("getContent should NOT modify currentContent (peek semantics)", () => {
-    const strat = new FIFOStorageStrategy();
-    const eRead = ev("ExitReadEvent", { ret: 4 });
+        // should not modify content on error
+        expect(snapshotData(current)).toEqual(snapshot);
+        expect(current.length).toBe(snapshot.length);
+    });
 
-    const current = [mkChunk("abc"), mkChunk("defg")];
-    const before = content(current);
+    it("getContent should NOT modify currentContent (peek semantics)", () => {
+        const strategy = new FIFOStorageStrategy();
+        const readEvent = ev("ExitReadEvent", { ret: 4 });
 
-    const extracted = strat.getContent(eRead as any, current);
+        const current = [mkChunk("abc"), mkChunk("defg")];
+        const beforeSnapshot = snapshotData(current);
 
-    expect(content(extracted)).toBe(toHex("abcd"));
-    expect(content(current)).toBe(before); // should be unchanged
-  });
+        const extracted = strategy.getContent(readEvent as any, current);
 
-  it("applyEvent(ExitReadEvent) should return the updated remaining FIFO content", () => {
-    const strat = new FIFOStorageStrategy();
-    const current = [mkChunk("abc"), mkChunk("defg")];
+        expect(content(extracted)).toBe(toHex("abcd"));
+        expect(snapshotData(current)).toEqual(beforeSnapshot);
+    });
 
-    // consume 5 bytes => remaining "fg"
-    const eRead = ev("ExitReadEvent", { ret: 5 });
+    it("applyEvent(ExitReadEvent) should return the updated remaining FIFO content", () => {
+        const strategy = new FIFOStorageStrategy();
+        const current = [mkChunk("abc"), mkChunk("defg")];
 
-    const res = strat.applyEvent(eRead as any, current);
+        // consume 5 bytes => remaining "fg"
+        const readEvent = ev("ExitReadEvent", { ret: 5 });
 
-    // applyEvent should yield the new storage state (remaining content)
-    expect(content(res)).toBe(toHex("fg"));
-  });
+        const result = strategy.applyEvent(readEvent as any, current);
 
-  it("applyExitReadEvent should remove bytes and return remaining storage state", () => {
-    const strat = new FIFOStorageStrategy();
-    const current = [mkChunk("hello"), mkChunk("world")];
+        // applyEvent yields the same mutated array instance (implementation returns currentContent)
+        expect(result).toBe(current);
+        expect(content(result)).toBe(toHex("fg"));
+    });
 
-    const eRead = ev("ExitReadEvent", { ret: 7 }); // consume "hellowo"
-    const res = strat.applyExitReadEvent(eRead as any, current);
+    it("applyExitReadEvent should remove bytes and return remaining storage state", () => {
+        const strategy = new FIFOStorageStrategy();
+        const current = [mkChunk("hello"), mkChunk("world")];
 
-    // remaining should be "rld"
-    expect(content(res)).toBe(toHex("rld"));
-  });
+        const readEvent = ev("ExitReadEvent", { ret: 7 }); // consume "hellowo"
+        const result = strategy.applyExitReadEvent(readEvent as any, current);
 
-  it("unknown eventType logs error and leaves content unchanged", () => {
-    const strat = new FIFOStorageStrategy();
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+        // remaining should be "rld"
+        expect(content(result)).toBe(toHex("rld"));
+    });
 
-    const current = [mkChunk("abc")];
-    const res = strat.applyEvent(ev("Nope") as any, current);
+    it("unknown eventType logs error and leaves content unchanged", () => {
+        const strategy = new FIFOStorageStrategy();
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(res).toBe(current);
-    expect(content(res)).toBe(toHex("abc"));
-    expect(spy).toHaveBeenCalled();
-  });
+        const current = [mkChunk("abc")];
+        const result = strategy.applyEvent(ev("Nope") as any, current);
+
+        expect(result).toBe(current);
+        expect(content(result)).toBe(toHex("abc"));
+        expect(spy).toHaveBeenCalled();
+    });
 });
