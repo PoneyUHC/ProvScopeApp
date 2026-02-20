@@ -133,4 +133,16 @@ export function getPath(obj: object, path: string): object | null {
 }
 
 
-        
+export function hexToAscii(hexString: string): string {
+    const normalized = hexString.length % 2 === 0 ? hexString : `0${hexString}`;
+    const bytes = new Uint8Array(normalized.length / 2);
+
+    for (let index = 0; index < normalized.length; index += 2) {
+        const byte = Number.parseInt(normalized.slice(index, index + 2), 16);
+        if (Number.isNaN(byte)) return "";
+        bytes[index / 2] = byte;
+    }
+
+    // ASCII is a subset of UTF-8, so this is fine for typical logs.
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+}

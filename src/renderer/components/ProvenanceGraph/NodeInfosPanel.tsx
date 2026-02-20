@@ -6,6 +6,7 @@ import ResizableControlsContainer from '@renderer/components/ReactSigmaUtils/Res
 import { ProvenanceGraphContext, ProvenanceGraphContextType } from './ProvenanceGraphProvider';
 import { Process } from '@common/types';
 import ResourceContent from '@common/Provenance/InterProcess/ResourceContent';
+import { hexToAscii } from '@common/utils';
 
 
 const NodeInfosPanel: React.FC = () => {
@@ -62,8 +63,17 @@ const NodeInfosPanel: React.FC = () => {
                 {resourceContent.content.map((chunk, i) => {
 
                     return (
-                        <p key={`chunk${i}`} className="border-b-gray-500 border-b p-1">
-                            <strong>{i}:</strong> <span className="whitespace-pre-wrap">{chunk.toString()}</span>
+                        <p key={`chunk${i}`} className="border-b border-b-gray-500 p-1">
+                            <strong>{i}:</strong>{" "}
+                            <span className="whitespace-pre-wrap">
+                                <span className="text-slate-500">raw: </span>
+                                {chunk.toString()}
+                            </span>
+                            <span className="text-slate-500">{"  |  "}</span>
+                            <span className="whitespace-pre-wrap">
+                                <span className="text-slate-500">ascii: </span>
+                                {hexToAscii(chunk.data)}
+                            </span>
                         </p>
                     );
                 })}
