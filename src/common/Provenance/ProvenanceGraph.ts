@@ -9,13 +9,16 @@ export default class ProvenanceGraph {
 
     trace: ExecutionTrace
     graph: DirectedGraph
+    buildTimeMs: number = 0
 
 
     constructor(trace: ExecutionTrace) {
         this.trace = trace
         this.graph = new DirectedGraph()
 
+        const t0 = Date.now()
         this.loadTrace()
+        this.buildTimeMs = Date.now() - t0
     }
 
 

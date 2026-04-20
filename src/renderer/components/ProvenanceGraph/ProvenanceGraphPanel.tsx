@@ -25,8 +25,8 @@ const provenanceGraphPanel: React.FC = () => {
 
     const hiddenEntitiesIndexLookup = useRef<Map<Entity, number>>(new Map());
 
-    const { 
-        provenanceGraph: provenanceGraph 
+    const {
+        provenanceGraph: provenanceGraph
     } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
     
     if (!provenanceGraph) {
@@ -114,11 +114,11 @@ const provenanceGraphPanel: React.FC = () => {
              <Allotment onDragEnd={onDrag}>
                 <Allotment.Pane minSize={200} preferredSize={"90%"} className="h-full w-full">
 
-                    <ProvenanceGraphSigma 
+                    <ProvenanceGraphSigma
                         setSigma={setSigma}
                         graph={provenanceGraph.graph}
                     />
-                
+
                 </Allotment.Pane>
 
                 <Allotment.Pane minSize={200} preferredSize={"10%"}>

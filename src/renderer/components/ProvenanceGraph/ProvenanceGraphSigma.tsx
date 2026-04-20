@@ -18,6 +18,7 @@ import { NodeCircleProgram } from "sigma/rendering";
 import ProvenanceGraphEvents from "@renderer/components/ProvenanceGraph/ProvenanceGraphEvents";
 import EventInfosPanel from "@renderer/components/ProvenanceGraph/EventInfosPanel";
 import NodeInfosPanel from "./NodeInfosPanel";
+import StatsPanel from "./StatsPanel";
 
 
 export type ProvenanceGraphSigmaProps = {
@@ -29,25 +30,26 @@ export type ProvenanceGraphSigmaProps = {
 const ProvenanceGraphSigma: React.FC<ProvenanceGraphSigmaProps> = ({graph, setSigma}) => {
 
 	const settings = {
-		renderLabels: false, 
-		allowInvalidContainer: true, 
-		nodeProgramClasses: { 
-			square: NodeSquareProgram, 
-			circle: NodeCircleProgram, 
+		renderLabels: false,
+		allowInvalidContainer: true,
+		nodeProgramClasses: {
+			square: NodeSquareProgram,
+			circle: NodeCircleProgram,
 		}
 	}
-	
-	
+
+
 	return (
 		<SigmaContainer ref={setSigma} graph={graph} settings={settings}>
 			<ControlsContainer position="bottom-right">
 			<ZoomControl />
 			<FullScreenControl />
 			</ControlsContainer>
-			
+
 			<ProvenanceGraphEvents />
 			<EventInfosPanel />
             <NodeInfosPanel />
+            <StatsPanel />
 		</SigmaContainer>
 	);
 };

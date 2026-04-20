@@ -14,10 +14,19 @@ import IntraProcessDeducer from "./IntraProcess/IntraProcessDeducer";
 import { CausalProperty } from "./IntraProcess/CausalProperty";
 
 
+export interface ProvenanceResult {
+    assertedGraph: DirectedGraph
+    discardedGraph: DirectedGraph
+    uncertainGraph: DirectedGraph
+    queryTimeMs: number
+}
+
+
 export class ProvenanceEngine {
 
     provenanceGraph: ProvenanceGraph
     intraProcessDeducer: IntraProcessDeducer
+    queryTimeMs: number = 0
 
     constructor(provenanceGraph: ProvenanceGraph, causalProperties: CausalProperty[]) {
         this.provenanceGraph = provenanceGraph
@@ -33,6 +42,7 @@ export class ProvenanceEngine {
 
     getProvenanceFromNode(targetNode: string): [DirectedGraph, DirectedGraph, DirectedGraph] {
 
+        const t0 = Date.now()
         const reversedGraph = reverse(this.provenanceGraph.graph)
         
         let reachableSubgraph: DirectedGraph
@@ -116,6 +126,7 @@ export class ProvenanceEngine {
             uncertainGraph = union(uncertainGraph, partialUncertainGraph)
         }
     
+        this.queryTimeMs = Date.now() - t0
         return [reverse(assertedSubgraph), reverse(discardedSubgraph), reverse(uncertainGraph)]
     }
 

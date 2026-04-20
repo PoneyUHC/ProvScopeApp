@@ -28,6 +28,7 @@ const ProvenanceGraphEvents: React.FC = () => {
     const {
         provenanceGraph: provenanceGraph,
         selectedNodes: [selectedNodes, setSelectedNodes],
+        provenanceResult: [_provenanceResult, setProvenanceResult],
     } = useContext<ProvenanceGraphContextType>(ProvenanceGraphContext);
 
     if (!provenanceGraph) {
@@ -226,15 +227,19 @@ const ProvenanceGraphEvents: React.FC = () => {
 
 
     const showProvenanceFrom = (target: string | null) => {
-        
+
         resetColoring();
 
         if ( !target ) {
+            setProvenanceResult(null);
             return;
         }
 
         const [assertedSubgraph, discardedSubgraph, uncertainSubgraph] = provenanceEngine.current?.getProvenanceFromNode(target)!
-        
+        const queryTimeMs = provenanceEngine.current?.queryTimeMs!
+
+        setProvenanceResult({ assertedGraph: assertedSubgraph, discardedGraph: discardedSubgraph, uncertainGraph: uncertainSubgraph, queryTimeMs })
+
         console.warn("Asserte subgraph: ", assertedSubgraph)
         console.warn("Discarded subgraph: ", discardedSubgraph)
         console.warn("Uncertain subgraph: ", uncertainSubgraph)
