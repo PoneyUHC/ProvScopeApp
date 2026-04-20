@@ -250,7 +250,7 @@ const ProvenanceGraphEvents: React.FC = () => {
             }
         }
 
-         for (const node of provenanceGraph.graph.nodes()) {
+        for (const node of provenanceGraph.graph.nodes()) {
             if ( discardedSubgraph.hasNode(node) ) {
                 const inNeighbors = provenanceGraph.graph.inNeighbors(node)
                 for (const neighbor of inNeighbors) {
@@ -259,7 +259,18 @@ const ProvenanceGraphEvents: React.FC = () => {
             }
         }
 
+        for (const node of provenanceGraph.graph.nodes()) {
+            if ( !uncertainSubgraph.hasNode(node) && 
+                !assertedSubgraph.hasNode(node) && 
+                !discardedSubgraph.hasNode(node) 
+            ) {
+                provenanceGraph.graph.setNodeAttribute(node, 'color', 'lightgrey')
 
+                provenanceGraph.graph.edges(node).forEach((edge) => {
+                    provenanceGraph.graph.setEdgeAttribute(edge, 'color', 'lightgrey')
+                })
+            }
+        }
     }
 
 
