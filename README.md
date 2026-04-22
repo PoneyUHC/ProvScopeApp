@@ -1,3 +1,5 @@
+<img width="640" height="200" alt="image" src="https://github.com/user-attachments/assets/48b31a82-57c8-4279-9a33-482ad71cf12d" />
+
 # ProvScope App
 
 Desktop application to explore and analyze execution traces of inter-process systems.
