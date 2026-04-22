@@ -1,5 +1,5 @@
 
-# IPCA_APP (name to be found)
+# ProvScope App
 
 Application to explore and analyze execution trace of inter-process systems.
 Expects to be used on outputs of IPC_Analyzer ()

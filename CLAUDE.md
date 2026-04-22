@@ -1,4 +1,4 @@
-# IPCA App
+# ProvScope App
 
 Electron 34 + React 18 + TypeScript desktop app for analyzing IPC execution traces (PhD research).
 Visualizes inter-process communication as interactive graphs using Sigma.js + Graphology.

@@ -1,5 +1,5 @@
-appId: com.ipcaapp.poneyuhc
-productName: ipca_app
+appId: com.provscopeapp.poneyuhc
+productName: provscope_app
 directories:
   buildResources: build
 files:

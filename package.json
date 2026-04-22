@@ -1,5 +1,5 @@
 {
-  "name": "ipca_app",
+  "name": "provscope_app",
   "version": "1.0.0",
   "description": "An IPC analyzing app built with React, Vite, and Electron.",
   "main": "./out/main/index.js",
