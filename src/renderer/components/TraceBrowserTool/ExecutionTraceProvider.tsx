@@ -39,10 +39,20 @@ const ExecutionTraceProvider = ({ trace, children }: ExecutionTraceProviderType)
 
     const hideEntity = (entityName: Entity) => {
         setHiddenEntities((prev) => [...prev, entityName]);
+        const affectedEvents = trace.events.filter((event) => {
+            const entities = [event.process, ...event.otherEntities];
+            return entities.includes(entityName);
+        });
+        setHiddenEvents((prev) => [...prev, ...affectedEvents]);
     }
 
     const showEntity = (entityName: Entity) => {
         setHiddenEntities((prev) => prev.filter((obj) => obj !== entityName));
+        const affectedEvents = trace.events.filter((event) => {
+            const entities = [event.process, ...event.otherEntities];
+            return entities.includes(entityName);
+        });
+        setHiddenEvents((prev) => prev.filter((event) => !affectedEvents.includes(event)));
     }
 
     const hideEvent = (event: Event) => {
