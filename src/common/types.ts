@@ -90,8 +90,7 @@ export class Event {
     constructor(
         timestamp: number, 
         process: Process, 
-        eventType: string, 
-        otherEntities: Set<Entity>, 
+        eventType: string,
         sourceEntities: Set<Entity>, 
         targetEntities: Set<Entity>, 
         inputValues: Record<string, any>, 
@@ -102,7 +101,7 @@ export class Event {
         this.process = process
         this.eventType = eventType
 
-        this.otherEntities = otherEntities
+        this.otherEntities = sourceEntities.union(targetEntities).difference(new Set([process]))
         this.sourceEntities = sourceEntities
         this.targetEntities = targetEntities
         this.inputValues = inputValues

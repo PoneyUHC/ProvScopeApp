@@ -54,7 +54,6 @@ export default class EventSplitterImporterExtension implements ExecutionTraceImp
                     event.timestamp,
                     event.process,
                     event.eventType,
-                    event.otherEntities,
                     event.sourceEntities,
                     event.targetEntities,
                     { ...event.inputValues, size: sizeBytes },
@@ -108,13 +107,6 @@ function splitHexMessagesWithTrailingNewline(hex: string): string[] {
         const end = i + 2; // include "0a"
         parts.push(h.slice(start, end));
         start = end;
-    }
-
-    // Enforce the expected pattern: only keep full (message + "\n") chunks.
-    // So if there's leftover after the last "0a", we drop it.
-    // (If you prefer to keep it as its own event, remove this block.)
-    if (start !== h.length) {
-        // leftover exists -> discard it
     }
 
     return parts;

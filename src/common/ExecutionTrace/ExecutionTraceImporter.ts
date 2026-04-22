@@ -86,14 +86,6 @@ export default class ExecutionTraceImporter {
             return null
         }
 
-        const otherEntities: Set<Entity> = new Set()
-        for ( const otherEntityIndex of json.other_entities ) {
-            const entity = ExecutionTraceImporter.getEntity(executionTrace, otherEntityIndex)
-            if ( entity ) {
-                otherEntities.add(entity)
-            }
-        }
-
         const sourceEntities: Set<Entity> = new Set()
         for ( const sourceEntityIndex of json.source_entities ) {
             const entity = ExecutionTraceImporter.getEntity(executionTrace, sourceEntityIndex)
@@ -117,7 +109,6 @@ export default class ExecutionTraceImporter {
             json.timestamp,
             process as Process,
             json.event_type,
-            otherEntities,
             sourceEntities,
             targetEntities,
             inputValues,
