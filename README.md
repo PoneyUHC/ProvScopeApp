@@ -3,7 +3,7 @@
 # ProvScope App
 
 Desktop application to explore and analyze execution traces of inter-process systems.
-Expects to be used on outputs of ProvScope Observer (link to be added).
+Expects to be used on outputs of [ProvScope Observer](https://github.com/PoneyUHC/ProvScopeObserver), or any other that respect the same JSON format (see Trace file format section below)
 
 ## Features
 
