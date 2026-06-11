@@ -67,23 +67,28 @@ export default class ResourceContentDeducer {
                 continue;
             }
 
-            if (!event.targetEntities.has(resource)) {
-                contentHostNode = null
-            } else {
-                contentHostNode = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === resource)!;
-            }
-
-          
             const resourceContent = this.resourceContentMap.get(resource)
             if (! resourceContent) {
                 console.error("Should never happen as long as init() was called")
                 continue;
             }
-            resourceContent.applyEvent(event);
 
-            if (contentHostNode) {
-                graph.setNodeAttribute(contentHostNode, 'resourceContent', resourceContent.clone());
+            if (event.eventType !== "CloseEvent") {
+
+                const processNode = graph.findNode((n) => graph.getNodeAttribute(n, 'event') === event && graph.getNodeAttribute(n, 'entity') === event.process)!;
+                contentHostNode = graph.inNeighbors(processNode).find((n) => graph.getNodeAttribute(n, 'entity') === resource)!;
+                const currentContentAttribute = graph.getNodeAttribute(contentHostNode, 'resourceContent');
+                if (currentContentAttribute) {
+                    currentContentAttribute.set(event.id, resourceContent.clone());
+                    graph.setNodeAttribute(contentHostNode, 'resourceContent', currentContentAttribute);
+                } else {
+                    const newContentAttribute = new Map<number, ResourceContent>();
+                    newContentAttribute.set(event.id, resourceContent.clone());
+                    graph.setNodeAttribute(contentHostNode, 'resourceContent', newContentAttribute);
+                }
             }
+
+            resourceContent.applyEvent(event);
         }
     }
 

@@ -45,38 +45,36 @@ const NodeInfosPanel: React.FC = () => {
     }
     
 
-    const resourceContent = provenanceGraph.graph.getNodeAttribute(selectedNodes[0], 'resourceContent') as ResourceContent
-
-    if(resourceContent.content.length === 0) {
+    const resourceContentMap = provenanceGraph.graph.getNodeAttribute(selectedNodes[0], 'resourceContent') as Map<number, ResourceContent>;
+    if (!resourceContentMap || resourceContentMap.size === 0) {
         return (
             <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-right'>
                 <Error message="Resource is empty" />
             </ResizableControlsContainer>
-        );    
+        );
     }
-
     return (
         <ResizableControlsContainer defaultSize={{ width: 300, height: 400 }} position='top-right'>
-            <div
-                className="w-full h-full bg-gray-100 rounded-lg shadow-md overflow-auto"
-            >
-                {resourceContent.content.map((chunk, i) => {
-
-                    return (
-                        <p key={`chunk${i}`} className="border-b border-b-gray-500 p-1">
-                            <strong>{i}:</strong>{" "}
-                            <span className="whitespace-pre-wrap">
-                                <span className="text-slate-500">raw: </span>
-                                {chunk.toString()}
-                            </span>
-                            <span className="text-slate-500">{"  |  "}</span>
-                            <span className="whitespace-pre-wrap">
-                                <span className="text-slate-500">ascii: </span>
-                                {hexToAscii(chunk.data)}
-                            </span>
-                        </p>
-                    );
-                })}
+            <div className="w-full h-full bg-gray-100 rounded-lg shadow-md overflow-auto">
+                {Array.from(resourceContentMap.entries()).map(([eventId, resourceContent]) => (
+                    <div key={`event${eventId}`} className="border-b border-gray-500 p-2">
+                        <h3 className="font-bold mb-1">Event ID: {eventId}</h3>
+                        {resourceContent.content.map((chunk, i) => (
+                            <p key={`chunk${i}`} className="border-b border-b-gray-500 p-1">
+                                <strong>{i}:</strong>{" "}
+                                <span className="whitespace-pre-wrap">
+                                    <span className="text-slate-500">raw: </span>
+                                    {chunk.toString()}
+                                </span>
+                                <span className="text-slate-500">{"  |  "}</span>
+                                <span className="whitespace-pre-wrap">
+                                    <span className="text-slate-500">ascii: </span>
+                                    {hexToAscii(chunk.data)}
+                                </span>
+                            </p>
+                        ))}
+                    </div>
+                ))}
             </div>
         </ResizableControlsContainer>
     );

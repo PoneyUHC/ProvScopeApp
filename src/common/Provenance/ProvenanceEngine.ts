@@ -73,6 +73,7 @@ export class ProvenanceEngine {
                     terminalNodes.add(currentNode)
                 } else {
                     dependentSourceEventNodes.forEach(n => leftToExplore.add(n))
+                    console.log(`[LOG] Added dependent source event nodes to exploration set for current node ${currentNode}: `, dependentSourceEventNodes)
                 }
                 if (independentPath) {
                     discardedSubgraph = union(discardedSubgraph, independentPath)
@@ -86,6 +87,7 @@ export class ProvenanceEngine {
                 }
                 
                 dependentSourceEventNodes.forEach(n => leftToExplore.add(n))
+                console.log(`[LOG] Added dependent source event nodes to exploration set for current node ${currentNode}: `, dependentSourceEventNodes)
                 
                 if (independentPath) {
                     discardedSubgraph = union(discardedSubgraph, independentPath)
@@ -96,6 +98,7 @@ export class ProvenanceEngine {
                     assertedSubgraph = union(assertedSubgraph, interProcessAssertedPath)
                 }
                 interProcessSourceEventNodes.forEach(n => leftToExplore.add(n))
+                console.log(`[LOG] Added inter-process source event nodes to exploration set for current node ${currentNode}: `, interProcessSourceEventNodes)
                 
                 if (interProcessSourceEventNodes.length === 0 && dependentSourceEventNodes.length === 0) {
                     terminalNodes.add(currentNode)
@@ -194,7 +197,12 @@ export class ProvenanceEngine {
             return [null, []]
         }
 
-        const resourceContent = reachableSubgraph.getNodeAttribute(resourceNode, "resourceContent") as ResourceContent
+        const resourceContentMap = reachableSubgraph.getNodeAttribute(resourceNode, "resourceContent") as Map<number, ResourceContent>
+        if (!resourceContentMap) {
+            console.error(`[ERROR] No content attribute for resource node ${resourceNode} in reachable subgraph.`)
+            return [null, []]
+        }
+        const resourceContent = resourceContentMap.get(targetEvent.id)
         if (!resourceContent) {
             console.error(`[ERROR] No content attribute for resource node ${resourceNode} in reachable subgraph.`)
             return [null, []]
