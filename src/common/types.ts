@@ -118,7 +118,7 @@ export class Event {
 
         // EXT_ADDR placeholder
         this.hasUserCallsite = false
-        this.symbolOffset = "main+0"
+        this.symbolOffset = "no_user_code"
         this.address = "deadbeef"
 
         // EXT_EVENT_COLOR placeholder

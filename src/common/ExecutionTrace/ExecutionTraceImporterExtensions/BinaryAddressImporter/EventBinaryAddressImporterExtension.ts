@@ -33,6 +33,7 @@ export default class EventBinaryAddressImporterExtension implements ExecutionTra
                 continue
             }
 
+            event.hasUserCallsite = true
             event.symbolOffset = symbolOffset
         }
 
