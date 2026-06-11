@@ -17,20 +17,19 @@ Expects to be used on outputs of [ProvScope Observer](https://github.com/PoneyUH
 
 ## Project Setup
 
-Easy setup is possible through the `init.bash` script. After initialization, you should activate the python venv in your shell.
+Easy setup is possible through the `init.bash` script of the `scripts` folder. After initialization, you should activate the python venv in your shell.
 
 ```bash
-./init.bash
-source ./venv/bin/activate
+./scripts/init.bash
 ```
 
 This script will create a python venv with the proper modules and activate it under the current shell.
-It will also download the necessary dependencies for both the Python and the React codebases.
+It will also download the necessary dependencies for both the Python and the React/Electron codebases.
 
 To clear the configuration, use the `clean.bash` script:
 
 ```bash
-./clean.bash
+./scripts/clean.bash
 ```
 
 ## Running the app

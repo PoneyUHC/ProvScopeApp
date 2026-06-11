@@ -83,7 +83,11 @@ export class Event {
 
     description: string
     id: number
+
+    hasUserCallsite: boolean
+    symbolOffset: string
     address: string
+    
     color: string
     edgeDirection: EdgeDirectionStrategy
 
@@ -113,6 +117,8 @@ export class Event {
         this.id = -1 // Placeholder for unique ID, can be set later
 
         // EXT_ADDR placeholder
+        this.hasUserCallsite = false
+        this.symbolOffset = "main+0"
         this.address = "deadbeef"
 
         // EXT_EVENT_COLOR placeholder
