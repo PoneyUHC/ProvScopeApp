@@ -11,6 +11,8 @@ const api = {
     offAll: () => ipcRenderer.removeAllListeners(),
     exportTrace: (filename: string, content: string) => ipcRenderer.send('exportTrace', filename, content),
 
+    readSymbolTable: (binaryPath: string): Promise<Record<string, number>> => ipcRenderer.invoke('readSymbolTable', binaryPath),
+
     sendClick: (message: string) => ipcRenderer.send('open_ghidra', message),
     sendGClick: (address: string) => ipcRenderer.send('ghidra_go_to_adress', address),
 

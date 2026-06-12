@@ -1,7 +1,5 @@
 
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { GhidraCommunication } from '../common/src/software/ghidra/GhidraCommunication'
-
 
 declare global {
     interface Window {
@@ -13,6 +11,8 @@ declare global {
             offRequestExportTrace: (callback: () => void) => void,
             offAll: () => void,
             exportTrace: (filename: string, content: string) => void,
+
+            readSymbolTable: (binaryPath: string) => Promise<Record<string, number>>,
 
             sendClick: (message: string) => void,
             sendGClick: (address: string) => void,

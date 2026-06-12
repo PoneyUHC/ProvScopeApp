@@ -5,6 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { GhidraCommunication } from "../common/software/ghidra/GhidraCommunication";
 
 import getMenu from '@main/menuBuilder'
+import { registerSymbolTableHandler } from '@main/symbolTable'
 import goldoIcon from '@common/assets/goldo_icon.png?asset'
 
 
@@ -78,6 +79,8 @@ app.whenReady().then(() => {
 
     ghidraCommunication = GhidraCommunication.getInstance()
     ghidraCommunication.initWindow(mainWindow)
+
+    registerSymbolTableHandler()
 })
 
 
