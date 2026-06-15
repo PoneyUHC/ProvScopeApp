@@ -12,6 +12,7 @@ declare global {
             offAll: () => void,
             exportTrace: (filename: string, content: string) => void,
 
+            selectBinaryFile: () => Promise<string | null>,
             readSymbolTable: (binaryPath: string) => Promise<Record<string, number>>,
 
             sendClick: (message: string) => void,

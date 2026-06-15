@@ -26,10 +26,6 @@ export default class ExecutionTraceImporter {
             }
         }
 
-        for (const extension of staticExtensions) {
-            extension.importData(executionTrace, json, null)
-        }
-
         for (const extensionData of extensionsData) {
             const extensionTag = extensionData.tag
             const extensionImporter = tagToImporterMapping.get(extensionTag)
@@ -41,6 +37,10 @@ export default class ExecutionTraceImporter {
             if (importSuccess) {
                 executionTrace.extensions.push(extensionTag)
             }
+        }
+
+        for (const extension of staticExtensions) {
+            extension.importData(executionTrace, json, null)
         }
 
         ExecutionTraceImporter.addEventIDs(executionTrace)

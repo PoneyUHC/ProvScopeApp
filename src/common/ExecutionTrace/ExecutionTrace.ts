@@ -3,6 +3,7 @@ import ExecutionTraceExporter from "./ExecutionTraceExporter"
 import ExecutionTraceImporter from "./ExecutionTraceImporter"
 import { Process, Resource, Event, Entity } from "../types"
 import { IClonable } from "../utils"
+import { ProgramFile } from "@common/ProgramFile"
 
 
 export class ExecutionTrace implements IClonable<ExecutionTrace> {
@@ -29,6 +30,19 @@ export class ExecutionTrace implements IClonable<ExecutionTrace> {
         ExecutionTraceImporter.loadTraceFromJSON(this, jsonString)
 
         this.entities = [...this.processes, ...this.resources]
+    }
+
+
+    updateProcessProgramFile(process: Process, programFile: ProgramFile) {
+        process.programFile = programFile
+        this.events.forEach((event) => {
+            if (event.process === process) {
+                if (event.hasUserCallsite) {
+                    const decimalAddress = programFile.getAddressFromSymbolOffset(event.symbolOffset)
+                    event.address = "0x" + decimalAddress.toString(16)
+                }
+            }
+        })
     }
 
 

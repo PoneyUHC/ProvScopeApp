@@ -8,6 +8,7 @@
     "typecheck:node": "tsc --noEmit -p config/tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p config/tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "lint": "eslint --config config/eslint.config.mjs .",
     "start": "electron-vite preview --config config/electron.vite.config.ts",
     "dev": "electron-vite dev --config config/electron.vite.config.ts",
     "test": "vitest --config config/vitest.config.ts",

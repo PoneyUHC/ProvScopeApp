@@ -2,10 +2,13 @@
 import { useCallback, useContext, useState } from 'react';
 
 import { getNodesByType } from '@common/utils';
+import { Process } from '@common/types';
+import { ProgramFile } from '@common/ProgramFile';
 
 import { ExecutionTraceContext, ExecutionTraceContextType } from '@renderer/components/TraceBrowserTool/ExecutionTraceProvider';
 import { TopologyGraphContext, TopologyGraphContextType } from '@renderer/components/TopologyGraph/TopologyGraphProvider';
 import ShowHideButton from '@renderer/components/TopologyGraph/ExplorerPanel/ShowHideButton';
+import ContextMenu from '@renderer/components/Misc/ContextMenu';
 import Error from '@renderer/components/Misc/Error';
 
 
@@ -37,9 +40,34 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
 
     const [hiddenEventTypes, setHiddenEventTypes] = useState<string[]>([])
 
+    // Context menu for process nodes ("Set Binary File"). `binaryVersion` forces
+    // a re-render when a Process gains a programFile, so its icon shows up.
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: string } | null>(null)
+    const [binaryVersion, setBinaryVersion] = useState(0)
+
 
     const handleClick = (node: string) => {
         setSelectedNodes([node]);
+    }
+
+    const handleProcessContextMenu = (e: React.MouseEvent, node: string) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, node });
+    }
+
+    const handleSetBinaryFile = async (node: string) => {
+        const process = topologyGraph.graph.getNodeAttribute(node, 'entity');
+        if (!(process instanceof Process)) {
+            return;
+        }
+        const path = await window.api.selectBinaryFile();
+        if (!path) {
+            return;
+        }
+
+        const programFile = await ProgramFile.create(path, window.api.readSymbolTable);
+        executionTrace.updateProcessProgramFile(process, programFile);
+        setBinaryVersion((v) => v + 1);
     }
 
     const handleShowEntity = (node: string) => {
@@ -57,11 +85,13 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
         const nodesByType = getNodesByType(topologyGraph.graph)
 
         return Array.from(nodesByType).map((pair) => {
+            const isProcessGroup = pair[0] === 'Process'
             return (
                 <div className='mb-5 rounded-t-2xl overflow-hidden border border-black flex flex-col' key={pair[0]}>
                     <h1 className='text-xl font-semibold pl-3 bg-gray-300 flex-grow'>{pair[0]}</h1>
                         {
                             pair[1].map((node) => {
+                                const entity = topologyGraph.graph.getNodeAttribute(node, 'entity')
                                 return (
                                     <ShowHideButton
                                         key={node}
@@ -69,17 +99,19 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                                         onClick={() => handleClick(node)}
                                         onShow={() => handleShowEntity(node)}
                                         onHide={() => handleHideEntity(node)}
+                                        onContextMenu={isProcessGroup ? (e) => handleProcessContextMenu(e, node) : undefined}
                                         selected={selectedNodes.includes(node)}
-                                        visible={!hiddenEntities.includes(topologyGraph.graph.getNodeAttribute(node, 'entity'))}
+                                        visible={!hiddenEntities.includes(entity)}
+                                        showBinaryIcon={entity instanceof Process && entity.programFile !== null}
                                     />
                                 )
-                            })  
+                            })
                         }
                     <div className='bg-gray-300 flex-grow border-t border-black'>&nbsp;</div>
                 </div>
             )
         })
-    }, [topologyGraph, selectedNodes, hiddenEntities])
+    }, [topologyGraph, selectedNodes, hiddenEntities, binaryVersion])
 
 
     const handleShowEventType = (eventType: string) => {
@@ -132,6 +164,14 @@ const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
         <div className={`${className} overflow-auto`}>
             {getNodeGroupsButtons()}
             {getEventTypesButtons()}
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    items={[{ label: 'Set Binary File', onClick: () => handleSetBinaryFile(contextMenu.node) }]}
+                    onClose={() => setContextMenu(null)}
+                />
+            )}
         </div>
     )
 }

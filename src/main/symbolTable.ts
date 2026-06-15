@@ -1,16 +1,28 @@
-import { ipcMain } from "electron";
+import { dialog, ipcMain } from "electron";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
 /**
- * Reads a binary's symbol table with `nm`, returning symbol name -> link-time
- * address. Runs in the main process because `child_process` is unavailable in
- * the (context-isolated) renderer. Exposed to the renderer via the
- * 'readSymbolTable' IPC channel.
+ * Registers the main-process IPC handlers backing the binary-resolution
+ * feature: picking a binary file and reading its symbol table. Both rely on
+ * Electron / `child_process` APIs that are unavailable in the (context-isolated)
+ * renderer.
  */
 export function registerSymbolTableHandler(): void {
+
+    // Opens a single-file picker and returns the chosen path, or null if cancelled.
+    ipcMain.handle("selectBinaryFile", async (): Promise<string | null> => {
+        const result = await dialog.showOpenDialog({
+            title: "Select binary file",
+            message: "Select the binary file for this process",
+            properties: ["openFile"],
+        });
+        return result.canceled ? null : result.filePaths[0];
+    });
+
+    // Reads a binary's symbol table with `nm`: symbol name -> link-time address.
     ipcMain.handle("readSymbolTable", async (_event, binaryPath: string) => {
         const { stdout } = await execFileAsync("nm", [binaryPath], { encoding: "utf8" });
         const symbolTable: Record<string, number> = {};

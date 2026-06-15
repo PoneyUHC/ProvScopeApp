@@ -1,5 +1,6 @@
 
 import { IClonable } from "@common/utils"
+import { ProgramFile } from "@common/ProgramFile"
 
 
 export abstract class Entity implements IClonable<Entity> {
@@ -13,10 +14,12 @@ export class Process implements Entity {
 
     name: string
     pid: number
+    programFile: ProgramFile | null
 
     constructor(name: string, pid: number) {
         this.name = name
         this.pid = pid
+        this.programFile = null
     }
 
     getUUID (): string {
@@ -24,7 +27,9 @@ export class Process implements Entity {
     }
 
     clone(): Process {
-        return new Process(this.name, this.pid)
+        const clone = new Process(this.name, this.pid)
+        clone.programFile = this.programFile
+        return clone
     }
 }
 
@@ -119,7 +124,7 @@ export class Event {
         // EXT_ADDR placeholder
         this.hasUserCallsite = false
         this.symbolOffset = "no_user_code"
-        this.address = "deadbeef"
+        this.address = "0xdeadbeef"
 
         // EXT_EVENT_COLOR placeholder
         this.color = "black"
