@@ -5,6 +5,13 @@
 Desktop application to explore and analyze execution traces of inter-process systems.
 Expects to be used on outputs of [ProvScope Observer](https://github.com/PoneyUHC/ProvScopeObserver), or any other that respect the same JSON format (see Trace file format section below)
 
+## Latest features
+
+### Ghidra integration
+
+It is now possible to associate to each process its binary source code, to navigate from the SEPG events to the system-calls calling site in user code. Refer to the Ghidra Setup section below.
+
+
 ## Features
 
 - Load and browse JSON execution traces produced by ProvScope Oberver (or any other source, as long as the JSON format is respected).
@@ -87,11 +94,31 @@ Protocol (renderer → Python, over WebSocket):
 
 Python → renderer messages: `"connected"` / `"disconnected"` (status heartbeat, emitted every second once a connection is established). These drive the `ghidraConnectedStep1/2` and `ghidraDisconnectedStep1/2` events exposed on `window.api`.
 
-Prerequisites on the host:
+## Ghidra setup
 
-- Ghidra installed (the path is hardcoded in `headlessGhidra.bash`; edit to match your installation).
-- The `ghidra_bridge` server script running inside Ghidra's Jython console so that the Python side can attach to it.
-- Python dependencies from `requirements.txt` (`ghidra-bridge`, `jfx-bridge`, `websockets`), installed by `init.bash` into the local venv.
+**1. Install tools**
+- [Ghidra](https://ghidra-sre.org/)
+- [Ghidra Bridge](https://github.com/justfoxing/ghidra_bridge):
+```bash
+  pip install ghidra_bridge
+  python -m ghidra_bridge.install_server ~/ghidra_scripts
+```
+  In Ghidra's Script Manager, open the **Bridge** folder and check **"In Tool"** for `ghidra_bridge_server_background.py` and `ghidra_bridge_server_shutdown.py` (adds them to Tools → Ghidra Bridge).
+
+**2. Configure `headlessGhidra.bash`**
+Update the paths:
+- `PROJECT_DIR` → path to the directory the ghidraProjects should be created in.
+- `GHIDRA_DIR` → path to the Ghidra folder
+- `BIN_FILE` → binary filename (or absolute path — if outside `ghidraProjects`, replace `"$PROJECT_DIR/$BIN_FILE"` with `"$BIN_FILE"`)
+
+### Launch
+
+1. Activate the venv
+2. Click the **Ghidra** button
+3. Open the file matching the binary's name in ghidra popup window.
+4. Go to **Tools → GhidraBridge → Run in Background** — the app should show **connected** (green)
+5. To jump to a node's address: press **G**, then click the node in the SEPG view
+
 
 ## Trace file format
 
