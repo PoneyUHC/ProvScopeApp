@@ -45,8 +45,13 @@ async def ws_server(websocket):
                 asyncio.create_task(monitor_connection(websocket, ghidra))
                 
 
-            elif (ghidra_launched and message.isdigit()):
+            elif (ghidra_launched and message.startswith("0x")):
                 bridge, status = ghidra.connect_to_ghidra()
+
+                message = message[2:]  # Remove "0x" prefix
+                message = "0010" + message
+
+                print(message)
 
                 while (status != "connected"):
                     time.sleep(1)

@@ -2,8 +2,8 @@
 
 PROJECT_NAME=project
 PROJECT_DIR=~/Documents/ghidraProjects
-GHIDRA_DIR=~/Documents/ghidraProjects/ghidra_11.4_PUBLIC_20250620/ghidra_11.4_PUBLIC
-BIN_FILE=test_file
+GHIDRA_DIR=~/Apps/ghidra_11.0.2_PUBLIC
+BIN_FILE=client.bin
 PROJECT_PATH="$PROJECT_DIR/$PROJECT_NAME.rep"
 PROJECT_GPR="$PROJECT_DIR/$PROJECT_NAME.gpr"
 

@@ -113,6 +113,7 @@ export class GhidraCommunication {
 
     send(message: string) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            console.log(`Sending message to Ghidra: ${message}`)
             this.socket.send(message);
         }
     }
