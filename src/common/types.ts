@@ -48,17 +48,89 @@ export enum ResourceType {
 
 export class Resource implements Entity {
 
+    // UUID <> Resource bank, holding every registered resource under its UUID
+    private static uuidBank: Map<string, Resource> = new Map()
+
     resourceType: ResourceType
     path: string
+    uuid: string
 
     constructor(path: string, resourceType: ResourceType) {
-        const filename = path.split('/').pop() ?? path
-        this.path = filename
+        this.path = path
         this.resourceType = resourceType
+        this.uuid = "" // assigned by register()
+        Resource.register(this)
+    }
+
+    // Number of segments in a path, i.e. the deepest suffix it can produce
+    private static depthOf(path: string): number {
+        return path.split('/').length
+    }
+
+    // The last `depth` segments of `path`, clamped to what the path can offer
+    private static suffixOf(path: string, depth: number): string {
+        const segments = path.split('/')
+        const clamped = Math.min(Math.max(depth, 1), segments.length)
+        return segments.slice(segments.length - clamped).join('/')
+    }
+
+    // A suffix is ambiguous as soon as another registered path also ends with it,
+    // whether or not that path currently uses it as its UUID
+    private static isAmbiguous(suffix: string, resource: Resource): boolean {
+        for (const other of Resource.uuidBank.values()) {
+            if (other.path === resource.path) {
+                continue // same path means same resource, not a collision
+            }
+            if (other.path === suffix || other.path.endsWith(`/${suffix}`)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Gives `resource` the shortest suffix of its path that no other path ends with,
+    // then rebanks it under that UUID
+    private static assignUUID(resource: Resource): void {
+        const maxDepth = Resource.depthOf(resource.path)
+        let uuid = resource.path // fallback: no suffix is unambiguous, spell the path out
+
+        for (let depth = 1; depth <= maxDepth; depth++) {
+            const suffix = Resource.suffixOf(resource.path, depth)
+            if (!Resource.isAmbiguous(suffix, resource)) {
+                uuid = suffix
+                break
+            }
+        }
+
+        if (Resource.uuidBank.get(resource.uuid) === resource) {
+            Resource.uuidBank.delete(resource.uuid)
+        }
+        const displaced = Resource.uuidBank.get(uuid)
+        resource.uuid = uuid
+        Resource.uuidBank.set(uuid, resource)
+
+        // Taking a UUID over happens when a path is the exact suffix of a longer one:
+        // the longer path has to give it up and spell out one more segment
+        if (displaced !== undefined && displaced.path !== resource.path) {
+            Resource.assignUUID(displaced)
+        }
+    }
+
+    // Banks the newcomer, then lengthens the UUID of the already banked resources it
+    // collides with. Only resources sharing its filename can collide, since every
+    // candidate UUID ends on the filename.
+    private static register(resource: Resource): void {
+        const filename = Resource.suffixOf(resource.path, 1)
+        const collided = Array.from(Resource.uuidBank.values()).filter((other) =>
+            other.path !== resource.path && Resource.suffixOf(other.path, 1) === filename
+        )
+
+        Resource.assignUUID(resource)
+        collided.forEach((other) => Resource.assignUUID(other))
     }
 
     getUUID (): string {
-        return this.path
+        return this.uuid
     }
 
     clone(): Resource {

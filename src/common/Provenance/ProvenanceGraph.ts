@@ -53,7 +53,7 @@ export default class ProvenanceGraph {
 
         for (const resource of this.trace.resources) {
 
-            const nodeLabel = `${resource.path}-0`
+            const nodeLabel = `${resource.getUUID()}-0`
             const node = this.graph.addNode(nodeLabel, {
                 x: 0, 
                 y: 0, 
