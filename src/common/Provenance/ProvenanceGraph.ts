@@ -5,6 +5,11 @@ import { ExecutionTrace } from '../ExecutionTrace/ExecutionTrace'
 import { Entity, Event } from '../types'
 
 
+const DEFAULT_NODE_SIZE = 2
+const DEFAULT_X_OFFSET = 25
+const DEFAULT_Y_OFFSET = 50
+
+
 export default class ProvenanceGraph {
 
     trace: ExecutionTrace
@@ -27,10 +32,10 @@ export default class ProvenanceGraph {
         for (const node of this.graph.nodes()) {
             
             const event = this.graph.getNodeAttribute(node, 'event')
-            const x = this.trace.events.indexOf(event) * 5
+            const x = this.trace.events.indexOf(event) * DEFAULT_X_OFFSET
 
             const entityName = this.graph.getNodeAttribute(node, 'entity')
-            const y = -entities.indexOf(entityName) * 50
+            const y = -entities.indexOf(entityName) * DEFAULT_Y_OFFSET
 
             this.graph.setNodeAttribute(node, 'x', x)
             this.graph.setNodeAttribute(node, 'y', y)
@@ -57,7 +62,7 @@ export default class ProvenanceGraph {
             const node = this.graph.addNode(nodeLabel, {
                 x: 0, 
                 y: 0, 
-                size: 4,
+                size: DEFAULT_NODE_SIZE,
                 label: nodeLabel, 
                 version: 0, 
                 entity: resource, 
@@ -74,7 +79,7 @@ export default class ProvenanceGraph {
             const node = this.graph.addNode(nodeLabel, {
                 x: 0, 
                 y: 0, 
-                size: 4,
+                size: DEFAULT_NODE_SIZE,
                 label: nodeLabel, 
                 version: 0, 
                 entity: process, 
@@ -116,7 +121,7 @@ export default class ProvenanceGraph {
         const newNode = this.graph.addNode(newNodeLabel, {
             x: 0,
             y: 0,
-            size: 4,
+            size: DEFAULT_NODE_SIZE,
             label: newNodeLabel,
             version: newVersion,
             entity: entity,
